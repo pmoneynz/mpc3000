@@ -101,17 +101,17 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 358495 owned / 121 gaps. `B060:0D04` /
-      `B20A:0004` / `D6E0:008B` / `E398:0009` are
-      hole-starts with named `CALLF`. Mid-hole `C4C8` /
-      `B77C` / `E398:01F0` / `0366` / `E3E7:0008` stay
-      unowned. `C44E:00C2` / `CEBF:0272` / `BE1A:0649`
-      / `E582:013A` have no owned caller. Isolated 1-byte
-      `0xFF` between owned ranges is align padding
-      (29 bytes). `D3A7:0005` `INT 40` still has no
-      owned caller. `0xC0xx` bit meaning is not claimed.
-      Unentered app ROM remains. The 1-byte `CF` at
-      `0x7ADA3` has no entry.
+      Progress: 359531 owned / 120 gaps. Packed leftovers
+      after `E398:0009` (`0119`/`01F0`/`0366`/`0386`/
+      `03BD`/`045A` plus far dest `E3E7:0008`) close
+      `[0x63A99, 0x63EA5)`. Mid-hole `C4C8` / `B77C`
+      stay unowned. `C44E:00C2` / `CEBF:0272` /
+      `BE1A:0649` / `E582:013A` / `B060:0D70` have no
+      owned caller. Isolated 1-byte `0xFF` between owned
+      ranges is align padding (29 bytes). `D3A7:0005`
+      `INT 40` still has no owned caller. `0xC0xx` bit
+      meaning is not claimed. Unentered app ROM remains.
+      The 1-byte `CF` at `0x7ADA3` has no entry.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.

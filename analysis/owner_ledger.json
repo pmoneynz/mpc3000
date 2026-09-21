@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 358495,
+  "owned_bytes": 359531,
   "ranges": [
     {
       "start": "0x00000",
@@ -4959,6 +4959,62 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "E398:0009 through RETF; CALLF C2E6:01B9"
+    },
+    {
+      "start": "0x63A99",
+      "end": "0x63B70",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E398:0119 cdecl through RETF; CALLN E398:0091"
+    },
+    {
+      "start": "0x63B70",
+      "end": "0x63CE6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E398:01F0 cdecl through RETF; CALLF C2E6:00EC"
+    },
+    {
+      "start": "0x63CE6",
+      "end": "0x63D06",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E398:0366 through RETF; CALLF C2E6:0126"
+    },
+    {
+      "start": "0x63D06",
+      "end": "0x63D3D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E398:0386 through RETF; CALLN E398:0065"
+    },
+    {
+      "start": "0x63D3D",
+      "end": "0x63DDA",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E398:03BD cdecl through RETF; CALLN E398:00AB"
+    },
+    {
+      "start": "0x63DDA",
+      "end": "0x63E78",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E398:045A cdecl through RETF; CALLN E398:0351"
+    },
+    {
+      "start": "0x63E78",
+      "end": "0x63EA5",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E3E7:0008 cdecl through RETF; CALLF E4FA:0025"
     },
     {
       "start": "0x63EA5",

@@ -107,9 +107,10 @@ after `0CBF` (`CALLF` `EBC8:00B0`).
 `D6E0:008B` is a 42-byte hole-exact AMX
 thunk (`CALLF` `C303:029C`). `E398:0009`
 is the hole-start through `RETF`
-(`CALLF` `C2E6:01B9`); mid-hole
-`E398:01F0` / `0366` / `E3E7:0008` stay
-unowned.
+(`CALLF` `C2E6:01B9`). Packed leftovers
+`E398:0119` / `01F0` / `0366` / `0386` /
+`03BD` / `045A` and far dest `E3E7:0008`
+fill `[0x63A99, 0x63EA5)`.
 `D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
@@ -168,6 +169,13 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x320A4, 0x321AF)` | code — `B20A:0004` cdecl through `RETF`; `CALLF` `EB1A:0155`/`025F`/`030D` |
 | `[0x56E8B, 0x56EB5)` | code — `D6E0:008B` `ES=DS` / AMX `0725`/`06B9` through `RETF`; `CALLF` `C303:029C` |
 | `[0x63989, 0x63A99)` | code — `E398:0009` through `RETF`; `CALLF` `C2E6:01B9` |
+| `[0x63A99, 0x63B70)` | code — `E398:0119` cdecl through `RETF`; `CALLN` `E398:0091` |
+| `[0x63B70, 0x63CE6)` | code — `E398:01F0` cdecl through `RETF`; `CALLF` `C2E6:00EC` |
+| `[0x63CE6, 0x63D06)` | code — `E398:0366` through `RETF`; `CALLF` `C2E6:0126` |
+| `[0x63D06, 0x63D3D)` | code — `E398:0386` through `RETF`; `CALLN` `E398:0065` |
+| `[0x63D3D, 0x63DDA)` | code — `E398:03BD` cdecl through `RETF`; `CALLN` `E398:00AB` |
+| `[0x63DDA, 0x63E78)` | code — `E398:045A` cdecl through `RETF`; `CALLN` `E398:0351` |
+| `[0x63E78, 0x63EA5)` | code — `E3E7:0008` cdecl through `RETF`; `CALLF` `E4FA:0025` |
 | `[0x44483, 0x444B9)` | data — `C425` `JMP CS:[BX+0233]` 27 near IPs |
 | `[0x50785, 0x5078D)` | data — `CFC6` `JMP CS:[BX+0B25]` 4 near IPs |
 | `[0x53CAC, 0x53CBC)` | data — `D3A7` `JMP CS:[BX+023C]` 8 near IPs |
