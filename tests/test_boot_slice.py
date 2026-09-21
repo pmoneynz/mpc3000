@@ -18,7 +18,9 @@ from tools.owner_ledger import (
 from tools.string_scan import load_scan, validate as validate_string_scan
 from tools.entry_scan import load_scan as load_entry_scan
 from tools.entry_scan import validate as validate_entry_scan
-from tools.v53_decode import decode_one
+from tools.transfer_scan import load_scan as load_transfer_scan
+from tools.transfer_scan import validate as validate_transfer_scan
+from tools.v53_decode import decode_one, follow_local
 from tools.verify_boot_slice import FACTS_PATH, verify
 
 
@@ -188,6 +190,28 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x797A6:0x797A9], bytes.fromhex("e89a00"))
         self.assertEqual(self.image[0x7FFF0:0x7FFF5], bytes.fromhex("ea0000f0ff"))
         self.assertEqual(entries["create_table"][6]["cs_ip"], "D9BD:0009")
+
+    def test_transfer_scan_exits(self) -> None:
+        transfers = load_transfer_scan()
+        meta = self.facts["transfer_scan"]
+        checks = validate_transfer_scan(self.image, transfers)
+        self.assertGreaterEqual(len(checks), 3)
+        self.assertEqual(transfers["entries"], meta["entries"])
+        self.assertEqual(transfers["status_counts"]["bounded"], 128)
+        self.assertEqual(transfers["status_counts"]["indirect"], 14)
+        self.assertEqual(transfers["status_counts"]["loop"], 1)
+        self.assertEqual(transfers["discovered"]["jmpf_unestablished"], 0)
+        self.assertEqual(transfers["discovered"]["callf_new"], 74)
+        self.assertEqual(transfers["discovered"]["calln_new"], 42)
+        self.assertEqual(self.image[0x7B23A:0x7B240], bytes.fromhex("90909090ebfa"))
+        self.assertEqual(self.image[0x31B90], 0xCB)
+        idle = transfers["specimens"]["idle"]
+        self.assertEqual(idle["cs_ip"], "FB00:023A")
+        self.assertEqual(idle["status"], "loop")
+        insns, hit_limit = follow_local(self.image, 0xFB00, 0x023A)
+        self.assertFalse(hit_limit)
+        self.assertEqual(len(insns), 5)
+        self.assertEqual(insns[-1].kind, "JMPS")
 
     def test_v53_decode_brkxa_retxa(self) -> None:
         brk = decode_one(self.image, 0xFAC0, 0x001C)

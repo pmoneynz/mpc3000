@@ -327,3 +327,48 @@ def follow(image: bytes, cs: int, ip: int, *, limit: int = 400) -> list[Insn]:
         work.append((c, fall_ip))
     out.sort(key=lambda x: (x.cs, x.ip))
     return out
+
+
+def follow_local(image: bytes, cs: int, ip: int, *, limit: int = 800) -> tuple[list[Insn], bool]:
+    """CFG of one entry. Does not enter JMPF or CALLF.
+
+    Stops on return, far jump, and indirect jump. Near jumps and
+    conditional jumps stay inside the walk. CALL/BRKXA/RETXA record
+    as fallthrough after the instruction.
+    """
+    seen: set[tuple[int, int]] = set()
+    work = [(cs, ip)]
+    out: list[Insn] = []
+    while work and len(out) < limit:
+        c, i = work.pop(0)
+        if (c, i) in seen:
+            continue
+        seen.add((c, i))
+        insn = decode_one(image, c, i)
+        out.append(insn)
+        if insn.kind in (
+            "RETF",
+            "RET",
+            "IRET",
+            "RETN",
+            "RETFN",
+            "JMPF",
+            "JMPF_RM",
+            "JMPN_RM",
+            "UNKNOWN_0F",
+        ):
+            continue
+        fall_ip = (i + insn.length) & 0xFFFF
+        if insn.kind in ("JMPS", "JMPN"):
+            work.append((insn.target_cs or c, insn.target_ip or 0))
+            continue
+        if insn.kind == "JCC":
+            work.append((c, fall_ip))
+            work.append((insn.target_cs or c, insn.target_ip or 0))
+            continue
+        if insn.kind in ("CALLN", "CALLF", "CALLN_RM", "CALLF_RM", "BRKXA", "RETXA"):
+            work.append((c, fall_ip))
+            continue
+        work.append((c, fall_ip))
+    out.sort(key=lambda x: (x.cs, x.ip))
+    return out, len(out) >= limit

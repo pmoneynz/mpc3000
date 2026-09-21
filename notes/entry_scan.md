@@ -6,7 +6,7 @@
 
 Closes D15. A transfer consumer, not a `9A`/`EA` encoding, establishes
 an entry. Whole-image candidates stay suspects until investigated.
-Following every exit is D16.
+Following every exit is [`transfer_scan.md`](transfer_scan.md) (D16).
 
 Reproduction: `python3 tools/entry_scan.py --write` then
 `python3 tools/verify_boot_slice.py`.
@@ -114,7 +114,7 @@ left as gap debt. `B1B1:005B` stays
 
 ## What this note does *not* prove
 
-- Every exit from the 141 entries (D16).
+- Every exit from the 143 entries (closed in [`transfer_scan.md`](transfer_scan.md)).
 - That a `55 8B EC` target is a complete function.
 - Instruction bounds for unowned `PUSH DS`+far bodies.
 - IRQ pin identity for IVT slots (`U-V53A`).

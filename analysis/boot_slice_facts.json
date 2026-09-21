@@ -375,5 +375,15 @@
     "raw_ea": 825,
     "push_ds_far_targets": 67,
     "amx_public_count": 76
+  },
+  "transfer_scan": {
+    "file": "analysis/transfer_scan.json",
+    "entries": 143,
+    "bounded": 128,
+    "indirect": 14,
+    "loop": 1,
+    "callf_new": 74,
+    "calln_new": 42,
+    "jmpf_unestablished": 0
   }
 }

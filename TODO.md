@@ -95,8 +95,10 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       Raw `9A`/`EA` (6154/825) stay suspects. `0x7FF01` and
       `0x797A7` are immediates, not transfers. 67 `PUSH DS`+far
       cdecl entries. Bodies stay D16.
-- [ ] **D16.** From each established entry, follow control flow, check
-      instruction bounds, and resolve or exclude every exit.
+- [x] **D16.** Every local exit from the 143 entries classified.
+      128 bounded, 14 indirect (slot named, table UNDETERMINED),
+      1 idle loop. 74+42 new CALL dests are candidates. JMPF dests
+      all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
 

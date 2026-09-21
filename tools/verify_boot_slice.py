@@ -22,6 +22,8 @@ from tools.owner_ledger import (
 from tools.string_scan import load_scan, validate as validate_string_scan
 from tools.entry_scan import load_scan as load_entry_scan
 from tools.entry_scan import validate as validate_entry_scan
+from tools.transfer_scan import load_scan as load_transfer_scan
+from tools.transfer_scan import validate as validate_transfer_scan
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FACTS_PATH = REPO_ROOT / "analysis" / "boot_slice_facts.json"
@@ -341,6 +343,30 @@ def verify(image: bytes, facts: dict) -> list[str]:
     checks.append(
         f"entry scan: {entries['established']['unique_cs_ip']} unique CS:IP, "
         f"{entries['raw_encodings']['callf_9a']} raw 9A suspects"
+    )
+
+    transfers = load_transfer_scan()
+    checks.extend(validate_transfer_scan(image, transfers))
+    tmeta = facts["transfer_scan"]
+    if transfers["entries"] != tmeta["entries"]:
+        raise AssertionError("transfer_scan entries does not match facts")
+    if transfers["status_counts"]["bounded"] != tmeta["bounded"]:
+        raise AssertionError("transfer_scan bounded does not match facts")
+    if transfers["status_counts"]["indirect"] != tmeta["indirect"]:
+        raise AssertionError("transfer_scan indirect does not match facts")
+    if transfers["status_counts"]["loop"] != tmeta["loop"]:
+        raise AssertionError("transfer_scan loop does not match facts")
+    if transfers["discovered"]["callf_new"] != tmeta["callf_new"]:
+        raise AssertionError("transfer_scan callf_new does not match facts")
+    if transfers["discovered"]["calln_new"] != tmeta["calln_new"]:
+        raise AssertionError("transfer_scan calln_new does not match facts")
+    if transfers["discovered"]["jmpf_unestablished"] != tmeta["jmpf_unestablished"]:
+        raise AssertionError("transfer_scan jmpf_unestablished does not match facts")
+    checks.append(
+        f"transfer scan: {transfers['entries']} entries, "
+        f"{transfers['status_counts']['bounded']} bounded, "
+        f"{transfers['status_counts']['indirect']} indirect, "
+        f"{transfers['status_counts']['loop']} loop"
     )
 
     return checks
