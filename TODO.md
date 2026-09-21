@@ -156,9 +156,16 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       unowned (mid-hole). `C4C8:000D` is now
       hole-start of `[0x44C8D, 0x45059)` but
       has `JMP CS:[BX+0099]`. Do not BFS into
-      the `B3FD:0B0B` app-ROM hole. Next D17
-      hunt: remaining named `CALLN` dests that
-      walk-bound without an indirect.
+      the `B3FD:0B0B` app-ROM hole. Named
+      `CALLN` / clean mid-gap `9A` class is
+      exhausted: remaining dests are app-ROM
+      (`B3FD:0B0B`/`0F79`), `JMP CS:[BX]`
+      (`C44E:02BF`, `C4C8:000D`, `DAF2:0040`),
+      or refused mid-hole families. Next D17
+      hunt: owned-code `JMPN` into a gap, or
+      another transfer class not already
+      exhausted. Do not repeat `CALLN`/`9A`/
+      CS-rel / far-ptr-to-hole-start.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.
