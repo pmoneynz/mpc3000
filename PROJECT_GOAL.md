@@ -60,7 +60,9 @@ slot / `+063E` / `[E639]`;
 walks `[E5F9]+SI*0x18+3E` for
 `SI` `0..0x3F` to exclusive
 `+063E`; sibling `0874`;
-`0BBF` bounds `DX` at `0x600`;
+`0BBF` skips `[E60E]`, compares
+`+3E` to `[BP+6]`, stores
+`[BP+8]`, restores `CA45`;
 `D0C0:0C9C` walks `FCF6` with
 `CX` `0x348`..`0x930` and
 `(FCF6+0x23*0x18)&0xFFFF=+3E`.

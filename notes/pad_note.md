@@ -419,7 +419,20 @@ Already-owned `C20F:0BBF` (file
 `0x42CAF`) loads `ES:[BX+3E]`
 (file `0x42CDB`) and bounds
 `CMP DX,0x600` (file `0x42CF1`;
-`0x40*0x18`). **PROVEN.** Do not
+`0x40*0x18`). It reads `[E60E]`
+(file `0x42CB7`) and skips
+`DI==[E60E]` (file `0x42CC1`).
+Else `CALLF C887:1BE8` (file
+`0x42CC7`) is `CA45:0008`;
+`CMP AX,[BP+6]` (file `0x42CE1`);
+on match `MOV ES:[SI+3E],[BP+8]`
+(file `0x42CE9`). Outer
+`CMP DI,0x18` (file `0x42CF8`)
+then restore `CA45` (file
+`0x42D00`). **PROVEN** as a
+24-program `+3E` compare/store
+that excludes the selected
+`Pgm`. Not a pad-hit. Do not
 name the `+3E` byte.
 
 Already-owned cdecl `D0C0:0C9C`
