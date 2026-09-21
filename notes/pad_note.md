@@ -374,6 +374,42 @@ and returns `+5` or `+3` from the same
 consumer of that table. Do not name
 `D0AE`.
 
+Already-owned `D9A2:0004` / `0031` /
+`005F` (files `0x59A24` / `0x59A51` /
+`0x59A7F`). `PUSH [BP+6]`; `CALLF
+D9F2:000C` (files `0x59A2D` /
+`0x59A5A` / `0x59A88`). If `AX>=0x23`
+(file `0x59A38`), `CALLF CFC6:02D6`
+(`0004`/`0031`, files `0x59A3E` /
+`0x59A6B`) or `033A` (`005F`, file
+`0x59A99`). Then `MOV ES:[BX+0],
+[BP+8]` / `+1` / `+2` (files
+`0x59A4C` / `0x59A79` / `0x59AA7`).
+**PROVEN** as stores through the
+named note-to-slot far pointer.
+Not a pad-hit. Do not name those
+fields.
+
+Sibling leftover `D9A2:00C7` /
+`00E9` / `010C` (files `0x59AE7` /
+`0x59B09` / `0x59B2C`) is the read
+side: `000C` then `02D6`
+(`00C7`/`00E9`) or `033A`
+(`010C`) then `MOV AL,ES:[BX+0]`
+/ `+1` / `+2` (files `0x59B02` /
+`0x59B24` / `0x59B47`).
+**PROVEN.** No `CMP 0x23` on the
+readers. Gap leftover `D9A2:008D`
+at file `0x59AAD` is the same
+shape with `033A` and `+3`. Do
+not seed it.
+
+`BDF1:00E1` (file `0x3DFEF`,
+already owned): `PUSH 0`; `CALLF
+D9F2:000C`; `MOV [D6AD],AL` (file
+`0x3DFF9`). **PROVEN** as slot 0
+to `[D6AD]`.
+
 ---
 
 ## 6. Owned writers of `[D6AC]` (not pad-hit)
@@ -406,9 +442,9 @@ MIDI note-on to slot. Not a pad scan.
 **PROVEN** on that arm. When `[7664]!=0`, `AL` is
 `CFC6:0DA7`'s return (**UNDETERMINED**).
 
-An owned inverse store at file `0x3DFFA` is
-`CALLF D9F2:000C` / `MOV [D6AD],AL` (slot to note into
-`[D6AD]`). Same pair, opposite direction.
+`BDF1:00E1` (file `0x3DFF9` `A2 AD D6`)
+is the inverse store: `000C(0)` into
+`[D6AD]`. Same pair, opposite direction.
 
 No owned `IN` / `OUT` sits next to an `[D6AC]` store.
 
@@ -437,6 +473,9 @@ read it as MIDI.
 - Writer that sets `[8375]` nonzero (overlay select).
 - Writer that sets `[81B3]` nonzero (gap `0x5771E`;
   do not seed).
+- Gap leftover `D9A2:008D` at file `0x59AAD`
+  (owned `9A` dest; leftover after `005F`
+  `RETF`). Do not seed.
 - Full `9770:` / `Pgm` record grammar past `+11` /
   `+12`..`+19` / `+063E` / `+073E` / `+FCF6` /
   `+FD0D`.

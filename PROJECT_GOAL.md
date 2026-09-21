@@ -54,7 +54,12 @@ slot / `+063E` / `[E639]`;
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`
-slots. Owned
+slots. `D9A2:0004`/`0031`/`005F`
+store `[BP+8]` at the `02D6`/`033A`
+far pointer `+0`/`+1`/`+2`;
+`00C7`/`00E9`/`010C` read those
+bytes. `BDF1:00E1` is `000C(0)`
+into `[D6AD]`. Owned
 `[D6AC]` writers are remaps, not pad-hit
 ([`notes/pad_note.md`](notes/pad_note.md)).
 

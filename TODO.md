@@ -234,6 +234,12 @@ bounds, evidence, unknowns).
       matching `D9F2:000C` slots;
       sibling cdecl at `0x50A07` is a
       second `FCF6` `+3`/`+5` picker;
+      `D9A2:0004`/`0031`/`005F` store
+      `[BP+8]` at the `02D6`/`033A`
+      far pointer `+0`/`+1`/`+2`;
+      `00C7`/`00E9`/`010C` read those
+      bytes; `BDF1:00E1` is `000C(0)`
+      into `[D6AD]`;
       `0x80` via `FCF6`;
       `0x90` → `CFC6:0007`, note `+2` in
       `0x23`..`0x62`, `02D6` note-to-slot,
