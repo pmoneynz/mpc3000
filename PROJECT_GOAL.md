@@ -87,7 +87,11 @@ leftover `CALLF`s
 `DCE4:000C` with
 `CMP SI,0x100`.
 `DC2A:0033` / `DC85:0047`
-also read `[996B]`).
+also read `[996B]`.
+`D9EA:0042` is `AX=[BP+6]`
+`SHL AX,1` / `SHR AL,1`,
+dest of `DC85:0047` /
+`011A`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

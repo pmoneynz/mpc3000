@@ -295,7 +295,16 @@ Already-owned leftover `DC85:011A`
 **PROVEN** as a second owned
 caller of the named `0xF0` gate.
 Not a pad-hit. Do not name the
-packet bytes or RAM.
+packet bytes or RAM. Both
+`0047` and `011A` `CALLF
+D9EA:0042` (files `0x5C93C` /
+`0x5C9F8`). That dest (file
+`0x59EE2`, already owned) is
+`AX=[BP+6]`; `SHL AX,1`;
+`SHR AL,1`; `RETF`. **PROVEN.**
+Do not name the transform.
+Gap leftovers after `004D RETF`
+at `0x59EEE` stay unseeded.
 
 `BE1A:0203` (file `0x3E3A3`, already owned): if
 `[81B3]==0`, `DX=4`. Else `AX=[BP+6]*0x18`;
