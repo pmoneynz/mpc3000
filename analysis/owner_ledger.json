@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 364473,
+  "owned_bytes": 365850,
   "ranges": [
     {
       "start": "0x00000",
@@ -1031,6 +1031,46 @@
       "kind": "jump_table",
       "source": "notes/transfer_scan.md",
       "why": "C44E JMP CS:[BX+00B8] 5 near IPs BX<=4 then SHL 1"
+    },
+    {
+      "start": "0x445A2",
+      "end": "0x445F9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "C44E:00C2 cdecl through RETF; CALLN from C44E:01C5"
+    },
+    {
+      "start": "0x445F9",
+      "end": "0x4479F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "C44E:0119 cdecl through RETF; CALLN from C44E:0057"
+    },
+    {
+      "start": "0x44965",
+      "end": "0x44B96",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "C44E:0485 cdecl through RETF; CALLN from C44E:0069"
+    },
+    {
+      "start": "0x44B96",
+      "end": "0x44BEF",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "C44E:06B6 cdecl through RETF; CALLN from C44E:05ED"
+    },
+    {
+      "start": "0x44BEF",
+      "end": "0x44C8D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "C44E:070F cdecl through RETF; CALLN from C44E:0072"
     },
     {
       "start": "0x45059",
@@ -3063,6 +3103,22 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x59F92",
+      "end": "0x59FCD",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D9F2:0072 cdecl through RETF; CALLF from C44E:020D"
+    },
+    {
+      "start": "0x59FCD",
+      "end": "0x59FCE",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
     },
     {
       "start": "0x59FCE",

@@ -18,7 +18,7 @@ Reproduction: `python3 tools/owner_ledger.py --write` then
 | Field | Value |
 |-------|-------|
 | Purpose | Machine-readable owner map for proven file ranges |
-| Observable | `analysis/owner_ledger.json`; 857 ranges; 364473 owned bytes |
+| Observable | `analysis/owner_ledger.json`; 864 ranges; 365850 owned bytes |
 | Inputs | Byte-ownership tables in the notes; D16 walks; bounded CALL dests to fixpoint from D15 and switch-table IPs |
 | Outputs | Owner `code` or `data` only. 117 gaps left as debt |
 | Confidence | Seed spans **PROVEN** as the union of those tables. Gaps are **UNDETERMINED**, not owners |
@@ -40,8 +40,9 @@ when they form one proven block (AMX `0x7B04E-0x7B5E9`, BIOS
 ladder through `1AD4`).
 
 Isolated 1-byte `0xFF` between owned ranges is `data`/`padding`
-(31 sites). The 1-byte `NOP` rule is unchanged. Isolated `90`
+(32 sites). The 1-byte `NOP` rule is unchanged. Isolated `90`
 at `0x7B813` is auto-align in front of `FB76:00B4`.
+Isolated `FF` at `0x59FCD` is auto-align after `D9F2:0072`.
 
 `E937:0004` is `[0x69374, 0x6937C)` (8 bytes through `RETF`). The
 create-table note’s exclusive end `0x6937B` is a subset.
@@ -79,6 +80,9 @@ Closed earlier this pass:
 | `[0x34A66, 0x34A9C)` | 54 | code — `B3FD:0A96` |
 | `[0x43D1E, 0x43D77)` | 89 | code — `C303:0CEE` |
 | `[0x43DA6, 0x44259)` | 1203 | code — `C303:0D76`..`11C4` |
+| `[0x445A2, 0x4479F)` | 509 | code — `C44E:00C2`/`0119` |
+| `[0x44965, 0x44C8D)` | 808 | code — `C44E:0485`/`06B6`/`070F` |
+| `[0x59F92, 0x59FCD)` | 59 | code — `D9F2:0072` |
 
 Smallest remaining named hole: `[0x7ADA3, 0x7ADA4)` is `CF`
 (`IRET`) between `FAC0:019E` `jmp B000:00DF` and `FAC0:01A4`.

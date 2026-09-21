@@ -101,7 +101,7 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 364473 owned / 117 gaps. Owned seed and
+      Progress: 365850 owned / 117 gaps. Owned seed and
       extra-only walks reach no gap instruction bytes
       and no hole-start `CALLF`/`CALLN` dest. A
       real-modrm CS-relative pass owned `D5DD:0124`
@@ -109,9 +109,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       `DC6E:0002` (16 mask words, `(n&0xF)<<1`), and
       `EB0B:0002`/`0004` (32-bit dividend). Isolated
       1-byte `0xFF` between owned ranges is align
-      padding (31 bytes). `EB0D` / `EB5B` stay
+      padding (32 bytes). `EB0D` / `EB5B` stay
       unowned (RAM `BX`). Mid-hole `C4C8` / `B77C`
-      stay unowned. `C44E:00C2` / `CEBF:0272` /
+      stay unowned. `CEBF:0272` /
       `BE1A:0649` / `E582:013A` / `B060:0D70` /
       `D3A7:0005` / `DC5B:001A` / `DC5B:0123` have
       no owned caller. `0xC0xx` bit meaning is not
@@ -136,10 +136,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       Mid-gap owned `CALLF` dests `E59E:0006`/`0035`
       and `E5A8:0003`/`0030` (from `E398`) plus
       leftover `C303:0D47` (from `B3FD`/`C2D0`) are
-      seeded. `E582:013A` / `E59E:0099` / `C303:0CEE`
-      have no owned caller. Mid-hole `C4C8` / `B77C`
-      stay unowned. Gap count rose because two holes
-      split around the new bodies. Mid-gap `E12D:0009`,
+      seeded. `E582:013A` / `E59E:0099` have
+      no owned caller. Mid-hole `C4C8` / `B77C`
+      stay unowned. Mid-gap `E12D:0009`,
       `E07A:0004`, `E6D1:0001`, `E739:030C`, and
       `E661:0006`/`0095` are seeded (owned `E398` /
       `B3FD` / `E7E0` callers; all `CALLF` dests
@@ -149,10 +148,15 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       `0D76`..`11C4` close two holes; `B060:0044`..
       `02D6` fills `[0x30644, 0x3095D)`; `B3FD:0A96`
       is the hole-start after `0A2F`. Prefix
-      `B060:0030` (20 bytes) stays unowned. Do not
-      BFS into the `B3FD:0B0B` app-ROM hole.
-      Next D17 hunt: remaining named `CALLN` dests
-      that walk-bound without an indirect.
+      `B060:0030` (20 bytes) stays unowned. Named
+      `C44E` `CALLN` dests `00C2`/`0119`/`0485`/
+      `06B6`/`070F` and leftover `D9F2:0072` are
+      seeded. `C44E:02BF` stays unowned
+      (`JMP CS:[BX]`). `C887:09AC` stays unowned
+      (mid-hole). Do not BFS into the `B3FD:0B0B`
+      app-ROM hole. Next D17 hunt: remaining named
+      `CALLN` dests that walk-bound without an
+      indirect.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.

@@ -138,9 +138,18 @@ closes `[0x43D1E, 0x43D77)`; `C303:0D76`..`11C4`
 closes `[0x43DA6, 0x44259)`; `B060:0044`..`02D6`
 fills `[0x30644, 0x3095D)` (20-byte prefix
 `0030` stays unowned); `B3FD:0A96` is the
-hole-start after `0A2F`. Do not BFS those
-dests. A `55 8B EC` prologue still does not
-accept a dest as an entry.
+hole-start after `0A2F`. Named `C44E` `00B8`
+`CALLN` dests `0119` / `0485` / `070F` plus
+leftovers `00C2` / `06B6` fill
+`[0x445A2, 0x4479F)` and `[0x44965, 0x44C8D)`.
+`02BF` stays unowned (`JMP CS:[BX+0459]` /
+`[BX+044D]`). `C887:09AC` stays unowned
+(mid-hole in the 8203-byte gap). `D9F2:0072`
+is the hole-exact leftover after extra
+`000C` (`9A` at `C44E:020D`). Isolated
+`0xFF` at `0x59FCD` is auto-align. Do not
+BFS those dests. A `55 8B EC` prologue still
+does not accept a dest as an entry.
 
 ---
 
@@ -302,6 +311,12 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x444E5, 0x44535)` | code — `C44E:0005` through `JMP CS:[BX+00B8]`; `CALLF` `C425:01BF` |
 | `[0x44535, 0x44598)` | code — `C44E` `00B8` dests `0055`..`0079` plus shared `RETF` `00B3` |
 | `[0x44598, 0x445A2)` | data — `C44E` `JMP CS:[BX+00B8]` 5 near IPs (`BX<=4` then `SHL 1`) |
+| `[0x445A2, 0x445F9)` | code — `C44E:00C2` cdecl through `RETF`; `CALLN` from `C44E:01C5` |
+| `[0x445F9, 0x4479F)` | code — `C44E:0119` cdecl through `RETF`; `CALLN` from `C44E:0057` |
+| `[0x44965, 0x44B96)` | code — `C44E:0485` cdecl through `RETF`; `CALLN` from `C44E:0069` |
+| `[0x44B96, 0x44BEF)` | code — `C44E:06B6` cdecl through `RETF`; `CALLN` from `C44E:05ED` |
+| `[0x44BEF, 0x44C8D)` | code — `C44E:070F` cdecl through `RETF`; `CALLN` from `C44E:0072` |
+| `[0x59F92, 0x59FCD)` | code — `D9F2:0072` cdecl through `RETF`; `CALLF` from `C44E:020D` |
 | `[0x4EBF8, 0x4ED2E)` | code — `CEBF:0008` through `JMP CS:[BX+026A]`; `CALLF` `C425:01D8` |
 | `[0x4ED2E, 0x4EDA2)` | code — `CEBF` `026A` dests `013E`/`0175`/`0189` |
 | `[0x4EDA2, 0x4EE5A)` | code — `CEBF` shared `01B2` through `RETF` |
