@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 329166,
+  "owned_bytes": 340541,
   "ranges": [
     {
       "start": "0x00000",
@@ -138,19 +138,19 @@
     },
     {
       "start": "0x3095D",
-      "end": "0x30C36",
+      "end": "0x30D01",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
-      "start": "0x30CAD",
-      "end": "0x30D01",
-      "owner": "code",
-      "kind": "code",
+      "start": "0x30D01",
+      "end": "0x30D15",
+      "owner": "data",
+      "kind": "jump_table",
       "source": "notes/transfer_scan.md",
-      "why": "instruction prefix of an indirect CALL dest"
+      "why": "B060 JMP CS:[BX+0701] 10 near IPs"
     },
     {
       "start": "0x30EE6",
@@ -169,12 +169,28 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
-      "start": "0x31250",
+      "start": "0x31128",
+      "end": "0x31255",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x31255",
       "end": "0x31258",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x31258",
+      "end": "0x3126C",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "B060 JMP CS:[BX+0C58] 10 near IPs"
     },
     {
       "start": "0x314B2",
@@ -385,7 +401,7 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
-      "start": "0x32BED",
+      "start": "0x32BA3",
       "end": "0x32C5C",
       "owner": "code",
       "kind": "code",
@@ -399,6 +415,30 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x32E79",
+      "end": "0x32F12",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x333C4",
+      "end": "0x33506",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x33506",
+      "end": "0x33549",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
       "start": "0x33549",
@@ -482,67 +522,19 @@
     },
     {
       "start": "0x44259",
-      "end": "0x4434A",
-      "owner": "code",
-      "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "instruction prefix of an indirect CALL dest"
-    },
-    {
-      "start": "0x4437A",
-      "end": "0x44395",
-      "owner": "code",
-      "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "instruction prefix of an indirect CALL dest"
-    },
-    {
-      "start": "0x443BB",
-      "end": "0x443C6",
-      "owner": "code",
-      "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "instruction prefix of an indirect CALL dest"
-    },
-    {
-      "start": "0x44400",
-      "end": "0x4440F",
-      "owner": "code",
-      "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "instruction prefix of an indirect CALL dest"
-    },
-    {
-      "start": "0x44419",
-      "end": "0x44428",
-      "owner": "code",
-      "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "instruction prefix of an indirect CALL dest"
-    },
-    {
-      "start": "0x44432",
-      "end": "0x4443C",
-      "owner": "code",
-      "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "instruction prefix of an indirect CALL dest"
-    },
-    {
-      "start": "0x44446",
-      "end": "0x44450",
-      "owner": "code",
-      "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "instruction prefix of an indirect CALL dest"
-    },
-    {
-      "start": "0x4445A",
       "end": "0x44483",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x44483",
+      "end": "0x444B9",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "C425 JMP CS:[BX+0233] 27 near IPs"
     },
     {
       "start": "0x45059",
@@ -713,15 +705,7 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
-      "start": "0x4F555",
-      "end": "0x4F7BF",
-      "owner": "code",
-      "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
-    },
-    {
-      "start": "0x4F81D",
+      "start": "0x4F372",
       "end": "0x4F944",
       "owner": "code",
       "kind": "code",
@@ -761,12 +745,36 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
+      "start": "0x500CE",
+      "end": "0x50110",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
       "start": "0x50110",
       "end": "0x50785",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x50785",
+      "end": "0x5078D",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "CFC6 JMP CS:[BX+0B25] 4 near IPs"
+    },
+    {
+      "start": "0x5078D",
+      "end": "0x508A6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
       "start": "0x508D0",
@@ -777,7 +785,7 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
-      "start": "0x50A07",
+      "start": "0x509F3",
       "end": "0x50E79",
       "owner": "code",
       "kind": "code",
@@ -834,22 +842,6 @@
     },
     {
       "start": "0x51CEF",
-      "end": "0x51F7E",
-      "owner": "code",
-      "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
-    },
-    {
-      "start": "0x5205E",
-      "end": "0x52096",
-      "owner": "code",
-      "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
-    },
-    {
-      "start": "0x520A8",
       "end": "0x5218F",
       "owner": "code",
       "kind": "code",
@@ -858,7 +850,39 @@
     },
     {
       "start": "0x52190",
-      "end": "0x521A7",
+      "end": "0x521C9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x521C9",
+      "end": "0x521CA",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x521CA",
+      "end": "0x521DE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x521DE",
+      "end": "0x521DF",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x521DF",
+      "end": "0x521F7",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -946,19 +970,27 @@
     },
     {
       "start": "0x53B78",
-      "end": "0x53BEF",
+      "end": "0x53C90",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
-      "start": "0x53BF6",
-      "end": "0x53C12",
+      "start": "0x53C90",
+      "end": "0x53C95",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "instruction prefix of an indirect CALL dest"
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x53C95",
+      "end": "0x53C96",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x53C96",
@@ -967,6 +999,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x53CAC",
+      "end": "0x53CBC",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "D3A7 JMP CS:[BX+023C] 8 near IPs"
     },
     {
       "start": "0x5470C",
@@ -1169,12 +1209,36 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
+      "start": "0x559AA",
+      "end": "0x559B8",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "D547 JMP CS:[BX+053A] 7 near IPs"
+    },
+    {
       "start": "0x559C5",
       "end": "0x559D1",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x55A47",
+      "end": "0x55A9D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x55D77",
+      "end": "0x55D7E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
       "start": "0x55DDC",
@@ -1649,7 +1713,7 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
-      "start": "0x56EF1",
+      "start": "0x56EB5",
       "end": "0x56F07",
       "owner": "code",
       "kind": "code",
@@ -1705,6 +1769,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x58BCA",
+      "end": "0x58BDC",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "D8BC JMP CS:[BX+000A] 9 near IPs"
+    },
+    {
       "start": "0x58BDC",
       "end": "0x58BF0",
       "owner": "code",
@@ -1713,8 +1785,144 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
+      "start": "0x58BF0",
+      "end": "0x58BF5",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x58BF5",
+      "end": "0x58BF6",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x58BF6",
+      "end": "0x58C34",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x58C34",
+      "end": "0x58C35",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x58C35",
+      "end": "0x58C70",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x58C70",
+      "end": "0x58C71",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x58C71",
+      "end": "0x58CCD",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x58CCD",
+      "end": "0x58CCE",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x58CCE",
+      "end": "0x58CE5",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x58CE5",
+      "end": "0x58CE6",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x58CE6",
+      "end": "0x58CEE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x58CEE",
+      "end": "0x58CEF",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x58CEF",
+      "end": "0x58D14",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x58D14",
+      "end": "0x58D15",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x58D15",
+      "end": "0x58D63",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x58D63",
+      "end": "0x58D64",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x58D64",
+      "end": "0x58D6F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
       "start": "0x58D6F",
-      "end": "0x58D92",
+      "end": "0x58DB4",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -1881,12 +2089,28 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
+      "start": "0x59C1B",
+      "end": "0x59C7F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
       "start": "0x59C7F",
       "end": "0x59C95",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x59C95",
+      "end": "0x59C9D",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "D9C0 JMP CS:[BX+0095] 4 near IPs"
     },
     {
       "start": "0x59CF1",
@@ -2001,7 +2225,7 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
-      "start": "0x5A3D6",
+      "start": "0x5A25C",
       "end": "0x5A4C8",
       "owner": "code",
       "kind": "code",
@@ -2025,7 +2249,7 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
-      "start": "0x5A69A",
+      "start": "0x5A666",
       "end": "0x5A9B1",
       "owner": "code",
       "kind": "code",
@@ -2217,12 +2441,28 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
+      "start": "0x5B0E9",
+      "end": "0x5B21C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
       "start": "0x5B21E",
       "end": "0x5B24D",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5B24D",
+      "end": "0x5B25F",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "DAF2 JMP CS:[BX+032D] 9 near IPs"
     },
     {
       "start": "0x5B25F",
@@ -2298,7 +2538,7 @@
     },
     {
       "start": "0x5B585",
-      "end": "0x5B6C4",
+      "end": "0x5B6E5",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -2562,7 +2802,23 @@
     },
     {
       "start": "0x5C61B",
-      "end": "0x5C638",
+      "end": "0x5C66E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x5C66E",
+      "end": "0x5C66F",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5C66F",
+      "end": "0x5C6D3",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -2625,6 +2881,70 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
+      "start": "0x5CA78",
+      "end": "0x5CA84",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "DCA2 JMP CS:[BX+0058] 6 near IPs"
+    },
+    {
+      "start": "0x5CA84",
+      "end": "0x5CAED",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x5CAED",
+      "end": "0x5CAEE",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5CAEE",
+      "end": "0x5CB08",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x5CB08",
+      "end": "0x5CB09",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5CB09",
+      "end": "0x5CB32",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x5CB32",
+      "end": "0x5CB33",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5CB33",
+      "end": "0x5CB52",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
       "start": "0x5CB52",
       "end": "0x5CB6F",
       "owner": "code",
@@ -2651,6 +2971,62 @@
     {
       "start": "0x5CB7E",
       "end": "0x5CB86",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x5CE02",
+      "end": "0x5CE14",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x5CE14",
+      "end": "0x5CE15",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5CE15",
+      "end": "0x5CE1D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x5CE1D",
+      "end": "0x5CE1E",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5CE1E",
+      "end": "0x5CE26",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x5CE26",
+      "end": "0x5CE27",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5CE27",
+      "end": "0x5CE4B",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -3130,7 +3506,7 @@
     },
     {
       "start": "0x5DC0F",
-      "end": "0x5DD12",
+      "end": "0x5DDDD",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -3209,7 +3585,7 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
-      "start": "0x5E32F",
+      "start": "0x5E112",
       "end": "0x5E36C",
       "owner": "code",
       "kind": "code",
@@ -3225,12 +3601,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5E499",
+      "end": "0x5E5CE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
       "start": "0x5E5CE",
       "end": "0x5E712",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5E712",
+      "end": "0x5E788",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
       "start": "0x5E788",
@@ -3241,12 +3633,28 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
+      "start": "0x5E8D1",
+      "end": "0x5E901",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
       "start": "0x5E901",
       "end": "0x5EB2C",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5EB2C",
+      "end": "0x5EB8A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
       "start": "0x5EB8A",
@@ -3257,12 +3665,28 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
+      "start": "0x5EBCC",
+      "end": "0x5ECCD",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
       "start": "0x5ECCD",
       "end": "0x5ECEC",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5ECEC",
+      "end": "0x5ED51",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
       "start": "0x5ED51",
@@ -3273,12 +3697,36 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
-      "start": "0x5EE3D",
+      "start": "0x5ED7A",
       "end": "0x5EE45",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "instruction prefix of an indirect CALL dest"
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x5EE45",
+      "end": "0x5EE8D",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "DE5C JMP CS:[BX+0885] 36 near IPs"
+    },
+    {
+      "start": "0x5EE8D",
+      "end": "0x5EE9B",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "DE5C JMP CS:[BX+08CD] 7 near IPs"
+    },
+    {
+      "start": "0x5EE9B",
+      "end": "0x5F0CA",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
       "start": "0x5F2BD",
@@ -3313,7 +3761,7 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
-      "start": "0x60D54",
+      "start": "0x60AAA",
       "end": "0x60E4A",
       "owner": "code",
       "kind": "code",
@@ -3457,6 +3905,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x6303D",
+      "end": "0x630A7",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
       "start": "0x630D7",
       "end": "0x633F4",
       "owner": "code",
@@ -3466,7 +3922,7 @@
     },
     {
       "start": "0x633F4",
-      "end": "0x6355C",
+      "end": "0x63989",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -3489,12 +3945,28 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x64D6D",
+      "end": "0x64ECC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
       "start": "0x64ECC",
       "end": "0x64F3C",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x64F3C",
+      "end": "0x64FAC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
       "start": "0x651D3",
@@ -3586,7 +4058,7 @@
     },
     {
       "start": "0x657A5",
-      "end": "0x657EE",
+      "end": "0x65815",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -3610,7 +4082,7 @@
     },
     {
       "start": "0x66095",
-      "end": "0x66100",
+      "end": "0x66148",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -3625,8 +4097,16 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x66883",
+      "end": "0x66908",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
       "start": "0x66D8B",
-      "end": "0x67047",
+      "end": "0x670C1",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -3634,7 +4114,7 @@
     },
     {
       "start": "0x670CB",
-      "end": "0x67166",
+      "end": "0x671E1",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -3651,6 +4131,14 @@
     {
       "start": "0x67725",
       "end": "0x67AE4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x67CE9",
+      "end": "0x67D51",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -3719,6 +4207,14 @@
       "kind": "code",
       "source": "notes/amx_create_table.md",
       "why": "E937:0004 DS=ES=8010 RETF"
+    },
+    {
+      "start": "0x6A97E",
+      "end": "0x6AD0B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
       "start": "0x6AD0B",
@@ -3801,6 +4297,14 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
+      "start": "0x6B761",
+      "end": "0x6B7E0",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
       "start": "0x6B7E0",
       "end": "0x6B7E2",
       "owner": "code",
@@ -3809,8 +4313,24 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
+      "start": "0x6B7E2",
+      "end": "0x6B7EC",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "EB74 JMP CS:[BX+00A2] 5 near IPs"
+    },
+    {
       "start": "0x6B7EC",
       "end": "0x6BB5D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x6BBC0",
+      "end": "0x6BC83",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
@@ -3833,12 +4353,36 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
+      "start": "0x6BE43",
+      "end": "0x6BE55",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
       "start": "0x6BE55",
-      "end": "0x6BE65",
+      "end": "0x6BE5E",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x6BE5E",
+      "end": "0x6BE65",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x6BE65",
+      "end": "0x6BE6F",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "EBC8 JMP CS:[BX+01E5] 5 near IPs"
     },
     {
       "start": "0x6BFF0",

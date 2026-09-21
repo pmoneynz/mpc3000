@@ -75,10 +75,9 @@ Task 6 never `RETF`s. That is a resolved loop, not a missing exit
 
 The 74+42 new dests are **candidates** as *entries* (D15). A
 bounded CALL dest on a consumer chain from a D16 entry or a
-bounded switch-table dest is owned as *code* (D17): 356 dests to
-fixpoint (336 from D15, then 20 from the 40 bounded switch IPs);
-19 indirect dests stay unowned and stop that chain. 25 switch
-dests are themselves indirect; they stay prefix-only.
+bounded switch-table dest is owned as *code* (D17). 21 hole- or
+edge-bounded `JMP CS:[BX+disp]` tables (plus INT 40) seed that
+BFS. 108 of 160 table dests are bounded; 52 stay prefix-only.
 `D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
@@ -122,6 +121,20 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x5D9AE, 0x5DBBC)` | code — `DD9A:000E` hop-1 CALLF dest of `D5F3:018A` through `RETF` |
 | `[0x79E81, 0x79E97)` | code — `F800:1E81` hop-1 CALLN dest of INT 40 `AH<=7` through `RET` |
 | `[0x5614D, 0x561A9)` | code — `D5F3:021D` hop-1 CALLN dest of `D5F3` switch IPs through `RET` |
+| `[0x30D01, 0x30D15)` | data — `B060` `JMP CS:[BX+0701]` 10 near IPs |
+| `[0x31258, 0x3126C)` | data — `B060` `JMP CS:[BX+0C58]` 10 near IPs |
+| `[0x44483, 0x444B9)` | data — `C425` `JMP CS:[BX+0233]` 27 near IPs |
+| `[0x50785, 0x5078D)` | data — `CFC6` `JMP CS:[BX+0B25]` 4 near IPs |
+| `[0x53CAC, 0x53CBC)` | data — `D3A7` `JMP CS:[BX+023C]` 8 near IPs |
+| `[0x559AA, 0x559B8)` | data — `D547` `JMP CS:[BX+053A]` 7 near IPs |
+| `[0x58BCA, 0x58BDC)` | data — `D8BC` `JMP CS:[BX+000A]` 9 near IPs |
+| `[0x59C95, 0x59C9D)` | data — `D9C0` `JMP CS:[BX+0095]` 4 near IPs |
+| `[0x5B24D, 0x5B25F)` | data — `DAF2` `JMP CS:[BX+032D]` 9 near IPs |
+| `[0x5CA78, 0x5CA84)` | data — `DCA2` `JMP CS:[BX+0058]` 6 near IPs |
+| `[0x5EE45, 0x5EE8D)` | data — `DE5C` `JMP CS:[BX+0885]` 36 near IPs |
+| `[0x5EE8D, 0x5EE9B)` | data — `DE5C` `JMP CS:[BX+08CD]` 7 near IPs |
+| `[0x6B7E2, 0x6B7EC)` | data — `EB74` `JMP CS:[BX+00A2]` 5 near IPs |
+| `[0x6BE65, 0x6BE6F)` | data — `EBC8` `JMP CS:[BX+01E5]` 5 near IPs |
 
 ---
 

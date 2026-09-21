@@ -177,6 +177,10 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x79E96], 0xC3)
         self.assertEqual(self.image[0x5614D:0x5614F], bytes.fromhex("e450"))
         self.assertEqual(self.image[0x561A8], 0xC3)
+        self.assertEqual(self.image[0x30D01:0x30D15], bytes.fromhex("3606490659067d067d068d065906ad069d0659"))
+        self.assertEqual(self.image[0x6B7E2:0x6B7EC], bytes.fromhex("2100310041005f008800"))
+        self.assertEqual(self.image[0x58BCA:0x58BDC], bytes.fromhex("ad013600ad013000cc0008012f0126010e01"))
+        self.assertEqual(self.image[0x53CAC:0x53CBC], bytes.fromhex("a201b401c601d801200220020702ec01"))
         self.assertGreaterEqual(
             sum(1 for rec in ledger["ranges"] if rec.get("kind") == "align"), 26
         )
