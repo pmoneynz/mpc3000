@@ -70,7 +70,7 @@ then `BRKXA 0x11`. Low byte of each word is the page frame:
 |--------------|-------|-------------|--------|
 | 0–39 | `C0`–`E7` | `0x300000`–`0x39C000` | work RAM (640 KiB of the 1 MiB HM658512 pair) |
 | 40–60 | `28`–`3C` | `0x0A0000`–`0x0F0000` | ROM mirror windows |
-| 61 | `40` | `0x100000` | **UNDETERMINED** — not in the MAME map |
+| 61 | `40` | `0x100000` | Consumer `D9B5` `ES=0xF400` **PROVEN**. Device **UNDETERMINED** — not in the MAME map. See [`pgr61.md`](pgr61.md) |
 | 62–63 | `3E`–`3F` | `0x0F8000`–`0x0FC000` | high ROM (FAC0, reset stub) |
 
 After this table, `0000:0044` is work RAM `0x300044`, not the ROM IVT

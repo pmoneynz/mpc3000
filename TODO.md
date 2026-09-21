@@ -172,6 +172,7 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       CS-rel / far-ptr-to-hole-start /
       JMP/JCC). Small `55 8B EC` holes
       without a named consumer stay unowned.
+      P7 consumer is closed (`D9B5` `ES=0xF400`).
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.
@@ -218,8 +219,10 @@ bounds, evidence, unknowns).
       (`U-PHYS`).
 - [PARTIAL] **P6.** µPD70236 vs 70236A marking (`U-V53A`). Treat as
       V53-family until a chip photo OCR exists.
-- [ ] **P7.** PGR page 61 frame `0x40` → `0x100000` (`U-PGR61`): find a
-      software consumer or keep UNDETERMINED. Not automatically PARTIAL.
+- [x] **P7.** PGR page 61 frame `0x40` → `0x100000`. Consumer is
+      `D9B5` `ES=0xF400` (file `0x59B57`). Device at
+      `0x100000` stays UNDETERMINED. See
+      [`notes/pgr61.md`](notes/pgr61.md).
 - [ ] **P8.** NVRAM `0x500000` consumer on a proven path, or document
       that boot does not touch it.
 

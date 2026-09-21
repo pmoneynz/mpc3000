@@ -99,6 +99,9 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Panel ROM, PAL fusemaps, full schematics. D19 is PARTIAL
   ([`notes/front_panel.md`](notes/front_panel.md)): `0xC0-0xDF`
   encodings exist; navigation meaning does not.
+- PGR page 61 has a software consumer (`D9B5` `ES=0xF400`).
+  The 24-bit object at `0x100000` is still unnamed
+  ([`notes/pgr61.md`](notes/pgr61.md)).
 - Instruction bounds for CALL dests that are still indirect or
   have no named consumer. Jump-table *selection* (`BX` domain)
   at the six `CS:[BX+disp]` sites.

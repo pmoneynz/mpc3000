@@ -393,5 +393,15 @@
     "b03b_out_c2_bytes": "e6c2",
     "d547_in_d2_file": "0x554E7",
     "d547_in_d2_bytes": "e4d2"
+  },
+  "pgr61": {
+    "first_file": "0x7AED0",
+    "second_file": "0x7AD2E",
+    "third_file": "0x7AE49",
+    "word_bytes": "4001",
+    "d9b5_es_file": "0x59B57",
+    "d9b5_es_bytes": "b800f48ec0",
+    "d9b5_sig_file": "0x59BC4",
+    "d9b5_sig_bytes": "b800f48ec026803efe03aa"
   }
 }

@@ -73,6 +73,18 @@ def verify(image: bytes, facts: dict) -> list[str]:
         raise AssertionError(f"PGR[0] expected 0x00C0, got 0x{pgr0:04X}")
     checks.append("PGR[0] -> 0x300000")
 
+    p61 = facts["pgr61"]
+    _expect_hex(image, int(p61["first_file"], 16), p61["word_bytes"], "PGR[61] first")
+    _expect_hex(image, int(p61["second_file"], 16), p61["word_bytes"], "PGR[61] second")
+    _expect_hex(image, int(p61["third_file"], 16), p61["word_bytes"], "PGR[61] third")
+    _expect_hex(image, int(p61["d9b5_es_file"], 16), p61["d9b5_es_bytes"], "D9B5 ES=F400")
+    _expect_hex(image, int(p61["d9b5_sig_file"], 16), p61["d9b5_sig_bytes"], "D9B5 ES:[03FE]")
+    if any(b != 0xFF for b in image[0x74000:0x78000]):
+        raise AssertionError("linear 20-bit page 61 file range is not 0xFF")
+    if image.find(bytes.fromhex("ba7aff")) != -1:
+        raise AssertionError("unexpected MOV DX,0xFF7A")
+    checks.append("P7: PGR[61]=0x0140; D9B5 ES=0xF400 consumer")
+
     if image[0x7AC1C:0x7AC1F] != bytes.fromhex("0fe011"):
         raise AssertionError("missing BRKXA 0x11 at FAC0:001C")
     checks.append("BRKXA 0x11")
