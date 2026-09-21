@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 317270,
+  "owned_bytes": 323472,
   "ranges": [
     {
       "start": "0x00000",
@@ -137,12 +137,44 @@
       "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
+      "start": "0x3095D",
+      "end": "0x30C36",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x30CAD",
+      "end": "0x30D01",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
       "start": "0x30EE6",
       "end": "0x30F82",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x310D9",
+      "end": "0x31128",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x31250",
+      "end": "0x31258",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
     },
     {
       "start": "0x314B2",
@@ -279,6 +311,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x31FE2",
+      "end": "0x31FFC",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "B1BC JMP CS:[BX+0422] 13 near IPs"
     },
     {
       "start": "0x31FFC",
@@ -423,6 +463,70 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x44259",
+      "end": "0x4434A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x4437A",
+      "end": "0x44395",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x443BB",
+      "end": "0x443C6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x44400",
+      "end": "0x4440F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x44419",
+      "end": "0x44428",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x44432",
+      "end": "0x4443C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x44446",
+      "end": "0x44450",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x4445A",
+      "end": "0x44483",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
     },
     {
       "start": "0x45059",
@@ -633,6 +737,22 @@
       "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
+      "start": "0x4FFFE",
+      "end": "0x500CE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x50110",
+      "end": "0x50785",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
       "start": "0x508D0",
       "end": "0x50949",
       "owner": "code",
@@ -809,6 +929,30 @@
       "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
+      "start": "0x53B78",
+      "end": "0x53BEF",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x53BF6",
+      "end": "0x53C12",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x53C96",
+      "end": "0x53CAC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
       "start": "0x5470C",
       "end": "0x54787",
       "owner": "code",
@@ -839,6 +983,14 @@
       "kind": "code",
       "source": "notes/pgr_live_after_amx.md",
       "why": "D510:008D port picker through RETF"
+    },
+    {
+      "start": "0x55206",
+      "end": "0x55218",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/pgr_live_after_amx.md",
+      "why": "D510 JMP CS:[BX+0106] 9 port words"
     },
     {
       "start": "0x55218",
@@ -897,6 +1049,22 @@
       "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
+      "start": "0x55343",
+      "end": "0x5535F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x553A3",
+      "end": "0x553C3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
       "start": "0x55430",
       "end": "0x55476",
       "owner": "code",
@@ -911,6 +1079,86 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x55575",
+      "end": "0x555B8",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x55940",
+      "end": "0x55950",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x55950",
+      "end": "0x55951",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x55951",
+      "end": "0x55971",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x55971",
+      "end": "0x55972",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x55972",
+      "end": "0x55986",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x55986",
+      "end": "0x55987",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x55987",
+      "end": "0x5598F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x55996",
+      "end": "0x559AA",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x559C5",
+      "end": "0x559D1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
     },
     {
       "start": "0x55DDC",
@@ -1145,6 +1393,14 @@
       "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
+      "start": "0x58BDC",
+      "end": "0x58BF0",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
       "start": "0x58D6F",
       "end": "0x58D92",
       "owner": "code",
@@ -1303,6 +1559,22 @@
       "kind": "code",
       "source": "notes/amx_first_dispatch.md",
       "why": "D9BD:0009 task 6 loop"
+    },
+    {
+      "start": "0x59C06",
+      "end": "0x59C1B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x59C7F",
+      "end": "0x59C95",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
     },
     {
       "start": "0x59CF1",
@@ -1625,6 +1897,22 @@
       "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
+      "start": "0x5B07D",
+      "end": "0x5B0E9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5B21E",
+      "end": "0x5B24D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
       "start": "0x5B25F",
       "end": "0x5B28D",
       "owner": "code",
@@ -1673,6 +1961,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5B56B",
+      "end": "0x5B585",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "DB28 JMP CS:[BX+02EB] 13 near IPs"
+    },
+    {
       "start": "0x5B585",
       "end": "0x5B6C4",
       "owner": "code",
@@ -1695,6 +1991,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5BC6B",
+      "end": "0x5BC87",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "DB28 JMP CS:[BX+09EB] 14 near IPs"
     },
     {
       "start": "0x5BE64",
@@ -2105,6 +2409,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5D35E",
+      "end": "0x5D376",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "DCF0 JMP CS:[BX+045E] 12 near IPs"
+    },
+    {
       "start": "0x5D376",
       "end": "0x5D385",
       "owner": "code",
@@ -2375,6 +2687,62 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5E5CE",
+      "end": "0x5E712",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5E788",
+      "end": "0x5E8D1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5E901",
+      "end": "0x5EB2C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5EB8A",
+      "end": "0x5EBCC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5ECCD",
+      "end": "0x5ECEC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5ED51",
+      "end": "0x5ED7A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5EE3D",
+      "end": "0x5EE45",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
     },
     {
       "start": "0x5F2BD",
@@ -2889,6 +3257,22 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x6B746",
+      "end": "0x6B761",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x6B7E0",
+      "end": "0x6B7E2",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
       "start": "0x6B7EC",
       "end": "0x6BB5D",
       "owner": "code",
@@ -2903,6 +3287,22 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x6BD96",
+      "end": "0x6BE43",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x6BE55",
+      "end": "0x6BE65",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
     },
     {
       "start": "0x6BFF0",
@@ -3441,6 +3841,14 @@
       "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
+      "start": "0x7A45B",
+      "end": "0x7A6E1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
       "start": "0x7A6E1",
       "end": "0x7A709",
       "owner": "code",
@@ -3647,6 +4055,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x7B996",
+      "end": "0x7BA00",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
     },
     {
       "start": "0x7BA01",

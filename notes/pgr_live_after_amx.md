@@ -99,6 +99,7 @@ after task 7 begins executing.
 | `[0x7ACA8, 0x7ACB4)` | code — second PGR `OUTSW` |
 | `[0x7ADC3, 0x7ADCF)` | code — third PGR `OUTSW` |
 | `[0x5518D, 0x55206)` | code — `D510:008D` port picker through `RETF` |
+| `[0x55206, 0x55218)` | data — `D510` `JMP CS:[BX+0106]` 9 port words |
 
 ---
 

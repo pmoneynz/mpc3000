@@ -51,12 +51,17 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x30600, 0x3060D, "code", "code", "notes/amx_create_table.md", "B060:0000 timed wait"),
     (0x314B2, 0x3156E, "code", "code", "notes/amx_create_table.md", "create-table task 5 through RETF"),
     (0x31B6B, 0x31B91, "code", "code", "notes/string_scan.md", "B1B1:005B put-string INT 43 AX=4"),
+    (0x31FE2, 0x31FFC, "data", "jump_table", "notes/transfer_scan.md", "B1BC JMP CS:[BX+0422] 13 near IPs"),
     (0x32596, 0x32600, "code", "code", "notes/amx_create_table.md", "create-table task 1 through RETF"),
     (0x5518D, 0x55206, "code", "code", "notes/pgr_live_after_amx.md", "D510:008D port picker through RETF"),
+    (0x55206, 0x55218, "data", "table", "notes/pgr_live_after_amx.md", "D510 JMP CS:[BX+0106] 9 port words"),
     (0x55F64, 0x55F7A, "data", "jump_table", "notes/transfer_scan.md", "D5F3 JMP CS:[BX+0034] 11 near IPs"),
     (0x59B95, 0x59BA1, "code", "code", "notes/calling_convention.md", "D9B5:0045 LDS [BP+6]"),
     (0x59BD9, 0x59C05, "code", "code", "notes/amx_first_dispatch.md", "D9BD:0009 task 6 loop"),
     (0x5B447, 0x5B461, "data", "jump_table", "notes/transfer_scan.md", "DB28 JMP CS:[BX+01C7] 13 near IPs"),
+    (0x5B56B, 0x5B585, "data", "jump_table", "notes/transfer_scan.md", "DB28 JMP CS:[BX+02EB] 13 near IPs"),
+    (0x5BC6B, 0x5BC87, "data", "jump_table", "notes/transfer_scan.md", "DB28 JMP CS:[BX+09EB] 14 near IPs"),
+    (0x5D35E, 0x5D376, "data", "jump_table", "notes/transfer_scan.md", "DCF0 JMP CS:[BX+045E] 12 near IPs"),
     (0x5DF1A, 0x5DF42, "code", "code", "notes/amx_create_table.md", "create-table task 4 through RETF"),
     (0x69374, 0x6937C, "code", "code", "notes/amx_create_table.md", "E937:0004 DS=ES=8010 RETF"),
     (0x6AD0B, 0x6AD6E, "code", "code", "notes/amx_create_table.md", "create-table task 3 through RETF"),
@@ -159,17 +164,18 @@ def transfer_insn_ranges(image: bytes) -> list[tuple[int, int]]:
     return _merge_runs(raw)
 
 
-def callee_insn_ranges(image: bytes) -> list[tuple[int, int]]:
-    """Instruction bytes of bounded CALL dests reachable from D16.
+def callee_walks(image: bytes) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
+    """BFS CALL dests from D15.
 
-    BFS from the D15 entries. A dest is promoted only when a
-    already-accepted body names it and its own local walk is
-    bounded. Indirect dests stay candidates and stop that chain.
+    Bounded dests are promoted. Indirect dests are not promoted;
+    only their decoded instruction bytes are returned as prefixes.
     """
     established = set(scan_entries(image)["_unique"])
     accepted = set(established)
     frontier = list(established)
-    raw: list[tuple[int, int]] = []
+    bounded_raw: list[tuple[int, int]] = []
+    prefix_raw: list[tuple[int, int]] = []
+    seen_unbounded: set[str] = set()
     while frontier:
         dests: set[str] = set()
         for cs_ip in frontier:
@@ -183,14 +189,28 @@ def callee_insn_ranges(image: bytes) -> list[tuple[int, int]]:
             cs, ip = _parse_cs_ip(dest)
             insns, extra, hit = follow_entry(image, cs, ip, accepted)
             exits = classify_exits(insns, accepted) + extra
-            if not _is_bounded(exits, hit):
+            if _is_bounded(exits, hit):
+                accepted.add(dest)
+                nxt.append(dest)
+                for insn in insns:
+                    bounded_raw.append((insn.file, insn.file + insn.length))
                 continue
-            accepted.add(dest)
-            nxt.append(dest)
-            for insn in insns:
-                raw.append((insn.file, insn.file + insn.length))
+            if dest not in seen_unbounded:
+                seen_unbounded.add(dest)
+                for insn in insns:
+                    prefix_raw.append((insn.file, insn.file + insn.length))
         frontier = nxt
-    return _merge_runs(raw)
+    return _merge_runs(bounded_raw), _merge_runs(prefix_raw)
+
+
+def callee_insn_ranges(image: bytes) -> list[tuple[int, int]]:
+    bounded, _prefixes = callee_walks(image)
+    return bounded
+
+
+def indirect_prefix_ranges(image: bytes) -> list[tuple[int, int]]:
+    _bounded, prefixes = callee_walks(image)
+    return prefixes
 
 
 def _subtract_owned(
@@ -231,8 +251,8 @@ def emit_ledger(image: bytes | None = None) -> dict:
             )
         )
     owned_spans = [(start, end) for start, end, *_ in seed]
-    callees = _subtract_owned(callee_insn_ranges(image), owned_spans)
-    for start, end in callees:
+    bounded, prefixes = callee_walks(image)
+    for start, end in _subtract_owned(bounded, owned_spans):
         seed.append(
             (
                 start,
@@ -241,6 +261,18 @@ def emit_ledger(image: bytes | None = None) -> dict:
                 "code",
                 "notes/transfer_scan.md",
                 "bounded CALL dest reachable from a D16 entry",
+            )
+        )
+    owned_spans = [(start, end) for start, end, *_ in seed]
+    for start, end in _subtract_owned(prefixes, owned_spans):
+        seed.append(
+            (
+                start,
+                end,
+                "code",
+                "code",
+                "notes/transfer_scan.md",
+                "instruction prefix of an indirect CALL dest",
             )
         )
     tmp_spans = [(start, end, "code", "code") for start, end, *_ in seed]
