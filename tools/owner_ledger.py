@@ -181,6 +181,19 @@ def emit_ledger(image: bytes | None = None) -> dict:
                 "D16 local-walk instruction bytes",
             )
         )
+    tmp_spans = [(start, end, "code", "code") for start, end, *_ in seed]
+    for start, end in gaps(tmp_spans):
+        if end - start == 1 and image[start] == 0x90:
+            seed.append(
+                (
+                    start,
+                    end,
+                    "code",
+                    "align",
+                    "notes/transfer_scan.md",
+                    "NOP between owned ranges",
+                )
+            )
     seed.sort(key=lambda rec: rec[0])
     ranges = []
     prev_end = -1

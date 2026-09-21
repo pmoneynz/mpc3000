@@ -99,6 +99,7 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | File range | Owner |
 |------------|-------|
 | `[0x7B23A, 0x7B240)` | code — idle `NOP*4` / `JMP` (already inside AMX) |
+| `[0x56E40, 0x56E41)` | code — specimen `NOP` between owned ranges |
 
 ---
 

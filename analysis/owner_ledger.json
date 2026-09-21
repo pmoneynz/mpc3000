@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 266994,
+  "owned_bytes": 267020,
   "ranges": [
     {
       "start": "0x00000",
@@ -337,12 +337,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x56E40",
+      "end": "0x56E41",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x56E41",
       "end": "0x56E5F",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x56E5F",
+      "end": "0x56E60",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x56E60",
@@ -481,12 +497,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5C294",
+      "end": "0x5C295",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x5C295",
       "end": "0x5C2A1",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C2A1",
+      "end": "0x5C2A2",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x5C2A2",
@@ -497,12 +529,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5C40D",
+      "end": "0x5C40E",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x5C40E",
       "end": "0x5C435",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C435",
+      "end": "0x5C436",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x5C436",
@@ -513,12 +561,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5C456",
+      "end": "0x5C457",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x5C457",
       "end": "0x5C46F",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C46F",
+      "end": "0x5C470",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x5C470",
@@ -529,12 +593,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5C497",
+      "end": "0x5C498",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x5C498",
       "end": "0x5C501",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C501",
+      "end": "0x5C502",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x5C502",
@@ -561,12 +641,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5CE9C",
+      "end": "0x5CE9D",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x5CE9D",
       "end": "0x5CEA3",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5CEA3",
+      "end": "0x5CEA4",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x5CEA4",
@@ -577,6 +673,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5CED2",
+      "end": "0x5CED3",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x5CED3",
       "end": "0x5CEE0",
       "owner": "code",
@@ -585,12 +689,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5CEE0",
+      "end": "0x5CEE1",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x5CEE1",
       "end": "0x5CEE3",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5CEE3",
+      "end": "0x5CEE4",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x5CEE4",
@@ -609,12 +729,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5D0CF",
+      "end": "0x5D0D0",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x5D0D0",
       "end": "0x5D2BD",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D2BD",
+      "end": "0x5D2BE",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x5D2BE",
@@ -631,6 +767,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D385",
+      "end": "0x5D386",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x5D386",
@@ -657,12 +801,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5D9A1",
+      "end": "0x5D9A2",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x5D9A2",
       "end": "0x5D9A6",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D9A6",
+      "end": "0x5D9A7",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x5D9A7",
@@ -889,6 +1049,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x782A4",
+      "end": "0x782A5",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x782A5",
       "end": "0x782C0",
       "owner": "code",
@@ -897,12 +1065,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x782C0",
+      "end": "0x782C1",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x782C1",
       "end": "0x782E5",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x782E5",
+      "end": "0x782E6",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x782E6",
@@ -921,12 +1105,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x78380",
+      "end": "0x78381",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x78381",
       "end": "0x783C8",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x783C8",
+      "end": "0x783C9",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x783C9",
@@ -1063,6 +1263,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x79B55",
+      "end": "0x79B56",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
     },
     {
       "start": "0x79B56",
