@@ -101,6 +101,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
+      Progress: 266994 owned / 108 gaps. Four named holes and
+      D16 instruction bytes are owned. Large unentered app ROM
+      remains. The 1-byte `CF` at `0x7ADA3` has no entry.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.

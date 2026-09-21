@@ -194,6 +194,7 @@ and creates task 7. **PROVEN** (see [`pgr_live_after_amx.md`](pgr_live_after_amx
 | `[0x7B3B3, 0x7B4AC)` | code — `03B3` through `0484` |
 | `[0x7B4AC, 0x7B537)` | code — `04AC` / `04DC` |
 | `[0x7B552, 0x7B5B2)` | code — `0552` / `055F` / `0586` |
+| `[0x7B5E9, 0x7B616)` | code — `05E9` TCB walk and `060B` helper through `RET` |
 | `[0x7B616, 0x7B762)` | code — `0616` through mailbox `0743` |
 
 `01EA` / `0240` / `0537` / create-table bytes are already owned.

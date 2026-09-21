@@ -5,7 +5,8 @@
 **Date:** 2026-09-21.
 
 Closes D12. D13 padding windows are in [`padding.md`](padding.md).
-D17 still owes no-gap closure.
+D16 instruction-byte runs are unioned into the ledger. D17 still
+owes no-gap closure: large app-ROM holes remain unowned.
 
 Reproduction: `python3 tools/owner_ledger.py --write` then
 `python3 tools/verify_boot_slice.py`.
@@ -17,9 +18,9 @@ Reproduction: `python3 tools/owner_ledger.py --write` then
 | Field | Value |
 |-------|-------|
 | Purpose | Machine-readable owner map for proven file ranges |
-| Observable | `analysis/owner_ledger.json`; 61 ranges; 252100 owned bytes |
-| Inputs | Byte-ownership tables in the notes |
-| Outputs | Owner `code` or `data` only. 26 gaps left as debt |
+| Observable | `analysis/owner_ledger.json`; 161 ranges; 266994 owned bytes |
+| Inputs | Byte-ownership tables in the notes; D16 instruction-byte runs |
+| Outputs | Owner `code` or `data` only. 108 gaps left as debt |
 | Confidence | Seed spans **PROVEN** as the union of those tables. Gaps are **UNDETERMINED**, not owners |
 | Hardware deferred | None |
 
@@ -49,23 +50,22 @@ table” row is covered by that split.
 
 ## 2. Gaps
 
-26 holes. They are debt. They are not
-`excluded_workspace`. Largest:
+D16 walks split the old 26 holes into more, smaller debt.
+They are not `excluded_workspace`. Closed this pass:
 
-| File range | Bytes | Why it is a gap |
-|------------|------:|-----------------|
-| `[0x32600, 0x5518D)` | 142221 | app ROM past task 1 |
-| `[0x5DF42, 0x69374)` | 46130 | between task 4 and `E937` |
-| `[0x27C92, 0x300DF)` | 33869 | after the DGROUP image, before task 7 |
-| `[0x707B6, 0x7800A)` | 30804 | after `F07A`, before BIOS |
-| `[0x7B813, 0x7FF00)` | 18157 | after the create-table stub, before the wait stub |
+| File range | Bytes | Owner |
+|------------|------:|-------|
+| `[0x27CA0, 0x27CB0)` | 16 | data — zeros after DGROUP |
+| `[0x707B6, 0x707C8)` | 18 | data — `F07A` tail |
+| `[0x7B5E9, 0x7B616)` | 45 | code — `05E9` / `060B` |
+| `[0x7B802, 0x7B80E)` | 12 | data — kernel far-ptr table |
 
-Smallest named hole: `[0x7ADA3, 0x7ADA4)` is `CF` (`IRET`) between
-`FAC0:019E` `jmp B000:00DF` and `FAC0:01A4`. No entry is proven.
-It stays a gap.
+Smallest remaining named hole: `[0x7ADA3, 0x7ADA4)` is `CF`
+(`IRET`) between `FAC0:019E` `jmp B000:00DF` and `FAC0:01A4`.
+No entry is proven. It stays a gap.
 
-`[0x7B5E9, 0x7B616)` is `05E9` through the byte before `0616`.
-`05E9` is named as a TCB walker and is not yet bounded.
+Largest remaining holes are unentered app ROM between
+established bodies (see the regenerated JSON).
 
 ---
 

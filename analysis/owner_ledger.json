@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 252100,
+  "owned_bytes": 266994,
   "ranges": [
     {
       "start": "0x00000",
@@ -65,6 +65,14 @@
       "why": "0xFF after DGROUP copy source"
     },
     {
+      "start": "0x27CA0",
+      "end": "0x27CB0",
+      "owner": "data",
+      "kind": "zeros",
+      "source": "notes/copy_7c92.md",
+      "why": "16 zeros after DGROUP copy source"
+    },
+    {
       "start": "0x27CB0",
       "end": "0x3000E",
       "owner": "data",
@@ -97,6 +105,14 @@
       "why": "B060:0000 timed wait"
     },
     {
+      "start": "0x30EE6",
+      "end": "0x30F82",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
       "start": "0x314B2",
       "end": "0x3156E",
       "owner": "code",
@@ -113,12 +129,148 @@
       "why": "B1B1:005B put-string INT 43 AX=4"
     },
     {
+      "start": "0x31DAE",
+      "end": "0x31EAC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x31EB7",
+      "end": "0x31F0C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x31F4B",
+      "end": "0x31FE2",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x3202E",
+      "end": "0x3207A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
       "start": "0x32596",
       "end": "0x32600",
       "owner": "code",
       "kind": "code",
       "source": "notes/amx_create_table.md",
       "why": "create-table task 1 through RETF"
+    },
+    {
+      "start": "0x32811",
+      "end": "0x32883",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x32C5C",
+      "end": "0x32DAF",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x33549",
+      "end": "0x3391B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x339B0",
+      "end": "0x33B38",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x33B8E",
+      "end": "0x33BEA",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x37319",
+      "end": "0x37336",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x398BB",
+      "end": "0x399A2",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x4835D",
+      "end": "0x483C5",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x4C512",
+      "end": "0x4C5C9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x4EFD5",
+      "end": "0x4F0AD",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x4F133",
+      "end": "0x4F179",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x51211",
+      "end": "0x513C9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x51917",
+      "end": "0x5199E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
     },
     {
       "start": "0x5518D",
@@ -129,12 +281,108 @@
       "why": "D510:008D port picker through RETF"
     },
     {
+      "start": "0x552A8",
+      "end": "0x552FE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x554D7",
+      "end": "0x55575",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x55DDC",
+      "end": "0x55EF4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x55F3E",
+      "end": "0x55F64",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x55F7A",
+      "end": "0x55F9D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5610F",
+      "end": "0x5614D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x56E1B",
+      "end": "0x56E40",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x56E41",
+      "end": "0x56E5F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x56E60",
+      "end": "0x56E75",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x58DB4",
+      "end": "0x58DF8",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x59B50",
+      "end": "0x59B95",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
       "start": "0x59B95",
       "end": "0x59BA1",
       "owner": "code",
       "kind": "code",
       "source": "notes/calling_convention.md",
       "why": "D9B5:0045 LDS [BP+6]"
+    },
+    {
+      "start": "0x59BA1",
+      "end": "0x59BC3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
     },
     {
       "start": "0x59BD9",
@@ -145,12 +393,388 @@
       "why": "D9BD:0009 task 6 loop"
     },
     {
+      "start": "0x59CF1",
+      "end": "0x59D03",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x59EB4",
+      "end": "0x59EC3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5A4C8",
+      "end": "0x5A50E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5B28D",
+      "end": "0x5B2D9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5B443",
+      "end": "0x5B447",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5B461",
+      "end": "0x5B495",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5B568",
+      "end": "0x5B56B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5B6E5",
+      "end": "0x5B703",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5BC5D",
+      "end": "0x5BC6B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C054",
+      "end": "0x5C08E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C23A",
+      "end": "0x5C294",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C295",
+      "end": "0x5C2A1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C2A2",
+      "end": "0x5C40D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C40E",
+      "end": "0x5C435",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C436",
+      "end": "0x5C456",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C457",
+      "end": "0x5C46F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C470",
+      "end": "0x5C497",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C498",
+      "end": "0x5C501",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C502",
+      "end": "0x5C521",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5C5EB",
+      "end": "0x5C61B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5CE4C",
+      "end": "0x5CE9C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5CE9D",
+      "end": "0x5CEA3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5CEA4",
+      "end": "0x5CED2",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5CED3",
+      "end": "0x5CEE0",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5CEE1",
+      "end": "0x5CEE3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5CEE4",
+      "end": "0x5CF05",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5CF06",
+      "end": "0x5D0CF",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D0D0",
+      "end": "0x5D2BD",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D2BE",
+      "end": "0x5D32B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D376",
+      "end": "0x5D385",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D386",
+      "end": "0x5D409",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D954",
+      "end": "0x5D95F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D966",
+      "end": "0x5D9A1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D9A2",
+      "end": "0x5D9A6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D9A7",
+      "end": "0x5D9AE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
       "start": "0x5DF1A",
       "end": "0x5DF42",
       "owner": "code",
       "kind": "code",
       "source": "notes/amx_create_table.md",
       "why": "create-table task 4 through RETF"
+    },
+    {
+      "start": "0x5E36C",
+      "end": "0x5E499",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5F2BD",
+      "end": "0x5F3B4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5F4F9",
+      "end": "0x5FA5B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x60E4A",
+      "end": "0x60EF4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x62912",
+      "end": "0x62DF6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x62EAC",
+      "end": "0x62F9A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x630D7",
+      "end": "0x633F4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x64ECC",
+      "end": "0x64F3C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x65216",
+      "end": "0x654C7",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x65AF1",
+      "end": "0x65B20",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x671E1",
+      "end": "0x672C6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x67DE1",
+      "end": "0x67E0A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
     },
     {
       "start": "0x69374",
@@ -167,6 +791,46 @@
       "kind": "code",
       "source": "notes/amx_create_table.md",
       "why": "create-table task 3 through RETF"
+    },
+    {
+      "start": "0x6AD6E",
+      "end": "0x6AE26",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x6AF81",
+      "end": "0x6B0B1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x6B0F8",
+      "end": "0x6B1A2",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x6B637",
+      "end": "0x6B693",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x6BFF0",
+      "end": "0x6C050",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
     },
     {
       "start": "0x6C050",
@@ -193,6 +857,14 @@
       "why": "F07A three 6-byte init records"
     },
     {
+      "start": "0x707B6",
+      "end": "0x707C8",
+      "owner": "data",
+      "kind": "table_tail",
+      "source": "notes/padding.md",
+      "why": "F07A tail FFFF + 16 zeros"
+    },
+    {
       "start": "0x707C8",
       "end": "0x7800A",
       "owner": "data",
@@ -207,6 +879,62 @@
       "kind": "code",
       "source": "notes/boot_reset_to_bios_banner.md",
       "why": "BIOS F800:000A through RETF"
+    },
+    {
+      "start": "0x78144",
+      "end": "0x782A4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x782A5",
+      "end": "0x782C0",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x782C1",
+      "end": "0x782E5",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x782E6",
+      "end": "0x78317",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x78364",
+      "end": "0x78380",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x78381",
+      "end": "0x783C8",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x783C9",
+      "end": "0x783D8",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
     },
     {
       "start": "0x796AA",
@@ -231,6 +959,14 @@
       "kind": "code",
       "source": "notes/boot_reset_to_bios_banner.md",
       "why": "INT 43 AX=0 LCD init"
+    },
+    {
+      "start": "0x7971D",
+      "end": "0x79752",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
     },
     {
       "start": "0x79752",
@@ -265,6 +1001,14 @@
       "why": "INT 43 AX=4 default glyph"
     },
     {
+      "start": "0x79808",
+      "end": "0x79843",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
       "start": "0x79843",
       "end": "0x79875",
       "owner": "code",
@@ -297,12 +1041,52 @@
       "why": "18CA INT 43 AX=4"
     },
     {
+      "start": "0x798D6",
+      "end": "0x798DE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
       "start": "0x79946",
       "end": "0x79B26",
       "owner": "code",
       "kind": "code",
       "source": "notes/ivt_inventory.md",
       "why": "1946 IRET + ladder + F800:1AD4 RETF"
+    },
+    {
+      "start": "0x79B28",
+      "end": "0x79B55",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x79B56",
+      "end": "0x79B82",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x7A047",
+      "end": "0x7A094",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x7A6E1",
+      "end": "0x7A709",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D16 local-walk instruction bytes"
     },
     {
       "start": "0x7A78E",
@@ -401,6 +1185,14 @@
       "why": "AMX start through task 0 RETF"
     },
     {
+      "start": "0x7B5E9",
+      "end": "0x7B616",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_public_api.md",
+      "why": "05E9 TCB walk and 060B helper through RET"
+    },
+    {
       "start": "0x7B616",
       "end": "0x7B762",
       "owner": "code",
@@ -439,6 +1231,14 @@
       "kind": "table",
       "source": "notes/padding.md",
       "why": "CS:[003A] FFFF:FFFF terminator"
+    },
+    {
+      "start": "0x7B802",
+      "end": "0x7B80E",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/amx_first_dispatch.md",
+      "why": "kernel far-ptr table 000A:0078 / 901C:1130 / FB76:00B2"
     },
     {
       "start": "0x7B80E",

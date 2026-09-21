@@ -199,6 +199,7 @@ exits are in [`amx_create_table.md`](amx_create_table.md).
 | `[0x7B347, 0x7B371)` | code — `0347` IVT plant (null ? `FB00:0311`) |
 | `[0x7B762, 0x7B7F2)` | data — eight create records; terminator `FFFF:FFFF` at `0x7B7F2` |
 | `[0x7B7F6, 0x7B7FE)` | data — `CS:[003A]` two far pointers + terminator |
+| `[0x7B802, 0x7B80E)` | data — kernel far-ptr table `000A:0078` / `901C:1130` / `FB76:00B2` |
 | `[0x303BA, 0x3058A)` | code — `B03B:000A` through `RETF` |
 | `[0x59BD9, 0x59C05)` | code — `D9BD:0009` through `JMP 000E` |
 

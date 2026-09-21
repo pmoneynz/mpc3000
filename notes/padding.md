@@ -81,6 +81,7 @@ inventory.
 | `[0x707C8, 0x7800A)` | data / padding |
 | `[0x7A78E, 0x7AC00)` | data / padding |
 | `[0x7AF6A, 0x7B00C)` | data / padding |
+| `[0x707B6, 0x707C8)` | data / F07A tail (`FFFF` + 16 zeros) |
 | `[0x7B7FE, 0x7B802)` | data / table terminator |
 | `[0x7B80E, 0x7B812)` | data / table terminator |
 | `[0x7BA01, 0x7FF00)` | data / padding |
@@ -90,7 +91,5 @@ inventory.
 ## What this note does *not* prove
 
 - Why the assembler or burner chose these gaps.
-- The 16 zero bytes at `[0x27CA0, 0x27CB0)` or the 18-byte
-  `F07A` tail at `[0x707B6, 0x707C8)`.
 - Code between a `RETF` and the start of a padding window
   (for example `[0x7B813, 0x7BA01)`).

@@ -92,9 +92,13 @@ Ten `CALL [rm]` sit in BIOS (`F800:0364`, `16AA`, `1752`, `19B3`,
 
 ## Byte ownership
 
-No new range. `B1B1:005B` span `[0x31B6B, 0x31B91)` already matches
-the D14 put-string. Idle `[0x7B23A, 0x7B240)` is inside AMX code.
-Task 6 `[0x59BD9, 0x59C05)` already owned.
+Instruction bytes of each D16 `follow_entry` walk are `code`.
+Holes inside a min-max span are not claimed. The ledger unions
+those runs; do not treat a walk’s `[min, max)` as one range.
+
+| File range | Owner |
+|------------|-------|
+| `[0x7B23A, 0x7B240)` | code — idle `NOP*4` / `JMP` (already inside AMX) |
 
 ---
 

@@ -157,6 +157,10 @@ class BootSliceTests(unittest.TestCase):
         self.assertNotIn("unresolved", ledger["owners"])
         self.assertFalse(any(rec["owner"] == "excluded_workspace" for rec in ledger["ranges"]))
         self.assertIsNone(next((rec for rec in ledger["ranges"] if rec["owner"] == "unresolved"), None))
+        self.assertEqual(self.image[0x7B60A], 0xC3)
+        self.assertEqual(self.image[0x7B615], 0xC3)
+        self.assertEqual(self.image[0x7B802:0x7B80E], bytes.fromhex("78000a0030111c90b20076fb"))
+        self.assertEqual(self.image[0x27CA0:0x27CB0], b"\x00" * 16)
 
     def test_string_scan_consumers(self) -> None:
         scan = load_scan()

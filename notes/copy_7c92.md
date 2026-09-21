@@ -156,6 +156,7 @@ No second segment is proven to address `20-bit 0x80100`. After
 | File range | Owner |
 |------------|-------|
 | `[0x20000, 0x27C92)` | data — DGROUP image (directory + strings + initialized scalars) |
+| `[0x27CA0, 0x27CB0)` | data — 16 zeros after the copy source |
 
 `E937:0004`, `B03B:000A`, and `065B` are already owned.
 

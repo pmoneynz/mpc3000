@@ -24,7 +24,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tools.entry_scan import scan as scan_entries
 from tools.linear_rom import load_vailixi_linear
+from tools.transfer_scan import follow_entry
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LEDGER_PATH = REPO_ROOT / "analysis" / "owner_ledger.json"
@@ -42,6 +44,7 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x00054, 0x20000, "data", "padding", "notes/boot_reset_to_bios_banner.md", "131020 0xFF bytes"),
     (0x20000, 0x27C92, "data", "dgroup", "notes/copy_7c92.md", "DS=A000 DGROUP image"),
     (0x27C92, 0x27CA0, "data", "padding", "notes/padding.md", "0xFF after DGROUP copy source"),
+    (0x27CA0, 0x27CB0, "data", "zeros", "notes/copy_7c92.md", "16 zeros after DGROUP copy source"),
     (0x27CB0, 0x3000E, "data", "padding", "notes/padding.md", "unprogrammed ROM before C prologue at 0x3000E"),
     (0x300DF, 0x301A7, "code", "code", "notes/amx_create_table.md", "create-table task 7 through RETF"),
     (0x303BA, 0x3058A, "code", "code", "notes/amx_first_dispatch.md", "B03B:000A through RETF"),
@@ -58,6 +61,7 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x6C050, 0x6C093, "code", "code", "notes/amx_create_table.md", "create-table task 2 through RETF"),
     (0x7079C, 0x707A4, "data", "padding", "notes/padding.md", "0xFF after RETF before F07A table"),
     (0x707A4, 0x707B6, "data", "init_table", "notes/boot_reset_to_bios_banner.md", "F07A three 6-byte init records"),
+    (0x707B6, 0x707C8, "data", "table_tail", "notes/padding.md", "F07A tail FFFF + 16 zeros"),
     (0x707C8, 0x7800A, "data", "padding", "notes/padding.md", "unprogrammed ROM before BIOS F800:000A"),
     (0x7800A, 0x78144, "code", "code", "notes/boot_reset_to_bios_banner.md", "BIOS F800:000A through RETF"),
     (0x796AA, 0x796D4, "code", "code", "notes/boot_reset_to_bios_banner.md", "INT 43 dispatcher"),
@@ -84,11 +88,13 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x7AF6A, 0x7B00C, "data", "padding", "notes/padding.md", "0xFF between I/O tables and AMX header"),
     (0x7B00C, 0x7B04E, "data", "amx_header", "notes/boot_reset_to_bios_banner.md", "AMX header / copyright"),
     (0x7B04E, 0x7B5E9, "code", "code", "notes/amx_wait.md", "AMX start through task 0 RETF"),
+    (0x7B5E9, 0x7B616, "code", "code", "notes/amx_public_api.md", "05E9 TCB walk and 060B helper through RET"),
     (0x7B616, 0x7B762, "code", "code", "notes/amx_public_api.md", "0616 through mailbox 0743"),
     (0x7B762, 0x7B7F2, "data", "create_table", "notes/amx_wait.md", "eight 18-byte create records"),
     (0x7B7F2, 0x7B7F6, "data", "create_table", "notes/amx_first_dispatch.md", "create-table FFFF:FFFF terminator"),
     (0x7B7F6, 0x7B7FE, "data", "table", "notes/amx_first_dispatch.md", "CS:[003A] two far pointers"),
     (0x7B7FE, 0x7B802, "data", "table", "notes/padding.md", "CS:[003A] FFFF:FFFF terminator"),
+    (0x7B802, 0x7B80E, "data", "table", "notes/amx_first_dispatch.md", "kernel far-ptr table 000A:0078 / 901C:1130 / FB76:00B2"),
     (0x7B80E, 0x7B812, "data", "table", "notes/padding.md", "kernel far-ptr table FFFF:FFFF terminator"),
     (0x7B812, 0x7B813, "code", "code", "notes/amx_create_table.md", "FB76:00B2 RETF stub"),
     (0x7BA01, 0x7FF00, "data", "padding", "notes/padding.md", "unprogrammed ROM before wait-state stub"),
@@ -114,10 +120,71 @@ def _record(start: int, end: int, owner: str, kind: str, source: str, why: str) 
     }
 
 
-def emit_ledger() -> dict:
+def _parse_cs_ip(cs_ip: str) -> tuple[int, int]:
+    cs, ip = cs_ip.split(":")
+    return int(cs, 16), int(ip, 16)
+
+
+def transfer_insn_ranges(image: bytes) -> list[tuple[int, int]]:
+    """Merged instruction-byte runs from every D16 local walk."""
+    established = set(scan_entries(image)["_unique"])
+    raw: list[tuple[int, int]] = []
+    for cs_ip in established:
+        cs, ip = _parse_cs_ip(cs_ip)
+        insns, _extra, _hit = follow_entry(image, cs, ip, established)
+        for insn in insns:
+            raw.append((insn.file, insn.file + insn.length))
+    raw.sort()
+    merged: list[tuple[int, int]] = []
+    for start, end in raw:
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def _subtract_owned(
+    runs: list[tuple[int, int]], owned: list[tuple[int, int]]
+) -> list[tuple[int, int]]:
+    extra: list[tuple[int, int]] = []
+    for start, end in runs:
+        off = start
+        while off < end:
+            hit = next(((s, e) for s, e in owned if s <= off < e), None)
+            if hit is not None:
+                off = hit[1]
+                continue
+            nxt = end
+            for seed_start, seed_end in owned:
+                if off < seed_start < nxt:
+                    nxt = seed_start
+            extra.append((off, min(end, nxt)))
+            off = min(end, nxt)
+    return extra
+
+
+def emit_ledger(image: bytes | None = None) -> dict:
+    if image is None:
+        image = load_vailixi_linear()
+    seed = list(SEED_RANGES)
+    owned_spans = [(start, end) for start, end, *_ in seed]
+    extras = _subtract_owned(transfer_insn_ranges(image), owned_spans)
+    for start, end in extras:
+        seed.append(
+            (
+                start,
+                end,
+                "code",
+                "code",
+                "notes/transfer_scan.md",
+                "D16 local-walk instruction bytes",
+            )
+        )
+    seed.sort(key=lambda rec: rec[0])
     ranges = []
     prev_end = -1
-    for start, end, owner, kind, source, why in SEED_RANGES:
+    for start, end, owner, kind, source, why in seed:
         if owner not in OWNERS:
             raise ValueError(f"illegal owner {owner!r}")
         if not (0 <= start < end <= IMAGE_SIZE):
@@ -126,7 +193,7 @@ def emit_ledger() -> dict:
             raise ValueError(f"overlap or unsorted at 0x{start:05X}")
         ranges.append(_record(start, end, owner, kind, source, why))
         prev_end = end
-    owned = sum(end - start for start, end, *_ in SEED_RANGES)
+    owned = sum(end - start for start, end, *_ in seed)
     return {
         "image_size": IMAGE_SIZE,
         "owners": list(OWNERS),
@@ -221,7 +288,7 @@ def validate_ledger(image: bytes, ledger: dict) -> list[str]:
     if any(name == "unresolved" for name in ledger["owners"]):
         raise AssertionError("unresolved is not an owner")
 
-    expected = emit_ledger()
+    expected = emit_ledger(image)
     if ledger["ranges"] != expected["ranges"]:
         raise AssertionError("analysis/owner_ledger.json does not match tools/owner_ledger.py seed")
     checks.append("ledger JSON matches seed")
