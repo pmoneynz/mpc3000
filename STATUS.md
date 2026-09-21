@@ -116,11 +116,11 @@ Validator: `python3 tools/verify_boot_slice.py`.
   (default 0 at `B21A:01E2`). `Center pad:` is
   `[E613]` (default `0x0D` at `CF37:0325`).
   Task 3 `EAD0:000B` consumes `[E614]` (`JB` if
-  `<0x23`; the create-table “`>=` skips” reading
-  is retracted). `BE40:000C` is a retracted CS
-  alias. Owned `[D6AC]` stores are remaps.
-  Pad-hit writer is unnamed
-  ([`notes/pad_note.md`](notes/pad_note.md)).
+  `<0x23`) and `CALLF CFB3:0008` (`& 0xF8`;
+  `0x90` ? already-owned `CFC6:0007`).
+  `BE40:000C` is a retracted CS alias. Owned
+  `[D6AC]` stores are remaps. Pad-hit writer
+  is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).
 - PGR page 61 word `0x0140` maps to 24-bit `0x500000`
   (full-word `v33_translate`). Consumer is `D9B5`
   `ES=0xF400`; `ES:[03FE]` is `0x5003FE` inside the

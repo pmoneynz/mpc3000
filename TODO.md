@@ -224,8 +224,9 @@ bounds, evidence, unknowns).
       `VELOCITY` / `NOTE VAR` (default `[81B3]=0`
       at `B21A:01E2`). `Center pad:` is `[E613]`
       (default `0x0D` at `CF37:0325`). Task 3
-      `EAD0:000B` consumes `[E614]` (`JB` if `<0x23`).
-      Owned `[D6AC]`
+      `EAD0:000B` consumes `[E614]` (`JB` if `<0x23`)
+      and `CALLF CFB3:0008` (status `& 0xF8`;
+      `0x90` → `CFC6:0007`). Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
       pan ([`notes/pan_table.md`](notes/pan_table.md)).

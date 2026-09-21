@@ -570,6 +570,16 @@
     "ead0_add90_bytes": "0490",
     "ead0_plus11_file": "0x6AD45",
     "ead0_plus11_bytes": "8b1ef9e5268a47113a0614e6",
+    "cfb3_file": "0x4FB38",
+    "cfb3_bytes": "558bec83ec06c45e06268a07",
+    "cfb3_and_file": "0x4FB46",
+    "cfb3_and_bytes": "25f800",
+    "cfb3_cmp90_file": "0x4FB58",
+    "cfb3_cmp90_bytes": "3d90007470",
+    "cfb3_90_file": "0x4FBCD",
+    "cfb3_90_bytes": "ff7608ff76069a0700c6cf",
+    "cfb3_note_file": "0x4FB74",
+    "cfb3_note_bytes": "26807f0223",
     "midi90_file": "0x56D4A",
     "midi90_bytes": "558bec06c45e06268a0724f83c90"
   }

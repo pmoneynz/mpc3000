@@ -242,7 +242,21 @@ body when the byte is below the note floor. Else
 `ADD AL,0x90`; also `CMP ES:[BX+11],[E614]`. Then
 `CALLF CFB3:0008`. **PROVEN** as that dataflow. Default
 `[E614]=0x23` takes the body. `ADD AL,0x90` as MIDI
-note-on **HYPOTHESIS**. Do not BFS `CFB3:0008`.
+note-on **HYPOTHESIS**.
+
+`CFB3:0008` (file `0x4FB38`, already owned in
+`[0x4FAEB, 0x4FFFE)`). `LES BX,[BP+6]`;
+`AX=ES:[BX] & 0xF8`; switch `0xB0` / `0x80` /
+`0x90` / `0xC0` / `0xF0`. The `0x90` arm
+(`009D`, file `0x4FBCD`) `CALLF CFC6:0007`
+(already owned, same span). The `0x80` arm
+requires `ES:[BX+2]` in `0x23`..`0x62` and
+indexes `[E5F9]` by that note. **PROVEN** as
+that switch. Task 3's first packet byte is
+`Param+0x90`; if Param is `0..3` then
+`& 0xF8` is `0x90` and that arm is taken
+(**HYPOTHESIS** live Param stays `0..3`).
+Do not BFS a new `CFC6` meaning this pass.
 
 ---
 
