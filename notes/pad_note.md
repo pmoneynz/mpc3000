@@ -618,7 +618,9 @@ body when the byte is below the note floor. Else
 (file `0x6AD22`); `LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`;
 `ADD AL,0x90`. A second `MOV AL,[E614]` (file
 `0x6AD3B`) then `CMP ES:[BX+11],[E614]`. Then
-`CALLF CFB3:0008`. **PROVEN** as that dataflow. Default
+`PUSH SS` / `LEA [BP-6]` (file `0x6AD5F`)
+/ `CALLF CFB3:0008` (file `0x6AD64`).
+**PROVEN** as that dataflow. Default
 `[E614]=0x23` takes the body. `ADD AL,0x90` as MIDI
 note-on **HYPOTHESIS**. Do not name `[996A]`. Not a
 pad-hit.

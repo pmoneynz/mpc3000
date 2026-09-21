@@ -263,7 +263,8 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `C44E:00C2` `(Gen MIDI:`
   of the named `000C` note;
   `C44E:0235` `CALLF B060:035D`
-  / `AX==0x44` takes `0251`).
+  / `AX==0x44` takes `0251`;
+  `EAD0:0064` `CALLF CFB3:0008`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).
