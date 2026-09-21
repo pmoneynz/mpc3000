@@ -181,6 +181,8 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x3E292, 0x3E335)` | code — `BE1A` `01FB` dests `00F2`/`0105`/`0131`/`0185` |
 | `[0x3E335, 0x3E39B)` | code — `BE1A` shared `0195` through `RETF` |
 | `[0x3E39B, 0x3E3A3)` | data — `BE1A` `JMP CS:[BX+01FB]` 4 near IPs (`BX<=3` then `SHL 1`) |
+| `[0x3E3A3, 0x3E3CB)` | code — `BE1A:0203` cdecl through `RETF`; `CALLN` `0070`/`010C`/`0160` |
+| `[0x3E3CB, 0x3E40C)` | code — `BE1A:022B` cdecl through `RETF`; `CALLN` `0129`/`017D`/`018F` |
 
 ---
 

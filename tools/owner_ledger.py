@@ -64,6 +64,8 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x3E292, 0x3E335, "code", "code", "notes/transfer_scan.md", "BE1A 01FB dests 00F2/0105/0131/0185"),
     (0x3E335, 0x3E39B, "code", "code", "notes/transfer_scan.md", "BE1A shared 0195 through RETF"),
     (0x3E39B, 0x3E3A3, "data", "jump_table", "notes/transfer_scan.md", "BE1A JMP CS:[BX+01FB] 4 near IPs BX<=3 then SHL 1"),
+    (0x3E3A3, 0x3E3CB, "code", "code", "notes/transfer_scan.md", "BE1A:0203 cdecl through RETF; CALLN BE1A:0070/010C/0160"),
+    (0x3E3CB, 0x3E40C, "code", "code", "notes/transfer_scan.md", "BE1A:022B cdecl through RETF; CALLN BE1A:0129/017D/018F"),
     (0x42D0C, 0x42E67, "code", "code", "notes/transfer_scan.md", "C2D0:000C cdecl through RETF; CALLF C425:012F"),
     (0x42E67, 0x43034, "code", "code", "notes/transfer_scan.md", "C2E6:0007 cdecl through RETF; CALLF C425:019B"),
     (0x44483, 0x444B9, "data", "jump_table", "notes/transfer_scan.md", "C425 JMP CS:[BX+0233] 27 near IPs"),

@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 345280,
+  "owned_bytes": 345385,
   "ranges": [
     {
       "start": "0x00000",
@@ -591,6 +591,22 @@
       "kind": "jump_table",
       "source": "notes/transfer_scan.md",
       "why": "BE1A JMP CS:[BX+01FB] 4 near IPs BX<=3 then SHL 1"
+    },
+    {
+      "start": "0x3E3A3",
+      "end": "0x3E3CB",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "BE1A:0203 cdecl through RETF; CALLN BE1A:0070/010C/0160"
+    },
+    {
+      "start": "0x3E3CB",
+      "end": "0x3E40C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "BE1A:022B cdecl through RETF; CALLN BE1A:0129/017D/018F"
     },
     {
       "start": "0x420F3",
