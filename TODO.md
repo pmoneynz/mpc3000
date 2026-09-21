@@ -319,7 +319,10 @@ bounds, evidence, unknowns).
       `Low`/`High` temps to
       `+12`..`+19`; `C44E:0251`
       second clamp / `0268`
-      copy).
+      copy; `CA45:001A`
+      `CALLF DA04:002B` then
+      reload `[BP+6]` into
+      `[E60E]`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

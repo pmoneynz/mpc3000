@@ -120,7 +120,10 @@ CS:[BX+062F]` stores
 `Low`/`High` temps to
 `+12`..`+19`. `C44E:0251`
 second clamp / `0268`
-copy).
+copy; `CA45:001A`
+`CALLF DA04:002B` then
+reload `[BP+6]` into
+`[E60E]`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

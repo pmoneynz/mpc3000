@@ -133,9 +133,20 @@ loop `SI<0x40`. **PROVEN** as overlay to far-`+073E`
 record size, word `+2` is count, records start at `+4`.
 
 `CA45:0008` (file `0x4A458`, already owned). Index
-`[BP+6]` must be `0..0x17`. `CALL DA04:002B`;
-`MOV [E5FB],DX`; `MOV [E5F9],AX`; `MOV [E60E],AL`.
-**PROVEN** as the selector that writes `[E5F9]`. Then
+`[BP+6]` must be `0..0x17`. `PUSH [BP+6]`;
+`CALLF DA04:002B` (file `0x4A46A`
+`9A 2B 00 04 DA`); `ADD SP,2`;
+`MOV [E5FB],DX`; `MOV [E5F9],AX`
+(file `0x4A472`, already pinned).
+Then `MOV AL,[BP+6]` (file
+`0x4A479` `8A 46 06`); `MOV
+[E60E],AL` (file `0x4A47C`
+`A2 0E E6`). **PROVEN** as the
+selector that writes `[E5F9]`
+and the `Pgm` index. `[E60E]`
+is the reloaded `0..0x17`
+argument, not the low byte of
+the picker pointer. Then
 `CALLF C4C8:1D83` / `1C57` (mid-hole; do not BFS).
 After that store: `LES BX,[E5F9]` (file
 `0x4A4AC`); `MOV AL,ES:[BX+11]` (file

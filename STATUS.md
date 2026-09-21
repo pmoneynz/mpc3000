@@ -210,7 +210,10 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `Low`/`High` temps to
   `+12`..`+19`; `C44E:0251`
   second clamp / `0268`
-  copy).
+  copy; `CA45:001A`
+  `CALLF DA04:002B` then
+  reload `[BP+6]` into
+  `[E60E]`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).
