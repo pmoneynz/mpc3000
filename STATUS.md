@@ -5,7 +5,7 @@
 
 This tree was a document-and-dump pack. It now has a project goal, an
 address model, a static reset-to-AMX-start slice, a seeded owner
-ledger (341 ranges, 283991 bytes), a consumer-established string
+ledger (460 ranges, 317270 bytes), a consumer-established string
 inventory, an entry inventory (143 unique `CS:IP`), and a
 local-exit inventory (128 bounded / 14 indirect / 1 idle loop).
 It does not have whole-image coverage, Ghidra exports, or a named
@@ -58,7 +58,7 @@ wake source for the AMX idle spin.
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
-- Owner ledger: 341 ranges, 283991 bytes, 119 gaps. Owners are
+- Owner ledger: 460 ranges, 317270 bytes, 167 gaps. Owners are
   `code` or `data` only. Every `0xFF` run of 4+ bytes is classified.
 - String scan (D14): 1096 C-string starts are text because a
   consumer points at them (directory 345 `8010` ptrs, 27 disk
@@ -99,12 +99,12 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Panel ROM, PAL fusemaps, full schematics.
 - Instruction bounds for the 74+42 new CALL dests (candidates, not
   entries). Jump-table contents at the six `CS:[BX+disp]` sites.
-- Whole-image ledger coverage (D17). 119 gaps remain. D16
+- Whole-image ledger coverage (D17). 167 gaps remain. D16
   instruction bytes, four named holes, sandwiched `NOP`s,
-  111 bounded first-hop CALL dests, and two `JMP CS:[BX+disp]`
-  near-IP tables are owned. Five indirect dests, four unbounded
-  switch tables, and unentered app ROM stay debt. The 1-byte
-  `CF` at `0x7ADA3` has no entry.
+  336 bounded CALL dests on the D16 consumer chain, and two
+  `JMP CS:[BX+disp]` near-IP tables are owned. 17 indirect
+  dests, four unbounded switch tables, and unentered app ROM
+  stay debt. The 1-byte `CF` at `0x7ADA3` has no entry.
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
   `065B` overlays.
 

@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 283991,
+  "owned_bytes": 317270,
   "ranges": [
     {
       "start": "0x00000",
@@ -86,7 +86,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x300DF",
@@ -102,7 +102,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x303BA",
@@ -114,11 +114,11 @@
     },
     {
       "start": "0x3058A",
-      "end": "0x305D6",
+      "end": "0x30600",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x30600",
@@ -134,7 +134,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x30EE6",
@@ -153,12 +153,76 @@
       "why": "create-table task 5 through RETF"
     },
     {
+      "start": "0x31744",
+      "end": "0x31908",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x31908",
+      "end": "0x31909",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x31909",
+      "end": "0x31922",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x31922",
+      "end": "0x31923",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x31923",
+      "end": "0x3193D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x3193D",
+      "end": "0x3193E",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x3193E",
+      "end": "0x3194B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x319A7",
+      "end": "0x31B11",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x31B12",
       "end": "0x31B32",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x31B36",
@@ -166,7 +230,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x31B6B",
@@ -178,11 +242,11 @@
     },
     {
       "start": "0x31B91",
-      "end": "0x31BC5",
+      "end": "0x31C00",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x31C6F",
@@ -190,7 +254,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x31DAE",
@@ -217,12 +281,36 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x31FFC",
+      "end": "0x3202E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x3202E",
       "end": "0x3207A",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x3207A",
+      "end": "0x320A3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x321AF",
+      "end": "0x3256F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x32596",
@@ -246,7 +334,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x32C5C",
@@ -282,19 +370,19 @@
     },
     {
       "start": "0x33BEA",
-      "end": "0x33C77",
+      "end": "0x33EDF",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x370F1",
-      "end": "0x37231",
+      "end": "0x37319",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x37319",
@@ -305,6 +393,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x39885",
+      "end": "0x398AA",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x398BB",
       "end": "0x399A2",
       "owner": "code",
@@ -313,20 +409,44 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
-      "start": "0x3DF10",
-      "end": "0x3E03B",
+      "start": "0x3DE3E",
+      "end": "0x3E1A2",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
-      "start": "0x468D7",
+      "start": "0x420F3",
+      "end": "0x42D0C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x45059",
+      "end": "0x450C8",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x45C19",
+      "end": "0x45C31",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x468BC",
       "end": "0x46A43",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x4835D",
@@ -342,7 +462,15 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x4A458",
+      "end": "0x4A4DE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x4C512",
@@ -353,6 +481,30 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x4EBCC",
+      "end": "0x4EBF8",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x4EEA4",
+      "end": "0x4EEFA",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x4EF0E",
+      "end": "0x4EF22",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x4EFD5",
       "end": "0x4F0AD",
       "owner": "code",
@@ -361,12 +513,20 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x4F0AD",
+      "end": "0x4F0C5",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x4F0C6",
       "end": "0x4F0DC",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x4F0DC",
@@ -382,7 +542,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x4F0EE",
@@ -398,7 +558,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x4F133",
@@ -409,20 +569,84 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
-      "start": "0x4FB38",
-      "end": "0x4FC40",
+      "start": "0x4F17A",
+      "end": "0x4F187",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
-      "start": "0x50E36",
+      "start": "0x4F187",
+      "end": "0x4F188",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x4F188",
+      "end": "0x4F1F9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x4F555",
+      "end": "0x4F7BF",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x4F81D",
+      "end": "0x4F944",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x4F944",
+      "end": "0x4F945",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x4F945",
+      "end": "0x4FABC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x4FAEB",
+      "end": "0x4FFFE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x508D0",
+      "end": "0x50949",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x50A07",
       "end": "0x50E79",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x50EBC",
@@ -430,7 +654,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x51211",
@@ -446,7 +670,15 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5146F",
+      "end": "0x51917",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x51917",
@@ -457,20 +689,36 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
-      "start": "0x51F17",
+      "start": "0x5199E",
+      "end": "0x51C1D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x51CEF",
       "end": "0x51F7E",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
-      "start": "0x52138",
+      "start": "0x5205E",
+      "end": "0x52096",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x520A8",
       "end": "0x5218F",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x52190",
@@ -478,15 +726,111 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
-      "start": "0x55048",
-      "end": "0x55106",
+      "start": "0x521F8",
+      "end": "0x5227F",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5389E",
+      "end": "0x53912",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x53912",
+      "end": "0x53913",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x53913",
+      "end": "0x53937",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x53937",
+      "end": "0x53938",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x53938",
+      "end": "0x53946",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x53A51",
+      "end": "0x53A75",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x53A84",
+      "end": "0x53A93",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x53A93",
+      "end": "0x53A94",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x53A94",
+      "end": "0x53AAA",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5470C",
+      "end": "0x54787",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x54807",
+      "end": "0x549D5",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x549F5",
+      "end": "0x5518D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5518D",
@@ -495,6 +839,14 @@
       "kind": "code",
       "source": "notes/pgr_live_after_amx.md",
       "why": "D510:008D port picker through RETF"
+    },
+    {
+      "start": "0x55218",
+      "end": "0x552A8",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x552A8",
@@ -510,7 +862,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5532A",
@@ -526,7 +878,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5533E",
@@ -542,7 +894,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x55430",
@@ -550,7 +902,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x554D7",
@@ -574,7 +926,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x55F36",
@@ -590,7 +942,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x55F3E",
@@ -625,12 +977,44 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
-      "start": "0x56C17",
-      "end": "0x56CC4",
+      "start": "0x56BEA",
+      "end": "0x56C0A",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x56C0A",
+      "end": "0x56C0B",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x56C0B",
+      "end": "0x56C0F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x56C0F",
+      "end": "0x56C10",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x56C10",
+      "end": "0x56D49",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x56D4A",
@@ -638,7 +1022,23 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x56D8A",
+      "end": "0x56DA6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x56E00",
+      "end": "0x56E1B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x56E1B",
@@ -681,36 +1081,52 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x56E75",
+      "end": "0x56E8B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x56EF1",
       "end": "0x56F07",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
-      "start": "0x56F60",
+      "start": "0x56F3E",
       "end": "0x56F7B",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
-      "start": "0x56FA1",
-      "end": "0x56FAE",
+      "start": "0x56F7C",
+      "end": "0x57379",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
-      "start": "0x58B6C",
+      "start": "0x57A0C",
+      "end": "0x58B59",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x58B5A",
       "end": "0x58BAF",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x58BAF",
@@ -726,7 +1142,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x58D6F",
@@ -734,7 +1150,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x58DB4",
@@ -745,12 +1161,20 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x58DF8",
+      "end": "0x58E56",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x58F80",
       "end": "0x58FAB",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x58FAB",
@@ -766,7 +1190,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x59031",
@@ -782,7 +1206,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5909B",
@@ -798,7 +1222,47 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x59650",
+      "end": "0x59656",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x59656",
+      "end": "0x59657",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x59657",
+      "end": "0x59825",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x59A24",
+      "end": "0x59AAD",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x59AE7",
+      "end": "0x59B4F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x59B50",
@@ -830,7 +1294,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x59BD9",
@@ -850,11 +1314,11 @@
     },
     {
       "start": "0x59DDE",
-      "end": "0x59E7F",
+      "end": "0x59EA5",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x59EA8",
@@ -862,7 +1326,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x59EB4",
@@ -873,12 +1337,44 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x59EE2",
+      "end": "0x59EEE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x59F2C",
+      "end": "0x59F92",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x59FCE",
+      "end": "0x5A037",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5A04E",
+      "end": "0x5A08F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x5A090",
       "end": "0x5A0B6",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5A0B6",
@@ -894,7 +1390,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5A0F2",
@@ -910,23 +1406,23 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5A0FE",
-      "end": "0x5A146",
+      "end": "0x5A20C",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
-      "start": "0x5A17A",
-      "end": "0x5A1AD",
+      "start": "0x5A3D6",
+      "end": "0x5A4C8",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5A4C8",
@@ -937,12 +1433,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5A50E",
+      "end": "0x5A665",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5A69A",
+      "end": "0x5A9B1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x5A9B2",
       "end": "0x5AA32",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5AA32",
@@ -958,7 +1470,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5AB0D",
@@ -974,7 +1486,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5ABE8",
@@ -990,7 +1502,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5AD59",
@@ -1006,7 +1518,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5ADA7",
@@ -1022,7 +1534,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5ADD4",
@@ -1038,7 +1550,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5AE01",
@@ -1054,7 +1566,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5AE2E",
@@ -1070,7 +1582,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5AE5B",
@@ -1086,7 +1598,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5AE8D",
@@ -1102,7 +1614,23 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5AEB7",
+      "end": "0x5AEF9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5B25F",
+      "end": "0x5B28D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5B28D",
@@ -1145,6 +1673,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5B585",
+      "end": "0x5B6C4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x5B6E5",
       "end": "0x5B703",
       "owner": "code",
@@ -1161,6 +1697,30 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5BE64",
+      "end": "0x5BF71",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5BF71",
+      "end": "0x5BF72",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5BF72",
+      "end": "0x5C053",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x5C054",
       "end": "0x5C08E",
       "owner": "code",
@@ -1169,12 +1729,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
-      "start": "0x5C0EA",
+      "start": "0x5C08E",
+      "end": "0x5C0B8",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5C0B8",
+      "end": "0x5C0B9",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5C0B9",
       "end": "0x5C23A",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5C23A",
@@ -1318,7 +1894,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5C53A",
@@ -1330,11 +1906,11 @@
     },
     {
       "start": "0x5C53B",
-      "end": "0x5C559",
+      "end": "0x5C5B1",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5C5EB",
@@ -1345,12 +1921,20 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5C61B",
+      "end": "0x5C638",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x5C702",
       "end": "0x5C7C3",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5C7C3",
@@ -1366,7 +1950,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5C7EB",
@@ -1382,15 +1966,15 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5C854",
-      "end": "0x5C897",
+      "end": "0x5CA24",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5CE4C",
@@ -1550,7 +2134,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5D70A",
@@ -1558,7 +2142,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5D721",
@@ -1574,7 +2158,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5D744",
@@ -1590,7 +2174,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5D78E",
@@ -1606,7 +2190,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5D7A3",
@@ -1618,11 +2202,35 @@
     },
     {
       "start": "0x5D7A4",
-      "end": "0x5D7D3",
+      "end": "0x5D82C",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5D82C",
+      "end": "0x5D82D",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5D82D",
+      "end": "0x5D8AD",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5D8AE",
+      "end": "0x5D953",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5D954",
@@ -1673,12 +2281,20 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5DC0F",
+      "end": "0x5DD12",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x5DDDE",
       "end": "0x5DDFD",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5DDFD",
@@ -1694,7 +2310,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5DE44",
@@ -1710,7 +2326,15 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5DE70",
+      "end": "0x5DE95",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5DE96",
@@ -1718,7 +2342,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5DF1A",
@@ -1734,7 +2358,15 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x5E32F",
+      "end": "0x5E36C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5E36C",
@@ -1758,7 +2390,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x5F4F9",
@@ -1774,7 +2406,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x60D54",
@@ -1782,7 +2414,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x60E4A",
@@ -1793,12 +2425,20 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x60EF4",
+      "end": "0x61227",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x614E4",
       "end": "0x61519",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x61519",
@@ -1814,7 +2454,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x61563",
@@ -1830,7 +2470,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x6156D",
@@ -1846,7 +2486,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x61573",
@@ -1862,15 +2502,15 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x61A62",
-      "end": "0x61BC3",
+      "end": "0x61F0C",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x621AB",
@@ -1878,7 +2518,15 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x6226A",
+      "end": "0x62912",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x62912",
@@ -1887,6 +2535,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x62DF6",
+      "end": "0x62EAC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x62EAC",
@@ -1910,7 +2566,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x63EA5",
@@ -1918,7 +2574,15 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x64A75",
+      "end": "0x64AA3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x64ECC",
@@ -1929,12 +2593,100 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x651D3",
+      "end": "0x65216",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x65216",
       "end": "0x654C7",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x654C7",
+      "end": "0x656F7",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x656F8",
+      "end": "0x6572A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x6572A",
+      "end": "0x6572B",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x6572B",
+      "end": "0x65742",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x65742",
+      "end": "0x65743",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x65743",
+      "end": "0x65790",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x65790",
+      "end": "0x65791",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x65791",
+      "end": "0x657A4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x657A4",
+      "end": "0x657A5",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x657A5",
+      "end": "0x657EE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x65AF1",
@@ -1946,11 +2698,27 @@
     },
     {
       "start": "0x65B20",
-      "end": "0x66014",
+      "end": "0x6605E",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x66095",
+      "end": "0x66100",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x666FC",
+      "end": "0x6676D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x66D8B",
@@ -1958,7 +2726,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x670CB",
@@ -1966,7 +2734,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x671E1",
@@ -1982,7 +2750,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x67DE1",
@@ -1991,6 +2759,54 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x68025",
+      "end": "0x68036",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x680EB",
+      "end": "0x68181",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x68390",
+      "end": "0x683C4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x683C4",
+      "end": "0x683C5",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x683C5",
+      "end": "0x683CE",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x6928C",
+      "end": "0x69373",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x69374",
@@ -2022,7 +2838,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x6AF81",
@@ -2033,6 +2849,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x6B0B6",
+      "end": "0x6B0CF",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x6B0F8",
       "end": "0x6B1A2",
       "owner": "code",
@@ -2041,12 +2865,20 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x6B4F2",
+      "end": "0x6B5B1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
       "start": "0x6B5B6",
       "end": "0x6B637",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x6B637",
@@ -2058,19 +2890,19 @@
     },
     {
       "start": "0x6B7EC",
-      "end": "0x6B7FA",
+      "end": "0x6BB5D",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
-      "start": "0x6B820",
-      "end": "0x6BA52",
+      "start": "0x6BD59",
+      "end": "0x6BD96",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x6BFF0",
@@ -2094,7 +2926,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x7079C",
@@ -2238,7 +3070,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x78F06",
@@ -2254,7 +3086,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x78F6D",
@@ -2270,7 +3102,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x78F73",
@@ -2286,7 +3118,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x78F86",
@@ -2298,11 +3130,83 @@
     },
     {
       "start": "0x78F87",
-      "end": "0x78FB4",
+      "end": "0x78FFF",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x793BD",
+      "end": "0x793CC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x793CC",
+      "end": "0x793CD",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x793CD",
+      "end": "0x7943E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x7943E",
+      "end": "0x7943F",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x7943F",
+      "end": "0x7944E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x794B4",
+      "end": "0x79556",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x79556",
+      "end": "0x79557",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x79557",
+      "end": "0x7955F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x79654",
+      "end": "0x796AA",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x796AA",
@@ -2406,7 +3310,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x798CA",
@@ -2430,7 +3334,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x79946",
@@ -2478,7 +3382,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x7A0FA",
@@ -2486,15 +3390,47 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
-      "start": "0x7A114",
+      "start": "0x7A101",
+      "end": "0x7A106",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x7A109",
+      "end": "0x7A10E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x7A111",
       "end": "0x7A1A5",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x7A1A8",
+      "end": "0x7A1C6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x7A1C9",
+      "end": "0x7A1E6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x7A244",
@@ -2502,7 +3438,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x7A6E1",
@@ -2518,7 +3454,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x7A78E",
@@ -2690,11 +3626,27 @@
     },
     {
       "start": "0x7B899",
-      "end": "0x7B90D",
+      "end": "0x7B94F",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest of a D16 entry"
+      "why": "bounded CALL dest reachable from a D16 entry"
+    },
+    {
+      "start": "0x7B94F",
+      "end": "0x7B950",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x7B950",
+      "end": "0x7B989",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry"
     },
     {
       "start": "0x7BA01",

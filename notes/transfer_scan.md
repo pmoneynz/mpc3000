@@ -72,9 +72,10 @@ Task 6 never `RETF`s. That is a resolved loop, not a missing exit
 | `retxa` | 2 | `0F F0 ib` |
 
 The 74+42 new dests are **candidates** as *entries* (D15). A
-bounded first-hop dest of a D16 CALL is owned as *code* (D17):
-111 dests this pass; 5 indirect dests stay unowned. A `55 8B EC`
-prologue still does not accept a dest as an entry.
+bounded CALL dest on a consumer chain from a D16 entry is owned
+as *code* (D17): 336 dests to fixpoint; 17 indirect dests stay
+unowned and stop that chain. A `55 8B EC` prologue still does
+not accept a dest as an entry.
 
 ---
 
@@ -107,13 +108,14 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x7989C, 0x798CA)` | code — `F800:189C` bounded CALLN dest through `RET` |
 | `[0x55F64, 0x55F7A)` | data — `D5F3` `JMP CS:[BX+0034]` 11 near IPs |
 | `[0x5B447, 0x5B461)` | data — `DB28` `JMP CS:[BX+01C7]` 13 near IPs |
+| `[0x319CE, 0x319FE)` | code — `B19C:000E` hop-2 cdecl dest through `RETF` |
 
 ---
 
 ## What this note does *not* prove
 
-- Instruction bounds for the five indirect first-hop dests.
-- Second-hop CALL dests of the 111 promoted callees.
+- Instruction bounds for the 17 indirect dests on the chain.
+- Destinations of those indirect calls/jumps.
 - Jump-table *targets* (which IP `BX` selects) and the four
   unbounded `CS:[BX+disp]` tables.
 - That a bounded cdecl body is fully owned (D17).

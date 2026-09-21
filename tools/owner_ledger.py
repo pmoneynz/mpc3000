@@ -160,28 +160,36 @@ def transfer_insn_ranges(image: bytes) -> list[tuple[int, int]]:
 
 
 def callee_insn_ranges(image: bytes) -> list[tuple[int, int]]:
-    """Instruction bytes of bounded CALL dests of D16 entries.
+    """Instruction bytes of bounded CALL dests reachable from D16.
 
-    A dest is promoted only when a D16 walk names it and its own
-    local walk is bounded. Indirect dests stay candidates.
+    BFS from the D15 entries. A dest is promoted only when a
+    already-accepted body names it and its own local walk is
+    bounded. Indirect dests stay candidates and stop that chain.
     """
     established = set(scan_entries(image)["_unique"])
-    dests: set[str] = set()
-    for cs_ip in established:
-        cs, ip = _parse_cs_ip(cs_ip)
-        insns, _extra, _hit = follow_entry(image, cs, ip, established)
-        for item in classify_exits(insns, established):
-            if item["kind"] in ("callf", "calln") and not item.get("established"):
-                dests.add(item["dest"])
+    accepted = set(established)
+    frontier = list(established)
     raw: list[tuple[int, int]] = []
-    for dest in dests:
-        cs, ip = _parse_cs_ip(dest)
-        insns, extra, hit = follow_entry(image, cs, ip, established)
-        exits = classify_exits(insns, established) + extra
-        if not _is_bounded(exits, hit):
-            continue
-        for insn in insns:
-            raw.append((insn.file, insn.file + insn.length))
+    while frontier:
+        dests: set[str] = set()
+        for cs_ip in frontier:
+            cs, ip = _parse_cs_ip(cs_ip)
+            insns, _extra, _hit = follow_entry(image, cs, ip, accepted)
+            for item in classify_exits(insns, accepted):
+                if item["kind"] in ("callf", "calln") and item["dest"] not in accepted:
+                    dests.add(item["dest"])
+        nxt: list[str] = []
+        for dest in dests:
+            cs, ip = _parse_cs_ip(dest)
+            insns, extra, hit = follow_entry(image, cs, ip, accepted)
+            exits = classify_exits(insns, accepted) + extra
+            if not _is_bounded(exits, hit):
+                continue
+            accepted.add(dest)
+            nxt.append(dest)
+            for insn in insns:
+                raw.append((insn.file, insn.file + insn.length))
+        frontier = nxt
     return _merge_runs(raw)
 
 
@@ -232,7 +240,7 @@ def emit_ledger(image: bytes | None = None) -> dict:
                 "code",
                 "code",
                 "notes/transfer_scan.md",
-                "bounded CALL dest of a D16 entry",
+                "bounded CALL dest reachable from a D16 entry",
             )
         )
     tmp_spans = [(start, end, "code", "code") for start, end, *_ in seed]
