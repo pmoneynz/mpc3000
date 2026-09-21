@@ -114,6 +114,7 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x5B56B, 0x5B585)` | data — `DB28` `JMP CS:[BX+02EB]` 13 near IPs |
 | `[0x5BC6B, 0x5BC87)` | data — `DB28` `JMP CS:[BX+09EB]` 14 near IPs |
 | `[0x5D35E, 0x5D376)` | data — `DCF0` `JMP CS:[BX+045E]` 12 near IPs |
+| `[0x561AA, 0x561AF)` | code — `D61A:000A` `0347` IVT[9] plant prefix (`CALL 0157`) |
 | `[0x319CE, 0x319FE)` | code — `B19C:000E` hop-2 cdecl dest through `RETF` |
 
 ---

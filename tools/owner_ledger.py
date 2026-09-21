@@ -83,6 +83,7 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x79896, 0x7989C, "code", "code", "notes/calling_convention.md", "hex helper 1896"),
     (0x798CA, 0x798D6, "code", "code", "notes/boot_reset_to_bios_banner.md", "18CA INT 43 AX=4"),
     (0x79946, 0x79B26, "code", "code", "notes/ivt_inventory.md", "1946 IRET + ladder + F800:1AD4 RETF"),
+    (0x79B26, 0x79B36, "data", "jump_table", "notes/ivt_inventory.md", "INT 40 CALL CS:[SI] 8 near IPs at F800:1B26"),
     (0x7A78E, 0x7AC00, "data", "padding", "notes/padding.md", "unprogrammed ROM before FAC0:0000"),
     (0x7AC00, 0x7ACB4, "code", "code", "notes/boot_reset_to_bios_banner.md", "FAC0 reset through BRKXA 0x14"),
     (0x7ACB4, 0x7AD34, "data", "pgr", "notes/boot_reset_to_bios_banner.md", "second PGR image"),
@@ -213,6 +214,42 @@ def indirect_prefix_ranges(image: bytes) -> list[tuple[int, int]]:
     return prefixes
 
 
+# (start, end, cs) - owned near-IP tables. Dest walks use that CS.
+SWITCH_TABLES: tuple[tuple[int, int, int], ...] = (
+    (0x31FE2, 0x31FFC, 0xB1BC),
+    (0x55F64, 0x55F7A, 0xD5F3),
+    (0x5B447, 0x5B461, 0xDB28),
+    (0x5B56B, 0x5B585, 0xDB28),
+    (0x5BC6B, 0x5BC87, 0xDB28),
+    (0x5D35E, 0x5D376, 0xDCF0),
+    (0x79B26, 0x79B36, 0xF800),
+)
+
+PLANTED_IVT: tuple[str, ...] = ("D61A:000A",)
+
+
+def switch_and_planted_ranges(image: bytes) -> list[tuple[int, int]]:
+    """Instruction bytes of switch-table IPs and proven 0347 plants.
+
+    Table dests have a named JMP/CALL [rm] consumer. D61A:000A is
+    IVT[9] after B03B:01F7 MOV ES,D61A / MOV BX,000A / MOV DL,9.
+    Indirect dests contribute prefixes only.
+    """
+    established = set(scan_entries(image)["_unique"])
+    dests: set[str] = set(PLANTED_IVT)
+    for start, end, cs in SWITCH_TABLES:
+        for off in range(start, end, 2):
+            ip = image[off] | (image[off + 1] << 8)
+            dests.add(f"{cs:04X}:{ip:04X}")
+    raw: list[tuple[int, int]] = []
+    for dest in dests:
+        cs, ip = _parse_cs_ip(dest)
+        insns, extra, hit = follow_entry(image, cs, ip, established)
+        for insn in insns:
+            raw.append((insn.file, insn.file + insn.length))
+    return _merge_runs(raw)
+
+
 def _subtract_owned(
     runs: list[tuple[int, int]], owned: list[tuple[int, int]]
 ) -> list[tuple[int, int]]:
@@ -273,6 +310,18 @@ def emit_ledger(image: bytes | None = None) -> dict:
                 "code",
                 "notes/transfer_scan.md",
                 "instruction prefix of an indirect CALL dest",
+            )
+        )
+    owned_spans = [(start, end) for start, end, *_ in seed]
+    for start, end in _subtract_owned(switch_and_planted_ranges(image), owned_spans):
+        seed.append(
+            (
+                start,
+                end,
+                "code",
+                "code",
+                "notes/transfer_scan.md",
+                "switch-table or 0347-plant dest instruction bytes",
             )
         )
     tmp_spans = [(start, end, "code", "code") for start, end, *_ in seed]

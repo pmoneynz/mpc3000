@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 323472,
+  "owned_bytes": 327633,
   "ranges": [
     {
       "start": "0x00000",
@@ -297,12 +297,28 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x31EAC",
+      "end": "0x31EB7",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
       "start": "0x31EB7",
       "end": "0x31F0C",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x31F0C",
+      "end": "0x31F4B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
       "start": "0x31F4B",
@@ -1217,12 +1233,300 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x55F9D",
+      "end": "0x560B9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x560B9",
+      "end": "0x560BA",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x560BA",
+      "end": "0x560E3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x560E3",
+      "end": "0x560E4",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x560E4",
+      "end": "0x5610E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x5610E",
+      "end": "0x5610F",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
       "start": "0x5610F",
       "end": "0x5614D",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x561AA",
+      "end": "0x561C3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x561C3",
+      "end": "0x561C4",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x561C4",
+      "end": "0x561DB",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x561DB",
+      "end": "0x561DC",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x561DC",
+      "end": "0x561F6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x561F6",
+      "end": "0x561F7",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x561F7",
+      "end": "0x5620D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x5620D",
+      "end": "0x5620E",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5620E",
+      "end": "0x56412",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x56412",
+      "end": "0x56413",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x56413",
+      "end": "0x5642A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x5642A",
+      "end": "0x5642B",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5642B",
+      "end": "0x56442",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x56442",
+      "end": "0x56443",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x56443",
+      "end": "0x5645C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x5645C",
+      "end": "0x5645D",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5645D",
+      "end": "0x5646C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x5646C",
+      "end": "0x5646D",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5646D",
+      "end": "0x56486",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x56486",
+      "end": "0x56487",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x56487",
+      "end": "0x5657E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x5657E",
+      "end": "0x5657F",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5657F",
+      "end": "0x565B2",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x565B2",
+      "end": "0x565B3",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x565B3",
+      "end": "0x565C8",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x565C8",
+      "end": "0x565C9",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x565C9",
+      "end": "0x5660C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x5695D",
+      "end": "0x569EC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x569EC",
+      "end": "0x569ED",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x569ED",
+      "end": "0x56A0A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
       "start": "0x56BEA",
@@ -1929,6 +2233,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x5B2D9",
+      "end": "0x5B443",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
       "start": "0x5B443",
       "end": "0x5B447",
       "owner": "code",
@@ -1951,6 +2263,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5B495",
+      "end": "0x5B568",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
       "start": "0x5B568",
@@ -1983,6 +2303,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5B703",
+      "end": "0x5BC5D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
       "start": "0x5BC5D",
@@ -2407,6 +2735,22 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5D32B",
+      "end": "0x5D32C",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x5D32C",
+      "end": "0x5D35E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
       "start": "0x5D35E",
@@ -3745,7 +4089,15 @@
       "why": "1946 IRET + ladder + F800:1AD4 RETF"
     },
     {
-      "start": "0x79B28",
+      "start": "0x79B26",
+      "end": "0x79B36",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/ivt_inventory.md",
+      "why": "INT 40 CALL CS:[SI] 8 near IPs at F800:1B26"
+    },
+    {
+      "start": "0x79B36",
       "end": "0x79B55",
       "owner": "code",
       "kind": "code",
@@ -3767,6 +4119,30 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x79B82",
+      "end": "0x79C5C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x79C5C",
+      "end": "0x79C5D",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x79C5D",
+      "end": "0x79D2C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
       "start": "0x7A047",

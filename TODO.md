@@ -101,11 +101,10 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 323472 owned / 200 gaps. 336 bounded CALL dests
-      plus 17 indirect prefixes. Six `JMP CS:[BX+disp]` tables
-      and the `D510` port-word table are owned. Indirect
-      targets and unentered app ROM remain. The 1-byte `CF` at
-      `0x7ADA3` has no entry.
+      Progress: 327633 owned / 194 gaps. Switch-table near IPs,
+      INT 40 dests (`AH<=7`), and `D61A:000A` IVT[9] prefix
+      owned. Indirect targets and unentered app ROM remain.
+      The 1-byte `CF` at `0x7ADA3` has no entry.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.

@@ -194,6 +194,7 @@ the post-task-7 map.
 | `[0x79946, 0x79952)` | code — `1946` |
 | `[0x79952, 0x79953)` | code — default `IRET` |
 | `[0x79953, 0x79B13)` | code — ladder `CALL 19B3` through last stub |
+| `[0x79B26, 0x79B36)` | data — INT 40 `CALL CS:[SI]` 8 near IPs (`AH<=7`) |
 | `[0x7AC5C, 0x7AC6C)` | code — FAC0 `IVT[10h]` plant (inside FAC0 span) |
 | `[0x7AC8F, 0x7AC9F)` | code — FAC0 `IVT[12h]` plant |
 
