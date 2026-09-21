@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 342658,
+  "owned_bytes": 342774,
   "ranges": [
     {
       "start": "0x00000",
@@ -303,6 +303,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x31C00",
+      "end": "0x31C6F",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B1BC:0040 LES DI SCASB count RETF; CALLN B1BC:0382"
     },
     {
       "start": "0x31C6F",
@@ -3295,6 +3303,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
+      "start": "0x5CB74",
+      "end": "0x5CB79",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "DCA2:0154 MOV AL,0x59 / JMP 0016; CALLF DE5C:055B"
     },
     {
       "start": "0x5CB79",
