@@ -164,7 +164,10 @@ of the named `+11`
 `BE1A:028D`/`02A5`/`02BD`/
 `02D5` `B1B1:005B` labels
 `Note:`/`Param:`/`Low
-range:`/`High range:`).
+range:`/`High range:`;
+`EAD0:001D` `[E614]*0x18`
+into the named `FD0D`
+load).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

@@ -363,7 +363,10 @@ bounds, evidence, unknowns).
       `BE1A:028D`/`02A5`/`02BD`/
       `02D5` `B1B1:005B` labels
       `Note:`/`Param:`/`Low
-      range:`/`High range:`).
+      range:`/`High range:`;
+      `EAD0:001D` `[E614]*0x18`
+      into the named `FD0D`
+      load).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

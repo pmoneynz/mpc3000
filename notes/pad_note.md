@@ -556,11 +556,14 @@ Create-table task 3 `EAD0:000B` (file `0x6AD0B`, already
 owned) is a named consumer of `[E614]`. After
 `E937:0004`, `CMP [E614],0x23` / `JB 006C` skips the
 body when the byte is below the note floor. Else
-`AX=[E614]*0x18`; `LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`;
-`ADD AL,0x90`; also `CMP ES:[BX+11],[E614]`. Then
+`MOV AL,[E614]` (file `0x6AD1D`); `IMUL AX,0x18`
+(file `0x6AD22`); `LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`;
+`ADD AL,0x90`. A second `MOV AL,[E614]` (file
+`0x6AD3B`) then `CMP ES:[BX+11],[E614]`. Then
 `CALLF CFB3:0008`. **PROVEN** as that dataflow. Default
 `[E614]=0x23` takes the body. `ADD AL,0x90` as MIDI
-note-on **HYPOTHESIS**.
+note-on **HYPOTHESIS**. Do not name `[996A]`. Not a
+pad-hit.
 
 `CFB3:0008` (file `0x4FB38`, already owned in
 `[0x4FAEB, 0x4FFFE)`). `LES BX,[BP+6]`;
