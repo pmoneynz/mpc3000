@@ -77,9 +77,10 @@ interaction**, with the relevant code, data, RAM state, and hardware
 interface connected end to end.
 
 Current slice (2026-09-21): reset through the FAC0 boot stub, the first PGR
-map, the BIOS far-call at `F800:000A`, and LC7981 initialization via
-`INT 43` AX=0. The KADAK AMX dispatcher is present in the image and is
-**not** yet on the explained path. See
+map, the `F07A` init table (BIOS `F800:000A`, `F800:1AD4`, AMX
+`FB00:000C`), and LC7981 initialization via `INT 43` AX=0. Reset reaches
+the AMX dispatcher spin at `FB00:013E`. The wake source for that spin is
+still open. See
 [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md).
 
 ## Priority order

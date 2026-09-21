@@ -85,6 +85,42 @@ def verify(image: bytes, facts: dict) -> list[str]:
         raise AssertionError("INT43 AX=0 does not start with MOV AX,0x3C / CALL LCD_put")
     checks.append("INT43 AX=0 -> LCD put")
 
+    bios = facts["bios"]
+    _expect_hex(image, int(bios["epilogue_file"], 16), bios["epilogue_bytes"], "BIOS RETF")
+    checks.append("BIOS F800:0142 RETF")
+
+    table = facts["init_table"]
+    table_off = int(table["file"], 16)
+    packed = "".join(rec["bytes"] for rec in table["records"])
+    _expect_hex(image, table_off, packed, "init table")
+    checks.append("F07A init table three records")
+
+    _expect_hex(image, 0x7AD9E, table["exit_if_cx_zero"]["jmp_bytes"], "FAC0 CX=0 exit")
+    checks.append("FAC0:019E jmp B000:00DF")
+
+    second = facts["second_init"]
+    if image[int(second["retf_file"], 16)] != 0xCB:
+        raise AssertionError("F800:1AD4 does not RETF")
+    if image[int(second["file"], 16) : int(second["file"], 16) + 2] != bytes.fromhex("1eb8"):
+        raise AssertionError("F800:1AD4 does not begin PUSH DS / MOV AX")
+    checks.append("F800:1AD4 RETF")
+
+    amx = facts["amx"]
+    _expect_hex(image, int(amx["file"], 16), amx["entry_bytes"], "AMX entry jmp")
+    _expect_hex(image, int(amx["copyright_file"], 16), amx["copyright_bytes"], "KADAK copyright")
+    _expect_hex(image, int(amx["dispatcher_file"], 16), amx["dispatcher_bytes"], "AMX dispatcher")
+    checks.append("AMX FB00:000C / dispatcher 013E")
+
+    copy = facts["copy_7c92"]
+    _expect_hex(image, int(copy["source_file"], 16), copy["signature_bytes"], "copy signature")
+    if image[0x7AC84:0x7AC87] != bytes.fromhex("b9927c"):
+        raise AssertionError("copy length is not MOV CX,0x7C92")
+    checks.append("DS=A000 copy AA 55 / 0x7C92")
+
+    if image[0x7AE4F:0x7AE56] != bytes.fromhex("5a595b585e1fcf"):
+        raise AssertionError("ROM IVT12 continue is not POP/IRET")
+    checks.append("ROM IVT12 FAC0:024F IRET tail")
+
     return checks
 
 

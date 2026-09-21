@@ -14,9 +14,9 @@ changes decode.
 
 Reset to a named loop plus one observable, end to end.
 
-- Done: reset ? FAC0 ? BIOS ? LC7981 init writes.
-- Open: AMX/event loop; banner glyph path; return from BIOS into later
-  startup.
+- Done: reset ? FAC0 ? BIOS + second init ? AMX start / dispatcher spin;
+  LC7981 init writes; `0x7C92` copy bounded.
+- Open: AMX wake source; banner glyph path; live PGR after BIOS.
 
 ## Gate 2 — Shared machinery
 

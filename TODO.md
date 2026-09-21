@@ -5,12 +5,13 @@ open a second backlog of unexplained code.
 
 ## Now
 
-1. Finish the `FAC0:0134` instruction partition through the return from
-   `F800:000A`. Pin every transfer. Close or bound `U-COPY-7C92`.
+1. Close `U-AMX-WAIT`: partition `FB00:01EA` / `0537` and name the wake
+   writer (IRQ, RAM flag, alias). That is the missing half of the first
+   milestone.
 2. Trace `INT 43` AX=4 from a banner character to LC7981 memory or a
    justified non-display sink (`U-INT43-AX4`).
-3. Find the AMX start and the dispatcher it returns to (`U-AMX-ENTRY`).
-   That is the missing half of the first milestone.
+3. Inventory consumers of `8010:0000` after the `0x7C92` copy
+   (`U-COPY-7C92` remainder).
 
 ## Next
 

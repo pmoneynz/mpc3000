@@ -4,9 +4,9 @@
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 **Date:** 2026-09-21.
 
-This is the first connected slice. It is **not** reset-to-event-loop.
-The KADAK copyright at file `0x7B00F` is on the image and unused by this
-note.
+This is the first connected slice. Reset now reaches the AMX dispatcher
+spin. That is still not a named application event loop: the wake source
+is open (`U-AMX-WAIT`).
 
 Reproduction: `python3 tools/verify_boot_slice.py`.
 
@@ -18,11 +18,11 @@ Address forms: [`address_model.md`](address_model.md).
 
 | Field | Value |
 |-------|-------|
-| Purpose | Power-on fetch, V53 wait-state/refresh setup, first XA map, work-RAM clear, BIOS entry, LC7981 programming |
-| Observable | Seven `OUT` pairs to LC7981 ports `0xE2`/`0xE0` from `INT 43` AX=0, then an inline-string print of `MPC-3000 BIOS 21/08/07` |
+| Purpose | Power-on fetch, V53 wait-state/refresh setup, first XA map, work-RAM clear, BIOS entry, LC7981 programming, AMX start |
+| Observable | Seven `OUT` pairs to LC7981 ports `0xE2`/`0xE0` from `INT 43` AX=0, then an inline-string print of `MPC-3000 BIOS 21/08/07`, then AMX dispatcher spin |
 | Inputs | Reset state; ROM as mapped; RAM and NVRAM contents ignored after the clear |
-| Outputs | PGR live; XA=1 after `BRKXA 0x14`; IVT in work RAM; LCD controller programmed |
-| Confidence | Path to LCD init: **PROVEN** statically. Glyph pixels for the banner: **HYPOTHESIS**. Event loop: **UNDETERMINED**. |
+| Outputs | PGR live; XA=1 after `BRKXA 0x14`; IVT in work RAM; LCD controller programmed; AMX entered |
+| Confidence | Path to LCD init and AMX start: **PROVEN** statically. Glyph pixels for the banner: **HYPOTHESIS**. Dispatcher wake source: **UNDETERMINED**. |
 | Hardware deferred | Actual LC7981 glass; busy-bit timing; PAL decode of `0xC0xx` |
 
 ---
@@ -119,24 +119,43 @@ BRKXA 0x14                  ; ROM IVT[0x14] = FAC0:0134
 ```
 
 **PROVEN:** the copy length, the segment numbers, and the two extended-mode
-transfers. **HYPOTHESIS:** `0x7C92` bytes from file `0x20000` are the main
-relocated OS body. Consumers of that copy are not yet inventoried.
+transfers. The copied object is bounded below (`U-COPY-7C92`). It is **not**
+proven to be a single relocated code image.
 
 `ndisasm` is not safe from `FAC0:00B4` onward: that is PGR data, not code.
 
-## 6. Init table ? BIOS — `FAC0:0134`
+## 6. Init table — `FAC0:0134`, file `0x7AD34`
 
-After further RAM zeroing, the stub walks 6-byte records at `ES=F07A`
-(file `0x707A0`), `SI=4` .. `DI=0x16`, `AH=0`:
+After the copy, `FAC0:0134` sets `DS=ES=8010`, zeros `8010:7C92` through
+`8010:FFB7` (`CX = (0xFFB8 - 0x7C92) / 2` words), then walks 6-byte
+records at `ES=F07A` (file `0x707A0`), `SI=4` .. `DI=0x16`.
+
+Record form: `byte0`, `byte1=AH`, `off`, `seg`. `byte0 != 0` selects
+`CALL FAR [ES:BX+2]`; `byte0 == 0` selects `CALL NEAR`. After each
+successful call, `CX` (initial record count 3) decrements. A miss
+advances `BX` by 6. Exhausting `BX` increments `AH` and restarts at
+`SI`. `CX=0` falls into `STI` / `XOR BP,BP` / `jmp B000:00DF`.
 
 ```
-01 00  0A 00 00 F8     ; byte1==AH, byte0!=0 ? CALL FAR F800:000A
-01 01  D4 1A 00 F8     ; skipped (byte1=01)
-01 FF  0C 00 00 FB     ; skipped (byte1=FF)
+F07A:0004  01 00  0A 00 00 F8     ; AH=0  CALL FAR F800:000A
+F07A:000A  01 01  D4 1A 00 F8     ; AH=1  CALL FAR F800:1AD4
+F07A:0010  01 FF  0C 00 00 FB     ; AH=FF CALL FAR FB00:000C
 ```
 
-**PROVEN:** only the first record is called on this pass. That is the BIOS
-entry.
+No record has `byte0=0`. The near-call site at `FAC0:0185` is unused by
+this table.
+
+**PROVEN:** BIOS `F800:000A` ends `POP DI/SI/ES/DS; RETF` at file
+`0x7813E`. **PROVEN:** `F800:1AD4` is a straight-line IVT/port init that
+`RETF`s at file `0x79B25`. **PROVEN:** `FB00:000C` is the KADAK header
+(`jmp FB00:004E` over the copyright). Its visible tail is the dispatcher
+spin at `FB00:013E` and does not `RETF`.
+
+The earlier claim that only the first record runs on this pass is
+**retracted**. This-trace: BIOS returns, the AH=1 record returns, AMX
+start is then entered and does not return. `jmp B000:00DF` is therefore
+**not** on the reset path unless AMX start grows a return. That jump is
+still a real instruction at `FAC0:019E` (file `0x7AD9E`).
 
 ## 7. BIOS `F800:000A` — file `0x7800A`
 
@@ -149,6 +168,8 @@ F800:0113  AX=0
            AL=0 .. 0x0F: INT 46
            CALL F800:1875          ; file 0x79875
            db "MPC-3000 BIOS 21/08/07", 13, 10, 0
+           pop di / si / es / ds
+           retf                   ; file 0x78142
 ```
 
 `INT 43` handler `F800:16AA` (installed at `0000:010C`) dispatches
@@ -196,6 +217,69 @@ AX=4 is a character-class dispatcher (`0x79752`) whose default path is not
 yet fully traced to `LCD_put`. Do not claim the letters are on the glass
 until that path is closed.
 
+## 10. Second init — `F800:1AD4`, file `0x79AD4`
+
+Straight-line, then `RETF` at `F800:1B25` (file `0x79B25`):
+
+```
+PUSH DS; DS=0; PUSHF; CLI
+IVT[0x0B] = F800:2047
+IVT[0x40] = F800:1B36
+IVT[0x42] = F800:205E
+IN  AL, 0xA2 / AND 0xFE / OUT 0xA2, AL
+IN  AL, DX=0xC011 / AND 0xF7 / OUT DX, AL
+POPF
+DS=06DD; [02]=20A8; zero [04]..[09]
+POP DS; RETF
+```
+
+**PROVEN:** instruction stream and the ports written. Device effect of
+`0xA2` and `0xC011` is **UNDETERMINED** (`U-C0XX`). `DS=06DD` is a 20-bit
+page under the live PGR; its 24-bit identity after BIOS has rewritten
+maps is `U-XA-LIVE`.
+
+## 11. AMX start — `FB00:000C`, file `0x7B00C`
+
+```
+FB00:000C  jmp short 004E
+FB00:000F  db "COPYRIGHT (C) 1983 KADAK PRODUCTS LTD."
+FB00:004E  CLI; load kernel pointers from CS:[0046]/[0042]/[0036]
+           plant IVT[0]=FB00:02F8 and IVT[4]=FB00:02EF
+           …
+FB00:013E  LDS DI, CS:[0042]
+           CALL 01EA
+           JMP 013E
+```
+
+`FB00:01EA` walks a list, calls `FB00:0537`, and on `SF=1` drops into
+`STI` plus a four-`NOP` spin at `FB00:023A`.
+
+**PROVEN:** this is the start call for the KADAK object; the dispatcher
+site is `FB00:013E`. **HYPOTHESIS:** `01EA` / `0537` implement “ready
+task?” and the NOP spin is the idle wait. **UNDETERMINED:** the wait
+source (which IRQ, which RAM flag, which alias). That remainder is
+`U-AMX-WAIT`.
+
+Reaching `013E` from `004E` walks data-dependent tables. This-trace from
+the header bytes in this image has no `RETF` on that path. All-paths
+“never returns” still needs those table bounds.
+
+## 12. Copy bound — `U-COPY-7C92`
+
+| Field | Value | Tag |
+|-------|-------|-----|
+| Source | `DS=A000` = file `[0x20000, 0x27C92)` | **PROVEN** |
+| Dest | `ES=8010` = 24-bit `0x380100` under the first PGR (page 32 frame `0xE0`) | **PROVEN** for that map |
+| Length | `0x7C92` (31900) | **PROVEN** |
+| Boot writer | `FAC0:0074` `REP MOVSW`; only `MOV AX,A000` in the image | **PROVEN** |
+| Signature | `AA 55` then word `0x0100` at `8010:0000`; unique `AA 55` in the image | **PROVEN** as bytes |
+| Front matter | early `8010:xxxx` dwords, some NULL, resolve to UI strings (`ALL EVENTS`, `YES`/`NO`, `MASTER`/`SEQUENCE`/`PROGRAM`, pad labels) | **PROVEN** for those first targets |
+| Grammar of the rest | mixed later dwords; not a uniform far-call table | **UNDETERMINED** |
+| Later writers / aliases | — | **UNDETERMINED** |
+
+The previous “relocated OS body” wording is withdrawn. The copy is a
+relocated data object whose front is a string/resource table.
+
 ---
 
 ## Byte ownership opened by this slice
@@ -210,36 +294,45 @@ unresolved.
 | `[0x0004C, 0x00050)` | data / padding | `0xFF` |
 | `[0x00050, 0x00054)` | data / IVT template | vector 0x14 |
 | `[0x00054, 0x20000)` | data / padding | 131,020 `0xFF` bytes; no other non-`FF` in the window |
+| `[0x20000, 0x27C92)` | data | `DS=A000` copy source; `AA 55` + string pointers |
+| `[0x707A4, 0x707B6)` | data | three 6-byte init records |
 | `[0x7AC00, 0x7ACB4)` | code | FAC0 reset body through `BRKXA 0x14` |
 | `[0x7ACB4, 0x7AD34)` | data | second PGR image (consumed by `OUTSW`) |
-| `[0x7AD34, 0x7ADC0)` | code | `BRKXA 0x14` target through the next XA switch; exact end **HYPOTHESIS** |
+| `[0x7AD34, 0x7ADA3)` | code | table walk through `jmp B000:00DF` |
+| `[0x7ADA4, 0x7ADCF)` | code | IVT[2] handler through `BRKXA 0x12` |
+| `[0x7ADCF, 0x7AE4F)` | data | third PGR image |
+| `[0x7AE4F, 0x7AE56)` | code | ROM IVT[0x12] continue: pops + `IRET` |
 | `[0x7AE56, 0x7AED6)` | data | first PGR image |
 | `[0x7AED6, 0x7AF6A)` | data | I/O tables + sentinels |
+| `[0x7B00C, 0x7B04E)` | data | AMX header / copyright / config words |
+| `[0x7B04E, 0x7B148)` | code | AMX start through dispatcher `JMP 013E` |
 | `[0x7FF00, 0x7FF44)` | code | wait-state stub |
 | `[0x7FF44, 0x7FFF0)` | data / padding | `0xFF` |
 | `[0x7FFF0, 0x7FFF5)` | code | reset vector |
 | `[0x7FFF5, 0x80000)` | data / padding | `0xFF` |
-| `[0x7800A, 0x7813E)` | code + inline string | BIOS entry through banner NUL |
+| `[0x7800A, 0x78144)` | code + inline string | BIOS entry through `RETF` |
+| `[0x79AD4, 0x79B26)` | code | second init record through `RETF` |
 | `[0x796AA, 0x796D4)` | code | `INT 43` dispatcher |
 | `[0x796D4, 0x796E4)` | data | eight near targets |
 | `[0x796E4, 0x7971D)` | code | `INT 43` AX=0 LCD init |
 | `[0x7985A, 0x79875)` | code | LCD put |
 
-`[0x7AD34, 0x7ADC0)` is deliberately coarse. Do not treat it as a finished
-instruction partition.
+`[0x7B04E, 0x7B148)` is the start-to-dispatcher span, not the whole AMX
+kernel. Helpers past `0148` stay unresolved.
 
 ---
 
 ## What this slice does *not* prove
 
-- The KADAK/AMX scheduler is the event loop. The copyright is present;
-  no start call is shown here.
+- What the AMX dispatcher waits on (`U-AMX-WAIT`). The spin is proven;
+  the wake source is not.
+- That `B000:00DF` runs after reset. The instruction exists; AMX start
+  does not return on the traced path.
 - Panel, MIDI, SCSI, FDC, or DSP behavior.
 - That `INT 46` or `INT 43` AX=4 paints glyphs.
 - Any 24-bit access to NVRAM `0x500000`.
-- Runtime copies after the `0x7C92`-byte move: aliases, later overwrite,
-  interrupt writers.
+- Later writers or aliases of the `0x7C92`-byte copy.
 
-Next useful uncertainty: the `FAC0:0134` instruction partition through the
-return from `F800:000A`, then the first AMX entry, then `INT 43` AX=4 to
-pixels.
+Next useful uncertainty: `U-AMX-WAIT` (ready-list / IRQ that leaves
+`FB00:01EA`), then `INT 43` AX=4 to pixels, then live PGR after BIOS
+(`U-XA-LIVE`).

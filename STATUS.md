@@ -4,8 +4,9 @@
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 
 This tree was a document-and-dump pack. It now has a project goal, an
-address model, and one static boot slice. It does not have a byte ledger,
-a transfer inventory, Ghidra exports, or an event loop.
+address model, and a static reset-to-AMX-start slice. It does not have a
+byte ledger, a transfer inventory, Ghidra exports, or a named wake
+source for the AMX idle spin.
 
 ## What is established
 
@@ -16,8 +17,12 @@ a transfer inventory, Ghidra exports, or an event loop.
   `0x7FF00` far-jumps to `FAC0:0000`.
 - First PGR maps 20-bit page 0 to work RAM `0x300000`. `BRKXA 0x11`
   continues in place from ROM IVT[0x11].
-- `FAC0:0134` far-calls `F800:000A`. That BIOS entry issues `INT 43` AX=0,
-  which programs LC7981 ports `0xE2`/`0xE0` through the put at `0x7985A`.
+- `FAC0:0134` walks three `F07A` records. BIOS `F800:000A` and
+  `F800:1AD4` both `RETF`. The third record is AMX start `FB00:000C`.
+- BIOS issues `INT 43` AX=0, which programs LC7981 ports `0xE2`/`0xE0`
+  through the put at `0x7985A`.
+- The `0x7C92`-byte `DS=A000`?`ES=8010` copy is bounded; its front is an
+  `AA 55` string/resource table, not a proven code image.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
 
@@ -26,18 +31,17 @@ Validator: `python3 tools/verify_boot_slice.py`.
 
 ## What is not established
 
-- Event loop / KADAK AMX start (`U-AMX-ENTRY`).
+- What the AMX dispatcher waits on (`U-AMX-WAIT`).
 - Banner glyphs on the LCD (`U-INT43-AX4`).
 - Live PGR after BIOS return (`U-XA-LIVE`).
+- Full grammar and later writers of the `0x7C92` copy.
 - Panel ROM, PAL fusemaps, full schematics.
-- Any RAM object lifetime, interrupt domain, or semantic acceptance beyond
-  the slice contract.
+- Any RAM object lifetime beyond the copy bound and the RAM clear.
 
 Physical hardware remains deferred.
 
 ## Progress measure
 
 The useful increment is the removal of a named uncertainty. This session
-removed “what is the image, where does reset go, and what is the first
-board-visible I/O on that path.” It did not remove the event-loop
-uncertainty.
+removed “does reset reach AMX, and what is the `0x7C92` copy?” It did
+not remove the dispatcher-wake uncertainty.

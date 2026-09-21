@@ -56,7 +56,47 @@
     "file": "0x7800A",
     "banner_call_file": "0x78122",
     "banner_bytes": "4d50432d333030302042494f532032312f30382f30370d0a00",
-    "banner_text": "MPC-3000 BIOS 21/08/07"
+    "banner_text": "MPC-3000 BIOS 21/08/07",
+    "epilogue_file": "0x7813E",
+    "epilogue_bytes": "5f5e071fcb",
+    "note": "RETF at F800:0142 / file 0x78142. The previous claim that only the first init-table record runs is retracted."
+  },
+  "init_table": {
+    "es_ip": "F07A:0004",
+    "file": "0x707A4",
+    "record_size": 6,
+    "si": 4,
+    "di": 22,
+    "records": [
+      {"ah": 0, "byte0": 1, "cs_ip": "F800:000A", "bytes": "01000a0000f8", "returns": true},
+      {"ah": 1, "byte0": 1, "cs_ip": "F800:1AD4", "bytes": "0101d41a00f8", "returns": true},
+      {"ah": 255, "byte0": 1, "cs_ip": "FB00:000C", "bytes": "01ff0c0000fb", "returns": false}
+    ],
+    "exit_if_cx_zero": {"cs_ip": "B000:00DF", "file": "0x300DF", "jmp_bytes": "eadf0000b0"}
+  },
+  "second_init": {
+    "entry": "F800:1AD4",
+    "file": "0x79AD4",
+    "retf_file": "0x79B25",
+    "retf_bytes": "cb"
+  },
+  "amx": {
+    "entry": "FB00:000C",
+    "file": "0x7B00C",
+    "entry_bytes": "eb40",
+    "copyright_file": "0x7B00F",
+    "copyright_bytes": "434f50595249474854202843292031393833204b4144414b2050524f4455435453204c54442e",
+    "dispatcher_cs_ip": "FB00:013E",
+    "dispatcher_file": "0x7B13E",
+    "dispatcher_bytes": "2ec53e4200e8a400ebf6"
+  },
+  "copy_7c92": {
+    "source_cs": "0xA000",
+    "source_file": "0x20000",
+    "dest_es": "0x8010",
+    "dest_phys24_first_pgr": "0x380100",
+    "length": 31890,
+    "signature_bytes": "aa550001"
   },
   "lcd_put": {
     "file": "0x7985A",

@@ -49,7 +49,7 @@ correct instruction decoded in chip-file order is at the wrong address.
 | `0x210F5` | `Vailixi 3.50 (---/--/----)` | **PROVEN** as bytes; date field unused |
 | `0x78125` | `MPC-3000 BIOS 21/08/07` | **PROVEN** as bytes; **HYPOTHESIS** that `21/08/07` is 2007-08-21 |
 | `0x79ABB` | `mpc3000le@yahoo.com.au` | **PROVEN** as bytes in the system-error text |
-| `0x7B00F` | `COPYRIGHT (C) 1983 KADAK PRODUCTS LTD.` | **PROVEN** as bytes; **HYPOTHESIS** this is AMX86 |
+| `0x7B00F` | `COPYRIGHT (C) 1983 KADAK PRODUCTS LTD.` | **PROVEN** as bytes; **PROVEN** start at `FB00:000C` from the `F07A` init table |
 
 ## Hardware revision under study
 
