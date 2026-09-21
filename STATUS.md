@@ -217,7 +217,10 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `CALLF DA04:002B` then
   defaults `+11` /
   `+12`..`+19` on the
-  picker record).
+  picker record; `BDF1:0014`
+  / `0022` `CALLF B21A:000F`,
+  which `CALLN`s the named
+  `+0859` copy).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).

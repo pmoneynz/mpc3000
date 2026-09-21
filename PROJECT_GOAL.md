@@ -127,7 +127,10 @@ reload `[BP+6]` into
 `CALLF DA04:002B` then
 defaults `+11` /
 `+12`..`+19` on the
-picker record).
+picker record; `BDF1:0014`
+/ `0022` `CALLF B21A:000F`,
+which `CALLN`s the named
+`+0859` copy).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

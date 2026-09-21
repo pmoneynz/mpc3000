@@ -326,7 +326,10 @@ bounds, evidence, unknowns).
       `CALLF DA04:002B` then
       defaults `+11` /
       `+12`..`+19` on the
-      picker record).
+      picker record; `BDF1:0014`
+      / `0022` `CALLF B21A:000F`,
+      which `CALLN`s the named
+      `+0859` copy).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

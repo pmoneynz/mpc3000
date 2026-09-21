@@ -99,9 +99,15 @@ for slot 0).
 `B21A:0033` (file `0x321D3`, already owned leftover after
 `000F` `RETF`). `SI=0`; `AL=[SI+0859]`; `MOV [SI+8376],AL`;
 `INC SI`; while `SI<0x40`; `RETF`. **PROVEN** copy of the
-ROM default into the `8010:8376` overlay. Callers include
-`CALLF B21A:000F` (which calls `0033`) and `CALLF B21A:0033`
-at file `0x48722`.
+ROM default into the `8010:8376` overlay. `B21A:000F`
+(file `0x321AF`) `CS: CALLN 0033` (file
+`0x321AF` `90 0E E8 1F 00`). Already-owned
+`BDF1:0014` / `0022` (files `0x3DF24` /
+`0x3DF32`) `CALLF` that wrapper. Same
+`BDF1` path as the named `00E1`
+`000C(0)` ? `[D6AD]` store. **PROVEN.**
+Gap `CALLF B21A:0033` at file `0x48722`
+stays unseeded.
 
 `B21A:01DD` (file `0x3237D`, inside `0107` init):
 `C6 06 75 83 00` — `MOV [8375],0`. **PROVEN.** No owned
