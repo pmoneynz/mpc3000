@@ -50,7 +50,9 @@ ROM default `+0859` is `0x23`..`0x62`. `[E5F9]` selects a
 consumes `[E614]` and `CALLF CFB3:0008` /
 `CFC6:0007` (note `+2` / `02D6`/`033A`
 slot / `+063E` / `[E639]`;
-`FCF6+17=FD0D`; `+5`/`+3` note-floor).
+`FCF6+17=FD0D`; `+5`/`+3` note-floor;
+`0007` `CALLN 039E` leftover indexes
+`+7`/`+8` through `[E5F9]+FCF6`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

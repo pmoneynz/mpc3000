@@ -303,9 +303,24 @@ byte is the already-named Param.
 `51 90 0E E8 6D 02`) then `CALLN 033A`
 (file `0x4FCDB` `50 90 0E E8 B9 02`)
 both pass the event note. **PROVEN.**
-Do not seed `CFC6:039E` at file
-`0x4FFFE` (span end). After those
-calls, `AL=ES:[BX+1]` (file `0x4FCED`)
+`CALLN 039E` from `0007` (files
+`0x4FE4D` / `0x4FEC0` / `0x4FF29`,
+`56 90 0E E8`). Already-owned leftover
+cdecl at file `0x4FFFE`
+(`[0x4FFFE, 0x500CE)`). If event
+`[BP+0C]+0` is `0xFF` (file
+`0x5000F`) it `RETF`s. Else event
+`+7` / `+8` must be `>=0x23` (files
+`0x50046` / `0x50069`); then
+`note*0x18+[E5F9]+FCF6` (files
+`0x50058` / `0x5005E` and
+`0x5007B` / `0x50081`).
+**PROVEN** as a second note-floor
+index of that table. Do not name
+the loaded `FCF6+0` byte. Ends at
+`JMP CS:[BX+0B25]` (file `0x500C9`).
+Do not walk that dest. After the
+`02D6`/`033A` calls, `AL=ES:[BX+1]` (file `0x4FCED`)
 is compared to `2` and `3`. When `+1==2`
 and event `+3` is above `+4`, `+5` must
 be `>=0x23` (file `0x4FD16`) and then
