@@ -64,6 +64,21 @@ def verify(image: bytes, facts: dict) -> list[str]:
         raise AssertionError("missing BRKXA 0x11 at FAC0:001C")
     checks.append("BRKXA 0x11")
 
+    writers = facts["pgr_writers"]
+    movs = [int(x, 16) for x in writers["mov_dx_ff00"]]
+    if image.count(bytes.fromhex("ba00ff")) != len(movs):
+        raise AssertionError("MOV DX,0xFF00 count is not the pinned FAC0 trio")
+    for off in movs:
+        _expect_hex(image, off, "ba00ff", f"MOV DX,FF00 at 0x{off:05X}")
+    for off in (int(x, 16) for x in writers["outsw_files"]):
+        if image[off] != 0x6F:
+            raise AssertionError(f"expected OUTSW at 0x{off:05X}")
+    picker = writers["port_picker"]
+    _expect_hex(image, int(picker["file"], 16), picker["bytes"], "D510 port picker")
+    wait = writers["wait_blocks_then_selects_task7"]
+    _expect_hex(image, int(wait["file"], 16), wait["bytes"], "AMX 01CF wait")
+    checks.append("PGR writers: three FAC0 OUTSW only")
+
     if image[0x7800A] != 0xFA:
         raise AssertionError("BIOS entry F800:000A is not CLI")
     checks.append("BIOS entry CLI")

@@ -335,5 +335,5 @@ kernel. Helpers past `0148` stay unresolved.
 - Any 24-bit access to NVRAM `0x500000`.
 - Later writers or aliases of the `0x7C92`-byte copy.
 
-Next useful uncertainty: PGR writers after task 6 runs (`U-XA-LIVE`),
-or the first-task body at `D9BD:0009`.
+Next useful uncertainty: task 7 body `B000:00DF` (first wait of task 6
+selects it) or IVT inventory (D5).

@@ -51,6 +51,21 @@
     "first_word": "00c0",
     "page0_phys": "0x300000"
   },
+  "pgr_writers": {
+    "mov_dx_ff00": ["0x7AC13", "0x7ACA8", "0x7ADC3"],
+    "outsw_files": ["0x7AC17", "0x7ACAC", "0x7ADC7"],
+    "brkxa_retxa_files": ["0x7AC1C", "0x7AC9F", "0x7ACB1", "0x7ADBA", "0x7ADCC"],
+    "port_picker": {
+      "cs_ip": "D510:008D",
+      "file": "0x5518D",
+      "bytes": "558bec8b4606"
+    },
+    "wait_blocks_then_selects_task7": {
+      "cs_ip": "FB00:01CF",
+      "file": "0x7B1CF",
+      "bytes": "2ec53e42008b750a"
+    }
+  },
   "bios": {
     "entry": "F800:000A",
     "file": "0x7800A",

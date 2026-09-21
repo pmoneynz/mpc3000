@@ -5,7 +5,7 @@ A guess is not listed as a fact.
 
 | ID | Unknown | Why it matters | What would close it |
 |----|---------|----------------|---------------------|
-| U-XA-LIVE | Which PGR is live after the first AMX task runs | Later RAM citations after `01EA` `RETF` | Trace `0xFF00-0xFF7E` writers from the first task entry (create-table CS:IPs) |
+| U-XA-LIVE | PGR after task 7 body (and later picker `OUT`s) | Second table is live through task 6 wait and task 7 select | Follow `B000:00DF` callees and `D510:008D` callers for `OUT` to `0xFF00-0xFF7E` |
 | U-AMX-WAIT | Which IRQ or hook leaves a later `FB00:023A` idle | First `01EA` creates task 6; later empty-queue wake is open | Find an ISR that rewrites the `023A` frame, `JMP`s `01EA`/`0281`, or `RETF`s a TCB |
 | U-LC7981 | Meaning of `INT 43` AX=0 pairs and AX=4 AH=`0x0A`/`0x0B`/`0x0C` | Port writes are proven; controller state is not | LC7981 / HD61830 register manual applied to those exact pairs |
 | U-C0XX | Board decode of `0xC000-0xC033` | BIOS and FAC0 program this window | Schematic or a tested PAL fusemap; MAME is a hypothesis |

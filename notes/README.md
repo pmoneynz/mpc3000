@@ -12,6 +12,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`amx_wait.md`](amx_wait.md) | AMX TCB select / idle condition |
 | [`amx_first_dispatch.md`](amx_first_dispatch.md) | First `01EA` creates task 6 |
 | [`int43_ax4.md`](int43_ax4.md) | Banner character → LC7981 ports |
+| [`pgr_live_after_amx.md`](pgr_live_after_amx.md) | PGR writers after first AMX select |
 | [`named_unknowns.md`](named_unknowns.md) | Ranked open uncertainties |
 
 Do not duplicate the MPC2000XL note corpus here. Cite it when a V53

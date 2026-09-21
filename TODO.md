@@ -49,8 +49,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
 
 ## G2 — Shared machinery
 
-- [ ] **D4.** Catalog every writer of `0xFF00-0xFF7E` after first AMX
-      `RETF`. Cite the live table for later RAM (`U-XA-LIVE`).
+- [x] **D4.** Only three `MOV DX,0xFF00`/`OUTSW` sites (all FAC0).
+      Second PGR stays live through task 6’s first wait and task 7
+      *select*. Later page-picker `OUT`s remain `U-XA-LIVE`.
 - [ ] **D5.** Inventory IVT slots: ROM templates, BIOS plants, AMX
       `IVT[0]`/`[4]`, `F800:1AD4` plants, later aliases and writers.
 - [ ] **D6.** Recover AMX public far-call surface and TCB word grammar

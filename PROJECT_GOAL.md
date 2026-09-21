@@ -79,8 +79,9 @@ interface connected end to end.
 Current slice (2026-09-21): reset through the FAC0 boot stub, the first PGR
 map, the `F07A` init table, LC7981 init via `INT 43` AX=0, and the BIOS
 banner through `INT 43` AX=4 to ports `0xE2`/`0xE0`. First AMX select
-creates task 6 at `D9BD:0009`. Glass pixels and the later empty-queue
-wake ISR stay open. See
+creates task 6 at `D9BD:0009`. The second PGR stays live through that
+task’s first wait and the select of task 7. Glass pixels and the later
+empty-queue wake ISR stay open. See
 [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),
 [`notes/int43_ax4.md`](notes/int43_ax4.md),
 [`notes/amx_wait.md`](notes/amx_wait.md), and
