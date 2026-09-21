@@ -18,9 +18,9 @@ Reproduction: `python3 tools/owner_ledger.py --write` then
 | Field | Value |
 |-------|-------|
 | Purpose | Machine-readable owner map for proven file ranges |
-| Observable | `analysis/owner_ledger.json`; 847 ranges; 361345 owned bytes |
+| Observable | `analysis/owner_ledger.json`; 853 ranges; 362334 owned bytes |
 | Inputs | Byte-ownership tables in the notes; D16 walks; bounded CALL dests to fixpoint from D15 and switch-table IPs |
-| Outputs | Owner `code` or `data` only. 117 gaps left as debt |
+| Outputs | Owner `code` or `data` only. 119 gaps left as debt |
 | Confidence | Seed spans **PROVEN** as the union of those tables. Gaps are **UNDETERMINED**, not owners |
 | Hardware deferred | None |
 
@@ -70,6 +70,11 @@ Closed earlier this pass:
 | `[0x659E6, 0x65A79)` | 147 | code — `E59E:0006`/`0035` |
 | `[0x65A83, 0x65AF1)` | 110 | code — `E5A8:0003`/`0030` |
 | `[0x43D77, 0x43DA6)` | 47 | code — `C303:0D47` |
+| `[0x607A4, 0x608C1)` | 285 | code — `E07A:0004` |
+| `[0x612D9, 0x613B0)` | 215 | code — `E12D:0009` |
+| `[0x66616, 0x666FC)` | 230 | code — `E661:0006`/`0095` |
+| `[0x66D11, 0x66D8B)` | 122 | code — `E6D1:0001` |
+| `[0x6769C, 0x67725)` | 137 | code — `E739:030C` |
 
 Smallest remaining named hole: `[0x7ADA3, 0x7ADA4)` is `CF`
 (`IRET`) between `FAC0:019E` `jmp B000:00DF` and `FAC0:01A4`.

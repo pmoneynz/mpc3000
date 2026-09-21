@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 361345,
+  "owned_bytes": 362334,
   "ranges": [
     {
       "start": "0x00000",
@@ -4865,6 +4865,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x607A4",
+      "end": "0x608C1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E07A:0004 cdecl through RETF; CALLF from E398:0055"
+    },
+    {
       "start": "0x60AAA",
       "end": "0x60E4A",
       "owner": "code",
@@ -4887,6 +4895,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x612D9",
+      "end": "0x613B0",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E12D:0009 cdecl through RETF; CALLF from E398:0394"
     },
     {
       "start": "0x614E4",
@@ -5337,6 +5353,22 @@
       "why": "E614:0008 flag thunk RETF; CALLF from E704:0081"
     },
     {
+      "start": "0x66616",
+      "end": "0x666A5",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E661:0006 cdecl through RETF; CALLF from B3FD"
+    },
+    {
+      "start": "0x666A5",
+      "end": "0x666FC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E661:0095 cdecl through RETF; CALLF from B3FD:0480"
+    },
+    {
       "start": "0x666FC",
       "end": "0x6676D",
       "owner": "code",
@@ -5369,6 +5401,14 @@
       "why": "E688:0088 compare RETF; CALLF DE5C:04E6"
     },
     {
+      "start": "0x66D11",
+      "end": "0x66D8B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E6D1:0001 cdecl through RETF; CALLF from E398:0206"
+    },
+    {
       "start": "0x66D8B",
       "end": "0x670C1",
       "owner": "code",
@@ -5399,6 +5439,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x6769C",
+      "end": "0x67725",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E739:030C cdecl through RETF; CALLF from E7E0:0043"
     },
     {
       "start": "0x67725",

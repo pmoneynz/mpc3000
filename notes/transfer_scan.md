@@ -128,9 +128,13 @@ fill `[0x659E6, 0x65A79)` + `[0x65A83, 0x65AF1)`.
 `E582:013A` / `E59E:0099` stay unowned (no owned
 `9A`). `C303:0D47` is the leftover after `0C64`
 (`9A` at `0x34274` / `0x42D97`). `C303:0CEE` has
-no owned caller. Do not BFS those dests. A
-`55 8B EC` prologue still does not accept a dest
-as an entry.
+no owned caller. Further mid-gap owned `CALLF`
+dests `E12D:0009`, `E07A:0004`, `E6D1:0001`,
+`E739:030C`, and `E661:0006`/`0095` walk through
+`RETF` (callers `E398` / `B3FD` / `E7E0`). Their
+hole prefixes stay unowned. Do not BFS those
+dests. A `55 8B EC` prologue still does not
+accept a dest as an entry.
 
 ---
 
@@ -247,6 +251,12 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x65A15, 0x65A79)` | code — `E59E:0035` through `RETF`; `CALLF` `E521:0006`/`DF4F:0009`/`E566:000A` |
 | `[0x65A83, 0x65AB0)` | code — `E5A8:0003` through `RETF`; `CALLF` from `E398:0031` |
 | `[0x65AB0, 0x65AF1)` | code — `E5A8:0030` through `RETF`; `CALLF` `EB5B:0087` |
+| `[0x607A4, 0x608C1)` | code — `E07A:0004` cdecl through `RETF`; `CALLF` from `E398:0055` |
+| `[0x612D9, 0x613B0)` | code — `E12D:0009` cdecl through `RETF`; `CALLF` from `E398:0394` |
+| `[0x66616, 0x666A5)` | code — `E661:0006` cdecl through `RETF`; `CALLF` from `B3FD` |
+| `[0x666A5, 0x666FC)` | code — `E661:0095` cdecl through `RETF`; `CALLF` from `B3FD:0480` |
+| `[0x66D11, 0x66D8B)` | code — `E6D1:0001` cdecl through `RETF`; `CALLF` from `E398:0206` |
+| `[0x6769C, 0x67725)` | code — `E739:030C` cdecl through `RETF`; `CALLF` from `E7E0:0043` |
 | `[0x6676D, 0x66883)` | code — `E676:000D` cdecl through `RETF`; `CALLF` `B3FD:0042` |
 | `[0x67E0A, 0x67F57)` | code — `E7E0:000A` cdecl through `RETF`; `CALLF` `CEBF:021C` |
 | `[0x6B1A2, 0x6B4F2)` | code — `EB1A:0002` cdecl through `RETF`; `CALLF` `DE5C:0496` |
