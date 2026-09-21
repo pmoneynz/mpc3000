@@ -4,8 +4,12 @@
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 
 This tree was a document-and-dump pack. It now has a project goal, an
-address model, and one static boot slice. It does not have a byte ledger,
-a transfer inventory, Ghidra exports, or an event loop.
+address model, a static reset-to-AMX-start slice, a seeded owner
+ledger (865 ranges, 365870 bytes), a consumer-established string
+inventory, an entry inventory (143 unique `CS:IP`), and a
+local-exit inventory (128 bounded / 14 indirect / 1 idle loop).
+It does not have whole-image coverage, Ghidra exports, or a named
+wake source for the AMX idle spin.
 
 ## What is established
 
@@ -16,28 +20,332 @@ a transfer inventory, Ghidra exports, or an event loop.
   `0x7FF00` far-jumps to `FAC0:0000`.
 - First PGR maps 20-bit page 0 to work RAM `0x300000`. `BRKXA 0x11`
   continues in place from ROM IVT[0x11].
-- `FAC0:0134` far-calls `F800:000A`. That BIOS entry issues `INT 43` AX=0,
-  which programs LC7981 ports `0xE2`/`0xE0` through the put at `0x7985A`.
+- `FAC0:0134` walks three `F07A` records. BIOS `F800:000A` and
+  `F800:1AD4` both `RETF`. The third record is AMX start `FB00:000C`.
+- BIOS issues `INT 43` AX=0, which programs LC7981 ports `0xE2`/`0xE0`
+  through the put at `0x7985A`.
+- The `0x7C92`-byte `DS=A000` to `ES=8010` copy is a relocated DGROUP:
+  directory `[+4, +0x5C8)`, string pool, writable globals. 21
+  `MOV AX,8010`. Dest 24-bit `0x380100` under first and second PGR.
+- AMX `0537` maps `DL` to a 0x40-byte TCB. `01EA` resumes or creates a
+  ready TCB, else `STI`+NOP at `FB00:023A`. Create record 7 is
+  `B000:00DF`. Second PGR is live through that first select.
+- First `01EA` does not idle. `B03B:000A` readies TCB 6 and 7 via
+  `0396`; scan from index 0 creates task 6 at `D9BD:0009`.
+- Reset-path IVT: 219 default `F800:1952` `IRET`s; `IVT[10h]=FAC0:01A4`;
+  AMX owns 0 and 4; `B03B` owns 8/`0Ch`/`0Dh`/`0Eh`. The old `IVT[2]`
+  plant claim is retracted.
+- Only three `MOV DX,0xFF00` sites exist; all are FAC0 `OUTSW`. Second
+  PGR is live through task 6’s first wait (`01CF` AX=4) and task 7
+  select (`B000:00DF`).
+- AMX public far-call surface is 76 `CALL FAR FB00` sites, 19 IPs.
+  TCB `[SI]` bits 0/1/2/3/14/15, stack at `+4/+6`, timed wait at
+  `+0Ah`, stride `0x40`. Mailbox/pool objects at `ES:[BX]` stay D11.
+- Create-table tasks 0–7: entries and exits pinned. Task 6 never
+  `RETF`s. Reset readies only 6 and 7. `E937:0004` is `DS=ES=8010`.
+- Dominant application convention is far cdecl: `[BP+6]`, caller
+  `ADD SP`, `RETF`. The `F800:1875` walker is BIOS-only (3 sites).
+  AMX public APIs take `DL` (or `CX` via `B060`). `INT 43` takes `AX`.
+- `FAC0:01A4` switches XA and reloads the third PGR; `IRET` at
+  `024F` keeps the interrupted IP. AMX `02F8`/`02EF` rewrite the
+  `IRET` frame to `TCB+18h+AX` when nest is 1..127 and the hook is
+  non-null. `0157` stack-switches to `901C:1130`.
+- `U-COPY-7C92` closed: only bulk writer is `FAC0:0074`; BSS zero
+  is `[7C92, FFB8)`; `065B` overlays `8010:125C`..; `A000` is ROM
+  only under the first PGR. No second dest alias.
+- BIOS banner characters take `INT 43` AX=4, then `17CC`, then `LCD_put`
+  AH=`0x0C` / AL=char on ports `0xE2`/`0xE0`. Cursor and a 320-cell
+  shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
+- Owner ledger: 865 ranges, 365870 bytes, 116 gaps. Owners are
+  `code` or `data` only. Every `0xFF` run of 4+ bytes is classified.
+- String scan (D14): 1096 C-string starts are text because a
+  consumer points at them (directory 345 `8010` ptrs, 27 disk
+  labels, 3 walker inlines, 886 `PUSH DS`/`PUSH off`/`CALL FAR`).
+  Put-string `B1B1:005B` (file `0x31B6B`) does `LDS DI,[BP+6]` and
+  `INT 43` AX=4. 355 DGROUP C-strings and app-ROM lookalikes stay
+  candidates. KADAK is identity bytes, not text.
+- Entry scan (D15): 143 unique `CS:IP` from reset, ROM IVT, `F07A`,
+  create-table, AMX public/internals, reset-path IVT, INT 43, BIOS
+  helpers, `E937`/`B060`/`D9B5:0045`, and 67 `PUSH DS`+far cdecl
+  targets. 6154 `9A` and 825 `EA` encodings are suspects.
+  `0x7FF01` and `0x797A7` are immediates, not far transfers.
+- Transfer scan (D16): every local exit from the 143 entries is
+  classified. 128 bounded, 14 indirect (`JMP`/`CALL [rm]` slot
+  named, table UNDETERMINED), 1 idle loop at `FB00:023A`. All
+  `JMPF` dests are already established. 74 CALLF + 42 CALLN dests
+  are named candidates, not accepted as code.
 
-Evidence: [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md).
+Evidence: [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),
+[`notes/copy_7c92.md`](notes/copy_7c92.md),
+[`notes/owner_ledger.md`](notes/owner_ledger.md),
+[`notes/string_scan.md`](notes/string_scan.md),
+[`notes/entry_scan.md`](notes/entry_scan.md),
+[`notes/transfer_scan.md`](notes/transfer_scan.md).
 Validator: `python3 tools/verify_boot_slice.py`.
 
 ## What is not established
 
-- Event loop / KADAK AMX start (`U-AMX-ENTRY`).
-- Banner glyphs on the LCD (`U-INT43-AX4`).
-- Live PGR after BIOS return (`U-XA-LIVE`).
-- Panel ROM, PAL fusemaps, full schematics.
-- Any RAM object lifetime, interrupt domain, or semantic acceptance beyond
-  the slice contract.
+- Which IRQ leaves a later AMX idle spin (`U-AMX-WAIT` remainder). First
+  select is closed; see [`notes/amx_first_dispatch.md`](notes/amx_first_dispatch.md).
+- LC7981 glass pixels (`D3-glass`). Software banner path is closed.
+- PGR after task 7 runs (`U-XA-LIVE`). Second table is live through
+  task 6’s first wait and task 7 select. Only three full-table `OUTSW`
+  sites exist, all FAC0.
+- First ready of create-table slots 0 and 2.
+- Word `+2` = `0x0100` and the `+0238` numeric-island *meaning*
+  (`copy_7c92.md`). Per-screen string meaning stays D25.
+- Panel ROM, PAL fusemaps, full schematics. D19 is PARTIAL
+  ([`notes/front_panel.md`](notes/front_panel.md)): `0xC0-0xDF`
+  encodings exist; navigation meaning does not.
+- DGROUP `+0054`..`+01E4` is 101 pan names (`50L`..` C `..`50R`),
+  not drum-pad labels. Owned printer `B354:01C6` is called with
+  title `Pan:` ([`notes/pan_table.md`](notes/pan_table.md)).
+- D20 assign UI is `C44E:0119` with `D9F2:000C`/`003D`/`0072`
+  (slot/note, index `<0x40`). ROM default `+0859` is
+  `0x23`..`0x62` (`B21A:0033` / `CF37:04AD` overlay).
+  `[E5F9]` is a far pointer into the `9770:` record array
+  (`CA45:0008` / `DA04:002B`, index `0..0x17`).
+  `BE1A:026C` (`C425:0200`) titles that record `Pgm`
+  (`Assign Note Var Slider (Pgm:  )`). Param `0..3`
+  is `TUNING`/`DECAY`/`ATTACK`/`FILTER` (`+0224` /
+  `BE1A:0641`). `BE1A:0002` (`C425:01F6`) is
+  `Assign '16 Levels'`; `Note:` is `[D6AD]`;
+  `[81B3]` selects `VELOCITY` / `NOTE VAR`
+  (default 0 at `B21A:01E2`). `Center pad:` is
+  `[E613]` (default `0x0D` at `CF37:0325`).
+  Task 3 `EAD0:000B` consumes `[E614]` (`JB` if
+  `<0x23`) and `CALLF CFB3:0008` (`& 0xF8`;
+  `0xB0` writes `[D6AB]=0x50` not `[D6AC]`;
+  `0xC0` `CALLF C887:1BE8` is `CA45:0008`;
+  `0xF0` gates `+2==0x47` / `+5` in
+  `{0x45,0x46}` then `CALLF D0AE:0002`;
+  leftover after that `RETF` paints
+  matching `D9F2:000C` slots;
+  sibling cdecl at `0x50A07` is a
+  second `FCF6` `+3`/`+5` picker;
+  `D9A2:0004`/`0031`/`005F` store
+  `[BP+8]` at the `02D6`/`033A`
+  far pointer `+0`/`+1`/`+2`;
+  `00C7`/`00E9`/`010C` read those
+  bytes; `BDF1:00E1` is `000C(0)`
+  into `[D6AD]`;
+  `0x80` via `FCF6`;
+  `0x90` to `CFC6:0007`, note `+2` in
+  `0x23`..`0x62`, `02D6` note-to-slot,
+  `[E5F9]+slot*4+063E` when `[E60F]==2`;
+  `[920A]+slot*4+002A` when `==1`; else
+  `DS:E639+slot*4`; `0007` `CALLN`
+  `02D6`/`033A`;   `FCF6+17=FD0D`;
+  `FCF6+5`/`+3` are note-floor;
+  `+1==3` uses `+0C` / event `+4`;
+  `+1==1` uses `+3` / `+5`;
+  `0007` `CALLN 039E` leftover
+  indexes `+7`/`+8` through
+  `[E5F9]+FCF6`; `D9C0:0006` is
+  the same Param `0..3` pair map;
+  `DC2A:0033` / `DC85:0047` consume
+  `[81B3]==0`; `C20F:0478` leftover
+  walks `[E5F9]+SI*0x18+3E` for
+  `SI` `0..0x3F` to exclusive
+  `+063E`; sibling `0874`
+  wrapped by `CA45` on
+  `[BP-8]` `0..0x17` then
+  restore;
+  `0BBF` skips `[E60E]`, compares
+  `+3E` to `[BP+6]`, stores
+  `[BP+8]`, restores `CA45`;
+  `D0C0:0C9C` walks `FCF6` with
+  `CX` `0x348`..`0x930` and
+  `(FCF6+0x23*0x18)&0xFFFF=+3E`;
+  `BE1A:0131` stores NOTE VAR
+  Param to `FD0D` when
+  `[81B3]!=0`; `0105` `CALLN`
+  `0203` with the note then
+  reads `[81B3]`; `DCE4:000C`
+  is the same `0xF0` /
+  `+2==0x47` / `+5` in
+  `{0x45,0x46}` gate plus
+  `[E60F]`/`[E610]==1`;
+  `CA45:0008` then loads
+  `+11` `*0x18` `FD0D` into
+  `[996B]` like `BE1A:0329`
+  / `0380`; `DC2A:010A`
+  leftover is `0033`'s
+  `DC3A:000A` dest, `AND
+  0xF8` / `CMP 0xC0` then
+  `CALLN 013B`; `DC85:011A`
+  leftover `CALLF`s
+  `DCE4:000C` with
+  `CMP SI,0x100`;
+  `DC2A:0033` / `DC85:0047`
+  also read `[996B]`;
+  `D9EA:0042` is `AX=[BP+6]`
+  `SHL AX,1` / `SHR AL,1`,
+  dest of `DC85:0047` /
+  `011A`; `DCE4:000C`
+  `[E60F]`/`[E610]==1`
+  taken arms `CALLF`
+  `DC3A:000A`, the named
+  `DC2A:010A` linear;
+  `BE1A:022B` leftover after
+  `0203` put-strings
+  `Center pad:` when
+  `[81B3]==0` and
+  `[BP+6]==1`; `BE1A:026C`
+  `CMP [996B],2` / `1` after
+  the `0380` store;
+  `BE1A:0508` `CALLF`s
+  `CA45:0008` with
+  `[E60E]+1` minus 1;
+  `D9F2:000C`/`0072`
+  `[8375]==0` arms are
+  `[E5F9]+073E`; `C44E`
+  copies `[D6AC]` to
+  `[BP-1]` then extra
+  `000C`/`0072`;
+  `BE1A:0592` `JMP
+  CS:[BX+062F]` stores
+  `Low`/`High` temps to
+  `+12`..`+19`; `C44E:0251`
+  second clamp / `0268`
+  copy; `CA45:001A`
+  `CALLF DA04:002B` then
+  reload `[BP+6]` into
+  `[E60E]`; `CF37:04AD`
+  `CALLF DA04:002B` then
+  defaults `+11` /
+  `+12`..`+19` on the
+  picker record; `BDF1:0014`
+  / `0022` `CALLF B21A:000F`,
+  which `CALLN`s the named
+  `+0859` copy;   `BE1A:0002`
+  `00A5` `B354:03B1`
+  `Center pad:` / `[E613]`
+  then `CALLN 022B` with
+  `[81B3]`; `0002` `0029`
+  `Note:` `B354:03B1` of
+  `[D6AD]`; `005E` `Param:`
+  `B354:01C6` of `[81B3]`;
+  `0070` `CALLN 0203`;
+  `C44E:013E` `Mode:`
+  `B354:01C6` of `[8375]`
+  via `+4F0C` `PROGRAM` /
+  `MASTER`; `C44E:017A`
+  `Pad:` `B354:01C6` of
+  `[D6AC]` via `+0264`
+  `A01`..`D16`;   `BE1A:0488`
+  / `04B3` `B354:02BB`
+  `[BP-4]` / `[BP-6]`;
+  `BE1A:0315` `B354:03B1`
+  of `[E60E]+1`;
+  `C44E:01A3` `B354:03B1`
+  of the `000C` return as
+  ` = Note:`;
+  `BE1A:03AC` `B354:01C6`
+  of `[996B]` via `+0224`
+  `TUNING`..`FILTER`;
+  `BE1A:037B` `MOV [996B],0`
+  before the `0380` load;
+  `BE1A:0344` `B354:03B1`
+  of the named `+11`
+  `Note:` byte;
+  `BE1A:028D`/`02A5`/`02BD`/
+  `02D5` `B1B1:005B` labels
+  `Note:`/`Param:`/`Low
+  range:`/`High range:`;
+  `EAD0:001D` `[E614]*0x18`
+  into the named `FD0D`
+  load;
+  `C44E:0005` dest 0
+  `CALLN` `0119`;
+  `C44E:00C2` `(Gen MIDI:`
+  of the named `000C` note;
+  `C44E:0235` `CALLF B060:035D`
+  / `AX==0x44` takes `0251`;
+  `EAD0:0064` `CALLF CFB3:0008`).
+  `BE40:000C` is a retracted CS alias. Owned
+  `[D6AC]` stores are remaps. Pad-hit writer
+  is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).
+- PGR page 61 word `0x0140` maps to 24-bit `0x500000`
+  (full-word `v33_translate`). Consumer is `D9B5`
+  `ES=0xF400`; `ES:[03FE]` is `0x5003FE` inside the
+  MAME NVRAM window. Chip LC3517 is HYPOTHESIS
+  ([`notes/pgr61.md`](notes/pgr61.md)). Low-byte-only
+  `0x100000` is retracted.
+- Instruction bounds for CALL dests that are still indirect or
+  have no named consumer. Jump-table *selection* (`BX` domain)
+  at the six `CS:[BX+disp]` sites.
+- Whole-image ledger coverage (D17). 116 gaps remain (365870 owned). Later
+  `IVT[8]` is `FB93:0059` (file `0x7B989`). `F800:1906` is
+  a 16×4-byte OUTSW table.   `D547:0561` is a 16-IP `DI` switch. `D547:053A` is 8 IPs
+  (`AND BX,0x0E`); slot 7 is `054A`.
+  `B2DA:000F`, `DB28:0A2D`, `F800:20F7`, `B1BC:0040`,
+  `DCA2:0154`, `C425:0269`, `F800:242D`, `C2D0:000C`,
+  `B3ED:000F`, `C44E:0005`/`00B8`, `C2E6:0007`,
+  `CEBF:0008`/`026A`, `BE1A:0002`/`01FB`, `BE1A:0203`/
+  `022B`, `BE1A:026C` (three packed tables), `C303:0004`
+  (`0BCC`/`0BE8`), `B3FD:0006` (`0871`/`088D`/`08A7`), and
+  `B3FD:08C3`/`0953`/`097B`/`09AC`/`09E2`/`0A2F`,
+  `C303:0C0E`/`0C64`, `B060:0715`/`086E`/`0982`..
+  `0A4A`/`0C6C`/`0CBF`, and hole-start `CALLF` dests
+  `B292:0008`/`B2F1:0002`/`B354:05F8`/`E4FA:000C`/
+  `E582:0000`/`E676:000D`/`E7E0:000A`/`EB1A:0002`/
+  `EBC8:0003`/`B2A0:0007`/`B31B:0007`/`E4FA:0170`/
+  `B060:0A7B`/`B060:0D04`/`B20A:0004`/`D6E0:008B`/
+  `E398:0009`/`0119`/`01F0`/`0366`/`0386`/`03BD`/
+  `045A`/`E3E7:0008`/`DCA2:0166`/`0371`/`03C9`
+  are seed-only. Those switch tables are
+  not BFS seeds.
+  Indirect *targets* and unentered app ROM stay
+  debt. The 1-byte `CF` at `0x7ADA3` has no entry.
+  2026-09-21 09:00 UTC CALL-set hunt was empty.
+  A later real-modrm CS-relative pass owned
+  `D5DD:0124` / `DC5B:0002` / `DC6E:0002` /
+  `EB0B:0002` data tables (plus two auto 1-byte
+  `0xFF` aligns). `EB0D` / `EB5B` stay unowned
+  (RAM `BX`/`DI`). Unentered app ROM stays debt.
+  2026-09-21 09:20 UTC: far ptrs in owned data to
+  hole starts = 0. F800 alternate `590e51` entries
+  and `D6D4:003F` still have no owned caller.
+  INT 43 AX=1..7 dests were already owned extras;
+  they are now seeded. D18 software contract is
+  closed. `FB81:0008` (`CS:[003A]` slot 0, file
+  `0x7B818`) is seed-only: list header, jump-over
+  sled, `CS:[0032]`/`[0036]`, `003A`/`0061`.
+  `0061` `CALLF FB00:065B` with `ES=A850`, `AL=2`
+  is a named `065B` consumer; D11 stays gated.
+  `B261:000A` (file `0x3261A`, `CALLF` from
+  owned `B060` prefix at `0x30A85`/`0x30C4D`)
+  and leftover `0273` are seed-only. Prefix
+  cdecls at `[0x32600, 0x3261A)` stay unowned.
+  `E59E:0006`/`0035` and `E5A8:0003`/`0030`
+  (`CALLF` from owned `E398`) and leftover
+  `C303:0D47` (`B3FD:02A4` / `C2D0:000C`) are
+  seed-only. `E582:013A` / `E59E:0099` /
+  Mid-hole `C4C8`
+  / `B77C` stay unowned. `E12D:0009`,
+  `E07A:0004`, `E6D1:0001`, `E739:030C`, and
+  `E661:0006`/`0095` are seed-only. Packed
+  `CALLN` leftovers `C303:0CEE`/`0D76`..`11C4`,
+  `B060:0044`..`02D6`, and `B3FD:0A96` are
+  seed-only. Named `C44E` `CALLN` dests
+  `00C2`/`0119`/`0485`/`06B6`/`070F` and
+  leftover `D9F2:0072` are seed-only.
+  Leftover `B060:0030` closes the 20-byte
+  prefix. `C44E:02BF` and `C887:09AC` stay
+  unowned. 2026-09-21 10:40: `LES`/`LDS`
+  static dests into gaps = 0; `INT` dests
+  already owned; CS-relative far `[rm]`
+  into gaps = 0. Further D17 growth needs
+  another named consumer.
+- RAM object lifetime past the `8010` DGROUP / BSS split and the
+  `065B` overlays.
 
 Physical hardware remains deferred.
 
 ## Progress measure
 
-The useful increment is the removal of a named uncertainty. This session
-removed “what is the image, where does reset go, and what is the first
-board-visible I/O on that path.” It did not remove the event-loop
-uncertainty.
+The useful increment is the removal of a named uncertainty. First `01EA`
+creates task 6. The later empty-queue wake ISR is still open.

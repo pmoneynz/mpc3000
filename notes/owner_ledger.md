@@ -1,0 +1,113 @@
+# Owner ledger seed
+
+**Image:** Vailixi 3.50 linear
+`a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
+**Date:** 2026-09-21.
+
+Closes D12. D13 padding windows are in [`padding.md`](padding.md).
+D16 instruction-byte runs are unioned into the ledger. D17 still
+owes no-gap closure: large app-ROM holes remain unowned.
+
+Reproduction: `python3 tools/owner_ledger.py --write` then
+`python3 tools/verify_boot_slice.py`.
+
+---
+
+## Contract
+
+| Field | Value |
+|-------|-------|
+| Purpose | Machine-readable owner map for proven file ranges |
+| Observable | `analysis/owner_ledger.json`; 865 ranges; 365870 owned bytes |
+| Inputs | Byte-ownership tables in the notes; D16 walks; bounded CALL dests to fixpoint from D15 and switch-table IPs |
+| Outputs | Owner `code` or `data` only. 116 gaps left as debt |
+| Confidence | Seed spans **PROVEN** as the union of those tables. Gaps are **UNDETERMINED**, not owners |
+| Hardware deferred | None |
+
+Owners are only `code`, `data`, or `excluded_workspace`.
+`unresolved` is never an owner. This seed has no
+`excluded_workspace` row. Padding is `data` with `kind=padding`
+and is all `0xFF`.
+
+---
+
+## 1. What is seeded
+
+D12 named `boot_reset_to_bios_banner.md` and `amx_wait.md`. Later
+G2 notes already opened more ranges. The seed is the union, not
+the two files alone. Adjacent same-owner spans are merged only
+when they form one proven block (AMX `0x7B04E-0x7B5E9`, BIOS
+ladder through `1AD4`).
+
+Isolated 1-byte `0xFF` between owned ranges is `data`/`padding`
+(32 sites). The 1-byte `NOP` rule is unchanged. Isolated `90`
+at `0x7B813` is auto-align in front of `FB76:00B4`.
+Isolated `FF` at `0x59FCD` is auto-align after `D9F2:0072`.
+
+`E937:0004` is `[0x69374, 0x6937C)` (8 bytes through `RETF`). The
+create-table note’s exclusive end `0x6937B` is a subset.
+
+INT 43 AX=4 `[0x79752, 0x79808)` is split: class walk, class
+table (`data`), specials, default. The boot note’s “code + class
+table” row is covered by that split.
+
+---
+
+## 2. Gaps
+
+D16 walks and bounded first-hop CALL dests split large holes
+into more, smaller debt. They are not `excluded_workspace`.
+Closed earlier this pass:
+
+| File range | Bytes | Owner |
+|------------|------:|-------|
+| `[0x27CA0, 0x27CB0)` | 16 | data — zeros after DGROUP |
+| `[0x707B6, 0x707C8)` | 18 | data — `F07A` tail |
+| `[0x7B5E9, 0x7B616)` | 45 | code — `05E9` / `060B` |
+| `[0x7B802, 0x7B80E)` | 12 | data — kernel far-ptr table |
+| `[0x7B813, 0x7B899)` | 134 | `FB81:0008` list init + `0061` |
+| `[0x3261A, 0x32811)` | 503 | code — `B261:000A` through `RETF` |
+| `[0x32883, 0x32922)` | 159 | code — `B261:0273` through `RETF` |
+| `[0x659E6, 0x65A79)` | 147 | code — `E59E:0006`/`0035` |
+| `[0x65A83, 0x65AF1)` | 110 | code — `E5A8:0003`/`0030` |
+| `[0x43D77, 0x43DA6)` | 47 | code — `C303:0D47` |
+| `[0x607A4, 0x608C1)` | 285 | code — `E07A:0004` |
+| `[0x612D9, 0x613B0)` | 215 | code — `E12D:0009` |
+| `[0x66616, 0x666FC)` | 230 | code — `E661:0006`/`0095` |
+| `[0x66D11, 0x66D8B)` | 122 | code — `E6D1:0001` |
+| `[0x6769C, 0x67725)` | 137 | code — `E739:030C` |
+| `[0x30630, 0x30644)` | 20 | code — `B060:0030` |
+| `[0x30644, 0x3095D)` | 793 | code — `B060:0044`..`02D6` |
+| `[0x34A66, 0x34A9C)` | 54 | code — `B3FD:0A96` |
+| `[0x43D1E, 0x43D77)` | 89 | code — `C303:0CEE` |
+| `[0x43DA6, 0x44259)` | 1203 | code — `C303:0D76`..`11C4` |
+| `[0x445A2, 0x4479F)` | 509 | code — `C44E:00C2`/`0119` |
+| `[0x44965, 0x44C8D)` | 808 | code — `C44E:0485`/`06B6`/`070F` |
+| `[0x59F92, 0x59FCD)` | 59 | code — `D9F2:0072` |
+
+Smallest remaining named hole: `[0x7ADA3, 0x7ADA4)` is `CF`
+(`IRET`) between `FAC0:019E` `jmp B000:00DF` and `FAC0:01A4`.
+No entry is proven. It stays a gap.
+
+Largest remaining holes are unentered app ROM between
+established bodies (see the regenerated JSON).
+
+---
+
+## 3. Checks
+
+`tools/owner_ledger.py` rejects overlap, `unresolved` as an owner,
+`excluded_workspace` in this seed, a padding byte that is not
+`0xFF`, and a Byte-ownership row that the ledger does not cover.
+A code note row may contain a `data` island (class table). A data
+note row may not be owned as code.
+
+Regenerating the JSON from the seed must match the committed file.
+
+---
+
+## What this note does *not* prove
+
+- Whole-image coverage (D17).
+- Purpose of every remaining `0xFF` window (D13).
+- That a gap is not code. Gaps are unanalyzed.
