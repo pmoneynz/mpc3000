@@ -257,7 +257,9 @@ Validator: `python3 tools/verify_boot_slice.py`.
   range:`/`High range:`;
   `EAD0:001D` `[E614]*0x18`
   into the named `FD0D`
-  load).
+  load;
+  `C44E:0005` dest 0
+  `CALLN` `0119`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).

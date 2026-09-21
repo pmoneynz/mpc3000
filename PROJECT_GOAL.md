@@ -167,7 +167,9 @@ of the named `+11`
 range:`/`High range:`;
 `EAD0:001D` `[E614]*0x18`
 into the named `FD0D`
-load).
+load;
+`C44E:0005` dest 0
+`CALLN` `0119`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

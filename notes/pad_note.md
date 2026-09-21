@@ -20,7 +20,7 @@ Reproduction: `python3 tools/verify_boot_slice.py`.
 | Field | Value |
 |-------|-------|
 | Purpose | Name the software assign path from slot index to note |
-| Observable | `C44E:0119` title `Assign Pads to Note Numbers`; `D9F2:000C` / `003D` / `0072`; `[E5F9]` via `CA45:0008` / `DA04:002B`; `BE1A:026C` `Pgm`; `BE1A:0002` `16 Levels` |
+| Observable | `C44E:0005` `MIDI` menu dest 0 `CALLN` `0119`; `C44E:0119` title `Assign Pads to Note Numbers`; `D9F2:000C` / `003D` / `0072`; `[E5F9]` via `CA45:0008` / `DA04:002B`; `BE1A:026C` `Pgm`; `BE1A:0002` `16 Levels` |
 | Inputs | `[D6AC]` 0..0x3F; `D9F2` `[BP+6]` index or note; `0072` `[BP+8]` note |
 | Outputs | `000C` returns a byte; `003D` returns a slot or `-1`; `0072` stores a byte clamped `0x22`..`0x62` |
 | Confidence | Screen strings, `[D6AC]` 0..0x3F, `D9F2` encodings, remap stores, `+0859` `0x23`..`0x62`, and `BE1A` Param `TUNING`..`FILTER` **PROVEN**. That `+11` is a MIDI note **HYPOTHESIS** (range + `Note:`). Pad-hit writer of `[D6AC]` **UNDETERMINED** |
@@ -48,6 +48,24 @@ File `0x445F9`. Already owned (`[0x445F9, 0x4479F)`). Sole exit
 | `025F` | `0x4473F` | `C6 06 AC D6 00` | Force 0 when out of range |
 | `0268` | `0x44748` | `A0 AC D6 88 46 FF` | `[D6AC]` copied to `[BP-1]` |
 | `027D` | `0x4475D` | `9A 0C 00 F2 D9` | `000C`(`[BP-1]`) after `0AD9` |
+
+Already-owned `C44E:0005` (file `0x444E5`,
+`[0x444E5, 0x44535)`) is the parent menu.
+`PUSH +4F68` (file `0x444EC`) is `MIDI`.
+`PUSH +4F6D` (file `0x444F8`) is
+`1.Assign pads to MIDI note numbers`.
+`CMP BX,4` (file `0x44529`); `SHL BX,1`;
+`JMP CS:[BX+00B8]` (file `0x44530`).
+Table `00B8` (file `0x44598`) is
+`0055` / `005E` / `0067` / `0070` /
+`0079`. Dest 0 `0055` (file `0x44535`
+`90 0E E8 BF 00`) `CALLN` `0119`.
+**PROVEN** as the already-owned consumer
+of the named assign screen. Not a
+pad-hit. Do not BFS `B77C:20C5`. Do not
+seed dest 1 `02BF` (file `0x4479F`). Do
+not name dests `0485` / `070F` / `0079`
+as D20. Do not name `[D7CA]`.
 
 `C887:09AC` is called with the note byte and stays unowned
 (mid-hole). Do not BFS it.

@@ -366,7 +366,9 @@ bounds, evidence, unknowns).
       range:`/`High range:`;
       `EAD0:001D` `[E614]*0x18`
       into the named `FD0D`
-      load).
+      load;
+      `C44E:0005` dest 0
+      `CALLN` `0119`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
