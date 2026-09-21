@@ -230,7 +230,8 @@ bounds, evidence, unknowns).
       `0x23`..`0x62`, `02D6` note-to-slot,
       `[E5F9]+slot*4+063E` when `[E60F]==2`;
       `[920A]+slot*4+002A` when `==1`; else
-      `DS:E639+slot*4`).
+      `DS:E639+slot*4`; `0007` `CALLN`
+      `02D6`/`033A`; `FCF6+17=FD0D`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

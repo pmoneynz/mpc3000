@@ -269,8 +269,17 @@ that switch. Task 3's first packet byte is
 `ADD BX,0xFCF6`; `AL=ES:[BX+0x0D]`.
 **PROVEN** as that index (effective
 `[E5F9]+note*0x18+FD03`, not `+FD0D`).
-Leftover `02D6` (file `0x4FF36`, `CALLN`
-from `0066`): `DX=[BP+6]-0x23`; clamp
+`FCF6+0x17=FD0D`, so this is the same
+`0x18`-byte per-note table whose last
+byte is the already-named Param.
+**PROVEN.** `CALLN 02D6` (file `0x4FCC3`
+`51 90 0E E8 6D 02`) then `CALLN 033A`
+(file `0x4FCDB` `50 90 0E E8 B9 02`)
+both pass the event note. **PROVEN.**
+Do not seed `CFC6:039E` at file
+`0x4FFFE` (span end). Leftover `02D6`
+(file `0x4FF36`, `CALLN` from `0066`):
+`DX=[BP+6]-0x23`; clamp
 `0`..`0x3F`. **PROVEN** note-to-slot
 on that arm. Not a pad-hit. If
 `[E60F]==2` (CF37 default), `AX=slot<<2`;
@@ -355,6 +364,7 @@ read it as MIDI.
 - Writer that sets `[81B3]` nonzero (gap `0x5771E`;
   do not seed).
 - Full `9770:` / `Pgm` record grammar past `+11` /
-  `+12`..`+19` / `+073E` / `+FD0D`.
+  `+12`..`+19` / `+063E` / `+073E` / `+FCF6` /
+  `+FD0D`.
 - `C887:09AC` body (mid-hole).
 - TE7774 / panel scan (D19).

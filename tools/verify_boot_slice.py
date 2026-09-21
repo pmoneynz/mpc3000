@@ -208,6 +208,8 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(pad["cfc6_hi_file"], 16), pad["cfc6_hi_bytes"], "CFC6 CMP [BX+2],0x62")
     _expect_hex(image, int(pad["cfc6_idx_file"], 16), pad["cfc6_idx_bytes"], "CFC6 LES [E5F9]+FCF6")
     _expect_hex(image, int(pad["cfc6_rd_file"], 16), pad["cfc6_rd_bytes"], "CFC6 MOV AL,ES:[BX+0D]")
+    _expect_hex(image, int(pad["cfc6_call_02d6_file"], 16), pad["cfc6_call_02d6_bytes"], "CFC6 CALLN 02D6")
+    _expect_hex(image, int(pad["cfc6_call_033a_file"], 16), pad["cfc6_call_033a_bytes"], "CFC6 CALLN 033A")
     _expect_hex(image, int(pad["cfc6_slot_file"], 16), pad["cfc6_slot_bytes"], "CFC6:02D6 note-0x23")
     _expect_hex(image, int(pad["cfc6_clamp_file"], 16), pad["cfc6_clamp_bytes"], "CFC6:02D6 CMP DX,0x40")
     _expect_hex(image, int(pad["cfc6_e60f_file"], 16), pad["cfc6_e60f_bytes"], "CFC6 CMP [E60F],2")
