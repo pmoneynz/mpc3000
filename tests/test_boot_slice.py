@@ -550,6 +550,14 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x7AE49:0x7AE4B], bytes.fromhex("4001"))
         self.assertEqual(self.image[0x59B57:0x59B5C], bytes.fromhex("b800f48ec0"))
         self.assertEqual(self.image[0x59BC4:0x59BCF], bytes.fromhex("b800f48ec026803efe03aa"))
+        word61 = int.from_bytes(self.image[0x7AED0:0x7AED2], "little")
+        self.assertEqual(word61, 0x0140)
+        self.assertEqual(word61 << 14, 0x500000)
+        self.assertEqual(0x500000 | 0x03FE, 0x5003FE)
+        self.assertLessEqual(0x5003FE, 0x500FFF)
+        for base in (0x7AE56, 0x7ACB4, 0x7ADCF):
+            highs = [self.image[base + i * 2 + 1] for i in range(64)]
+            self.assertEqual([i for i, h in enumerate(highs) if h], [61])
         self.assertTrue(all(b == 0xFF for b in self.image[0x74000:0x78000]))
         self.assertEqual(self.image[0x30644:0x3064C], bytes.fromhex("56fe06797dc41e7b"))
         self.assertEqual(self.image[0x308C4:0x308D6], bytes.fromhex("558becff7608ff76060ee8beff83c4045dcb"))

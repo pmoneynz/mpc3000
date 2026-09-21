@@ -79,11 +79,31 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(p61["third_file"], 16), p61["word_bytes"], "PGR[61] third")
     _expect_hex(image, int(p61["d9b5_es_file"], 16), p61["d9b5_es_bytes"], "D9B5 ES=F400")
     _expect_hex(image, int(p61["d9b5_sig_file"], 16), p61["d9b5_sig_bytes"], "D9B5 ES:[03FE]")
+    word61 = int(p61["word"], 16)
+    if word61 != int.from_bytes(bytes.fromhex(p61["word_bytes"]), "little"):
+        raise AssertionError("pgr61.word does not match word_bytes")
+    if (word61 << 14) != int(p61["phys24_base"], 16):
+        raise AssertionError("full-word v33_translate of PGR[61] is not 0x500000")
+    sig24 = int(p61["phys24_base"], 16) | int(p61["sig_off"], 16)
+    if sig24 != int(p61["sig_phys24"], 16):
+        raise AssertionError("ES:[03FE] 24-bit is not 0x5003FE")
+    if not (int(p61["mame_nvram_lo"], 16) <= sig24 <= int(p61["mame_nvram_hi"], 16)):
+        raise AssertionError("0x5003FE is outside the MAME NVRAM window")
+    slot = int(p61["only_nonzero_high_byte_slot"])
+    for label, base in (
+        ("first", 0x7AE56),
+        ("second", 0x7ACB4),
+        ("third", 0x7ADCF),
+    ):
+        highs = [image[base + i * 2 + 1] for i in range(64)]
+        nonzero = [i for i, h in enumerate(highs) if h]
+        if nonzero != [slot]:
+            raise AssertionError(f"{label} PGR high-byte slots {nonzero} != [{slot}]")
     if any(b != 0xFF for b in image[0x74000:0x78000]):
         raise AssertionError("linear 20-bit page 61 file range is not 0xFF")
     if image.find(bytes.fromhex("ba7aff")) != -1:
         raise AssertionError("unexpected MOV DX,0xFF7A")
-    checks.append("P7: PGR[61]=0x0140; D9B5 ES=0xF400 consumer")
+    checks.append("P7/P8: PGR[61]=0x0140 -> 0x500000; D9B5 ES=0xF400 / ES:[03FE]=0x5003FE")
 
     if image[0x7AC1C:0x7AC1F] != bytes.fromhex("0fe011"):
         raise AssertionError("missing BRKXA 0x11 at FAC0:001C")

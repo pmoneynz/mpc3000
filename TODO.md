@@ -172,7 +172,10 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       CS-rel / far-ptr-to-hole-start /
       JMP/JCC). Small `55 8B EC` holes
       without a named consumer stay unowned.
-      P7 consumer is closed (`D9B5` `ES=0xF400`).
+      P7/P8: page 61 word `0x0140` → `0x500000`
+      (full-word `v33_translate`). Consumer `D9B5`
+      `ES=0xF400`; `ES:[03FE]` = `0x5003FE`.
+      Low-byte-only `0x100000` is retracted.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.
@@ -219,12 +222,15 @@ bounds, evidence, unknowns).
       (`U-PHYS`).
 - [PARTIAL] **P6.** µPD70236 vs 70236A marking (`U-V53A`). Treat as
       V53-family until a chip photo OCR exists.
-- [x] **P7.** PGR page 61 frame `0x40` → `0x100000`. Consumer is
-      `D9B5` `ES=0xF400` (file `0x59B57`). Device at
-      `0x100000` stays UNDETERMINED. See
+- [x] **P7.** PGR page 61 word `0x0140` → `0x500000` via
+      full-word `v33_translate`. Consumer is `D9B5`
+      `ES=0xF400` (file `0x59B57`). Low-byte-only
+      `0x100000` is retracted. See
       [`notes/pgr61.md`](notes/pgr61.md).
-- [ ] **P8.** NVRAM `0x500000` consumer on a proven path, or document
-      that boot does not touch it.
+- [x] **P8.** NVRAM consumer is `D9B5`: `ES:0000` → `0x500000`,
+      `ES:[03FE]` → `0x5003FE` inside MAME
+      `0x500000-0x500FFF`. Chip LC3517 stays
+      HYPOTHESIS. Record format stays UNDETERMINED.
 
 ---
 

@@ -13,7 +13,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`amx_first_dispatch.md`](amx_first_dispatch.md) | First `01EA` creates task 6 |
 | [`int43_ax4.md`](int43_ax4.md) | Banner character → LC7981 ports |
 | [`front_panel.md`](front_panel.md) | D19 PARTIAL: panel ROM absent; `0xC0-0xDF` I/O only |
-| [`pgr61.md`](pgr61.md) | P7: page 61 consumer `D9B5` `ES=0xF400`; device unnamed |
+| [`pgr61.md`](pgr61.md) | P7/P8: page 61 word `0x0140` → `0x500000`; consumer `D9B5` |
 | [`pgr_live_after_amx.md`](pgr_live_after_amx.md) | PGR writers after first AMX select |
 | [`ivt_inventory.md`](ivt_inventory.md) | Reset-path IVT plants and writers |
 | [`amx_public_api.md`](amx_public_api.md) | AMX far-call surface and TCB grammar |

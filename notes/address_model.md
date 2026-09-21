@@ -64,14 +64,17 @@ as MMX and break the instruction stream.
 ## First PGR load (PROVEN)
 
 FAC0:0000 writes 64 words from `CS:0256` (file `0x7AE56`) to `0xFF00-0xFF7E`,
-then `BRKXA 0x11`. Low byte of each word is the page frame:
+then `BRKXA 0x11`. `v33_translate` shifts the **full 16-bit word**.
+Slots 0–60 and 62–63 have high byte 0, so the old “low byte is the
+frame” arithmetic coincides. Slot 61 is the only non-zero high byte
+(`0x0140`). See [`pgr61.md`](pgr61.md).
 
-| 20-bit pages | Frame | 24-bit base | Object |
-|--------------|-------|-------------|--------|
-| 0–39 | `C0`–`E7` | `0x300000`–`0x39C000` | work RAM (640 KiB of the 1 MiB HM658512 pair) |
-| 40–60 | `28`–`3C` | `0x0A0000`–`0x0F0000` | ROM mirror windows |
-| 61 | `40` | `0x100000` | Consumer `D9B5` `ES=0xF400` **PROVEN**. Device **UNDETERMINED** — not in the MAME map. See [`pgr61.md`](pgr61.md) |
-| 62–63 | `3E`–`3F` | `0x0F8000`–`0x0FC000` | high ROM (FAC0, reset stub) |
+| 20-bit pages | Word | 24-bit base | Object |
+|--------------|------|-------------|--------|
+| 0–39 | `00C0`–`00E7` | `0x300000`–`0x39C000` | work RAM (640 KiB of the 1 MiB HM658512 pair) |
+| 40–60 | `0028`–`003C` | `0x0A0000`–`0x0F0000` | ROM mirror windows |
+| 61 | `0140` | `0x500000` | NVRAM window. Consumer `D9B5` `ES=0xF400` **PROVEN**. Chip LC3517 **HYPOTHESIS** |
+| 62–63 | `003E`–`003F` | `0x0F8000`–`0x0FC000` | high ROM (FAC0, reset stub) |
 
 After this table, `0000:0044` is work RAM `0x300044`, not the ROM IVT
 template. The first `BRKXA 0x11` still fetches ROM `0x00044` because XA is
@@ -91,7 +94,7 @@ the map is **UNDETERMINED**.
 | 24-bit range | Device | Evidence |
 |--------------|--------|----------|
 | `0x300000-0x3FFFFF` | 1 MiB work RAM | MAME map; PGR frames `C0`–`FF` span this window; service IC15/IC16 |
-| `0x500000-0x500FFF` | LC3517 NVRAM, 2 KiB device in a 4 KiB window | MAME map only; no boot-path consumer proven yet |
+| `0x500000-0x500FFF` | NVRAM window (MAME `nvram` share). Chip LC3517 **HYPOTHESIS** | PGR[61]=`0x0140` ? `0x500000`. Consumer `D9B5` `ES=0xF400`; `ES:[03FE]` = `0x5003FE` **PROVEN**. See [`pgr61.md`](pgr61.md) |
 
 PAL/GAL decode (IC25/IC29/IC31) is **UNDETERMINED**. The MAME map is the
 working decode. A schematic or fusemap can refute it.

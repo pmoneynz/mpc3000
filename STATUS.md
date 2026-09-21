@@ -99,9 +99,12 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Panel ROM, PAL fusemaps, full schematics. D19 is PARTIAL
   ([`notes/front_panel.md`](notes/front_panel.md)): `0xC0-0xDF`
   encodings exist; navigation meaning does not.
-- PGR page 61 has a software consumer (`D9B5` `ES=0xF400`).
-  The 24-bit object at `0x100000` is still unnamed
-  ([`notes/pgr61.md`](notes/pgr61.md)).
+- PGR page 61 word `0x0140` maps to 24-bit `0x500000`
+  (full-word `v33_translate`). Consumer is `D9B5`
+  `ES=0xF400`; `ES:[03FE]` is `0x5003FE` inside the
+  MAME NVRAM window. Chip LC3517 is HYPOTHESIS
+  ([`notes/pgr61.md`](notes/pgr61.md)). Low-byte-only
+  `0x100000` is retracted.
 - Instruction bounds for CALL dests that are still indirect or
   have no named consumer. Jump-table *selection* (`BX` domain)
   at the six `CS:[BX+disp]` sites.

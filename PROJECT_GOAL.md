@@ -35,8 +35,9 @@ supporting evidence. Full annotation of those images is a later milestone.
 Hardware and panel behavior needed to explain Vailixi 3.50 remain tracked as
 debt until resolved. D19 is PARTIAL: the panel ROM is absent
 ([`notes/front_panel.md`](notes/front_panel.md)).
-P7: `D9B5` consumes page 61 (`ES=0xF400`); the device at
-`0x100000` stays unnamed ([`notes/pgr61.md`](notes/pgr61.md)).
+P7/P8: `D9B5` consumes page 61 (`ES=0xF400`) at 24-bit
+`0x500000` (NVRAM window). Chip LC3517 stays HYPOTHESIS
+([`notes/pgr61.md`](notes/pgr61.md)).
 
 Physical hardware qualification is deferred. Continue software-verifiable
 work. Record any fact that cannot be distinguished without hardware as an
