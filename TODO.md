@@ -267,7 +267,9 @@ bounds, evidence, unknowns).
       `(FCF6+0x23*0x18)&0xFFFF=+3E`;
       `BE1A:0131` stores NOTE VAR
       Param to `FD0D` when
-      `[81B3]!=0`).
+      `[81B3]!=0`; `0105` `CALLN`
+      `0203` with the note then
+      reads `[81B3]`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

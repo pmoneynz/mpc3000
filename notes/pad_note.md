@@ -260,6 +260,19 @@ a 16-level algorithm from this. Do not BFS
 `B77C:202D` / `20C5`.
 
 Already-owned `0002` switch dest
+`0105` (file `0x3E2A5`, table word
+`0x3E39D`). `PUSH [BP-1]`;
+`CS: CALLN 0203` (file `0x3E2AA`
+`90 0E E8 F4 00`);
+`MOV [BP-2],AL` (file `0x3E2B2`);
+then `MOV AL,[81B3]` (file
+`0x3E2C3`). **PROVEN** as the
+read side that calls the named
+`0203` FD0D helper with the
+note. Not a pad-hit. Do not
+invent a 16-level algorithm.
+
+Already-owned `0002` switch dest
 `0131` (file `0x3E2D1`, table word
 `0x3E39F`, span `[0x3E292, 0x3E335)`).
 `CMP [81B3],0` / `JZ` skips the

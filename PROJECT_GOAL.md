@@ -68,7 +68,9 @@ walks `[E5F9]+SI*0x18+3E` for
 `(FCF6+0x23*0x18)&0xFFFF=+3E`.
 `BE1A:0131` stores NOTE VAR
 Param to `FD0D` when
-`[81B3]!=0`).
+`[81B3]!=0`. `0105` `CALLN`
+`0203` with the note then
+reads `[81B3]`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`
