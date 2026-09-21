@@ -255,7 +255,10 @@ bounds, evidence, unknowns).
       `[E5F9]+FCF6`; `D9C0:0006` is
       the same Param `0..3` pair map;
       `DC2A:0033` / `DC85:0047` consume
-      `[81B3]==0`).
+      `[81B3]==0`; `C20F:0478` leftover
+      walks `[E5F9]+SI*0x18+3E` for
+      `SI` `0..0x3F` to exclusive
+      `+063E`; sibling `0874`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

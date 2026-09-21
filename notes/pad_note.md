@@ -384,6 +384,25 @@ on that arm. Not a pad-hit. If
 `+063E + 0x40*4 = +073E`, so `+063E` is
 64 dwords immediately before the note
 table. Do not name those dwords.
+
+Already-owned leftover `C20F:0478`
+(file `0x42568`, after `0477` `RETF`
+in `[0x420F3, 0x42D0C)`). `XOR SI,SI`
+then loop `047C`: `AX=SI*0x18`;
+`LES BX,[E5F9]`; `ADD BX,AX`;
+`CMP ES:[BX+3E],0xFF` (file
+`0x4257B`). Bound `CMP SI,0x40`
+(file `0x425CD`). After the loop,
+`CALLF C887:1BE8` (file `0x425D8`)
+is the named `CA45:0008` alias.
+`+3E + 0x40*0x18 = +063E`.
+**PROVEN** as a 64-slot walk of
+`[E5F9]+SI*0x18+3E` whose exclusive
+end is the named dword base. Not a
+pad-hit. Sibling leftover `0874`
+(file `0x42964`) is the same
+`SI*0x18` / `[BX+3E],0xFF` walk.
+Do not name the `+3E` byte.
 `033A` (file `0x4FF9A`) is the same map
 gated on `[E610]==2` (also default 2).
 If `[E60F]==1` and `[920A]:[920C]` is
