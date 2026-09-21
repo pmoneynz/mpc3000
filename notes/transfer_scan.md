@@ -148,6 +148,9 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x31B32, 0x31B36)` | code — `B1B1:0022` `MOV AX,[1D1A]` / `RETF`; `CALLF` `DE5C:0040` |
 | `[0x32922, 0x32928)` | code — `B261:0312` `MOV [E748],0` / `RETF`; `CALLF` `B060:03B7` |
 | `[0x670C1, 0x670CB)` | code — `E704:0081` `PUSH CS` / `CALL 0007` / `CALLF E614:0008` / `RETF` |
+| `[0x65815, 0x65820)` | code — `E56F:0125` CLI snapshot through `RETF`; `CALLF` `DE5C:0489` |
+| `[0x66148, 0x66174)` | code — `E614:0008` flag thunk through `RETF`; `CALLF` from `E704:0081` |
+| `[0x66908, 0x66920)` | code — `E688:0088` compare through `RETF`; `CALLF` `DE5C:04E6` |
 
 ---
 

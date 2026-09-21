@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 342121,
+  "owned_bytes": 342200,
   "ranges": [
     {
       "start": "0x00000",
@@ -4377,6 +4377,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x65815",
+      "end": "0x65820",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E56F:0125 CLI snapshot RETF; CALLF DE5C:0489"
+    },
+    {
       "start": "0x65AF1",
       "end": "0x65B20",
       "owner": "code",
@@ -4401,6 +4409,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x66148",
+      "end": "0x66174",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E614:0008 flag thunk RETF; CALLF from E704:0081"
+    },
+    {
       "start": "0x666FC",
       "end": "0x6676D",
       "owner": "code",
@@ -4415,6 +4431,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x66908",
+      "end": "0x66920",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E688:0088 compare RETF; CALLF DE5C:04E6"
     },
     {
       "start": "0x66D8B",
