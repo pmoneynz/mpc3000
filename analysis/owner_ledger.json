@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 351693,
+  "owned_bytes": 352160,
   "ranges": [
     {
       "start": "0x00000",
@@ -551,6 +551,54 @@
       "kind": "jump_table",
       "source": "notes/transfer_scan.md",
       "why": "B3FD JMP CS:[BX+08A7] 14 near IPs BX<=0x0D then SHL 1"
+    },
+    {
+      "start": "0x34893",
+      "end": "0x34923",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B3FD:08C3 cdecl through RETF; CALLN B3FD:029E/03B7"
+    },
+    {
+      "start": "0x34923",
+      "end": "0x3494B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B3FD:0953 cdecl through RETF; CALLN B3FD:03CA"
+    },
+    {
+      "start": "0x3494B",
+      "end": "0x3497C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B3FD:097B cdecl through RETF; CALLN B3FD:025A/032E"
+    },
+    {
+      "start": "0x3497C",
+      "end": "0x349B2",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B3FD:09AC cdecl through RETF; CALLN B3FD:011D/0345"
+    },
+    {
+      "start": "0x349B2",
+      "end": "0x349FF",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B3FD:09E2 cdecl through RETF; CALLN B3FD:05FD/06A2"
+    },
+    {
+      "start": "0x349FF",
+      "end": "0x34A66",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B3FD:0A2F cdecl through RETF; CALLN B3FD:052B/05BB"
     },
     {
       "start": "0x370F1",
