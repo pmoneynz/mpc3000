@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 342815,
+  "owned_bytes": 342905,
   "ranges": [
     {
       "start": "0x00000",
@@ -575,6 +575,14 @@
       "kind": "jump_table",
       "source": "notes/transfer_scan.md",
       "why": "C425 JMP CS:[BX+0233] 27 near IPs"
+    },
+    {
+      "start": "0x444B9",
+      "end": "0x444E5",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "C425:0269 cdecl through RETF; CALLN C425:0220"
     },
     {
       "start": "0x45059",
@@ -5727,6 +5735,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x7A42D",
+      "end": "0x7A45B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "F800:242D copy through RET 8; 6 CALLN from 24A5.."
     },
     {
       "start": "0x7A45B",

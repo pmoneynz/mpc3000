@@ -101,12 +101,15 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 342815 owned / 132 gaps. `D547` `JMP CS:[BX+053A]`
-      is 8 IPs (`AND BX,0x0E`). Slot 7 `054A` fills the hole after
-      the table. Isolated 1-byte `0xFF` between owned ranges is
-      align padding (28 bytes). `D3A7:0005` `INT 40` still has no
-      owned caller. `0xC0xx` bit meaning is not claimed. Unentered
-      app ROM remains. The 1-byte `CF` at `0x7ADA3` has no entry.
+      Progress: 342905 owned / 132 gaps. `C425:0269` is the
+      44-byte cdecl after the `0233` table (`CALLN` `0220`).
+      `F800:242D` is the 46-byte copy thunk on the owned BIOS
+      edge (6 `CALLN`). `D547` `JMP CS:[BX+053A]` is 8 IPs
+      (`AND BX,0x0E`). Isolated 1-byte `0xFF` between owned
+      ranges is align padding (28 bytes). `D3A7:0005` `INT 40`
+      still has no owned caller. `0xC0xx` bit meaning is not
+      claimed. Unentered app ROM remains. The 1-byte `CF` at
+      `0x7ADA3` has no entry.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.
