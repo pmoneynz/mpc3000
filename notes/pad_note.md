@@ -219,8 +219,14 @@ not exist. **PROVEN.** Labels `Note:` / `Param:` /
 `+3F03` / `+3F0E`).
 
 At `02FC` (file `0x3E49C`): `MOV AL,[E60E]`; `INC AL`;
-printed via `B354:03B1`. **PROVEN** the title `Pgm:`
-slot is the 1-based form of `CA45`'s `0..0x17` index.
+`MOV [BP-9],AL` (file `0x3E4A1`); `LEA [BP-9]`
+(file `0x3E4AD`); `PUSH +3E62` (file `0x3E4B2`);
+`CALLF B354:03B1` (file `0x3E4B5`). **PROVEN** the
+displayed `Pgm:` slot is the 1-based form of
+`CA45`'s `0..0x17` index. Title `+3E62` is the
+NUL after `VELOCITY` (same as `0488`/`04B3`).
+The screen title already carries `Pgm:`. Sibling
+of `0508` `CA45`. Not a pad-hit.
 Already-owned `0637` dest `0508`
 (file `0x3E6A8`, table word
 `0x3E7D7`) does `MOV AL,[BP-9]`;
