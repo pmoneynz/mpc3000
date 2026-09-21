@@ -119,7 +119,9 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `<0x23`) and `CALLF CFB3:0008` (`& 0xF8`;
   `0x90` to `CFC6:0007`, note `+2` in
   `0x23`..`0x62`, `02D6` note-to-slot,
-  `[E5F9]+slot*4+063E` when `[E60F]==2`).
+  `[E5F9]+slot*4+063E` when `[E60F]==2`;
+  `[920A]+slot*4+002A` when `==1`; else
+  `DS:E639+slot*4`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).

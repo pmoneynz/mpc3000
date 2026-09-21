@@ -228,7 +228,9 @@ bounds, evidence, unknowns).
       and `CALLF CFB3:0008` (status `& 0xF8`;
       `0x90` → `CFC6:0007`, note `+2` in
       `0x23`..`0x62`, `02D6` note-to-slot,
-      `[E5F9]+slot*4+063E` when `[E60F]==2`).
+      `[E5F9]+slot*4+063E` when `[E60F]==2`;
+      `[920A]+slot*4+002A` when `==1`; else
+      `DS:E639+slot*4`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

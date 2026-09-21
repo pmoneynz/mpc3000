@@ -49,7 +49,7 @@ ROM default `+0859` is `0x23`..`0x62`. `[E5F9]` selects a
 `[E613]` default `0x0D`). Task 3 `EAD0:000B`
 consumes `[E614]` and `CALLF CFB3:0008` /
 `CFC6:0007` (note `+2` / `02D6` slot /
-`+063E` dwords). Owned
+`+063E` / `[E639]` fallback). Owned
 `[D6AC]` writers are remaps, not pad-hit
 ([`notes/pad_note.md`](notes/pad_note.md)).
 

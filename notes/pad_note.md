@@ -231,8 +231,13 @@ a 16-level algorithm from this. Do not BFS
 (file `0x4F675`, leftover after `0304` `RETF`,
 `CALLN` from `0259`) stores `MOV [E613],0x0D` and
 `MOV [E614],0x23` (file `0x4F695` / `0x4F69A`).
-Also zeros `[E60E]` (the `Pgm` index). **PROVEN** as
-those defaults. Do not read `0x0D` as a pad-hit.
+Also zeros `[E60E]` (the `Pgm` index) and writes
+`[E60F]=2` / `[E610]=2` (file `0x4F681` / `0x4F686`).
+Then a 64-slot loop (`INC` / `CMP 0x40` at
+`0x4F6C3`) stores `64 32 00 09` at `[E639]+i*4`
+(file `0x4F6AF` `C6 87 39 E6 64`). **PROVEN** as
+those defaults. Do not name the dword bytes.
+Do not read `0x0D` as a pad-hit.
 
 Create-table task 3 `EAD0:000B` (file `0x6AD0B`, already
 owned) is a named consumer of `[E614]`. After
@@ -275,7 +280,16 @@ on that arm. Not a pad-hit. If
 table. Do not name those dwords.
 `033A` (file `0x4FF9A`) is the same map
 gated on `[E610]==2` (also default 2).
-Do not name the `+0x0D` field.
+If `[E60F]==1` and `[920A]:[920C]` is
+nonzero (`0309`, file `0x4FF69`),
+`DX:AX = [920A]:[920C] + slot*4 + 0x002A`.
+**PROVEN** as that far index. Else
+`DX:AX = DS:E639 + slot*4` (file `0x4FF8E`).
+**PROVEN** as the fallback; it is the
+table `CF37:0305` fills. `036D` is the
+same pair gated on `[E610]`. Do not name
+`[920A]` or the `+0x0D` field. Do not
+seed unowned `LES [920A]` at `0x669B8`.
 
 ---
 
