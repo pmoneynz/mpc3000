@@ -20,7 +20,7 @@ Reproduction: `python3 tools/verify_boot_slice.py`.
 | Field | Value |
 |-------|-------|
 | Purpose | Name the software assign path from slot index to note |
-| Observable | `C44E:0119` title `Assign Pads to Note Numbers`; `D9F2:000C` / `003D` / `0072` |
+| Observable | `C44E:0119` title `Assign Pads to Note Numbers`; `D9F2:000C` / `003D` / `0072`; `[E5F9]` via `CA45:0008` / `DA04:002B` |
 | Inputs | `[D6AC]` 0..0x3F; `D9F2` `[BP+6]` index or note; `0072` `[BP+8]` note |
 | Outputs | `000C` returns a byte; `003D` returns a slot or `-1`; `0072` stores a byte clamped `0x22`..`0x62` |
 | Confidence | Screen strings, `[D6AC]` 0..0x3F, `D9F2` encodings, remap stores, and `+0859` `0x23`..`0x62` **PROVEN**. That the table byte is a MIDI note **HYPOTHESIS** (range + ` = Note:`). Pad-hit writer of `[D6AC]` **UNDETERMINED** |
@@ -110,7 +110,35 @@ loop `SI<0x40`. **PROVEN** as overlay to far-`+073E`
 
 ---
 
-## 4. Owned writers of `[D6AC]` (not pad-hit)
+## 4. Selected record — `[E5F9]`
+
+`[E5F9]`:`[E5FB]` is a far pointer to one record in a
+`DS=0x9770` array. That segment is RAM: linear file
+`0x17700` is `0xFF` padding, not the live table.
+
+`DA04:002B` (file `0x5A06B`, already owned). `CX=[BP+6]`;
+`DS=0x9770`. If `CX>=[0002]`, `DX:AX=0`. Else
+`AX=[0000]*CX+4`, `DX=0x9770`. **PROVEN:** word `+0` is
+record size, word `+2` is count, records start at `+4`.
+
+`CA45:0008` (file `0x4A458`, already owned). Index
+`[BP+6]` must be `0..0x17`. `CALL DA04:002B`;
+`MOV [E5FB],DX`; `MOV [E5F9],AX`; `MOV [E60E],AL`.
+**PROVEN** as the selector that writes `[E5F9]`. Then
+`CALLF C4C8:1D83` / `1C57` (mid-hole; do not BFS).
+
+`D9F2:000C` when `[8375]==0` reads
+`ES:[BX+SI+073E]` after `LES BX,[E5F9]`. The 64-byte
+note table is field `+073E` of the selected record.
+**PROVEN** as that dataflow. What the record *is*
+(program, sound, other) stays **UNDETERMINED**.
+
+`CF37:04AD` also `CALLF DA04:002B` (file `0x4F828`)
+before the overlay-to-`+073E` copy.
+
+---
+
+## 5. Owned writers of `[D6AC]` (not pad-hit)
 
 Whole-image `AC D6` has 18 hits. Owned stores:
 
@@ -148,7 +176,7 @@ No owned `IN` / `OUT` sits next to an `[D6AC]` store.
 
 ---
 
-## 5. Related owned `0x90` sites (not pad-hit)
+## 6. Related owned `0x90` sites (not pad-hit)
 
 `56D4:000A` (file `0x56D4A`): `LES BX,[BP+6]`; `AND ES:[BX],0xF8`;
 `CMP AL,0x90`; on match take `ES:[BX+2]` and `CALL DA09:0000`.
@@ -159,7 +187,7 @@ read it as MIDI.
 
 ---
 
-## 6. Still open
+## 7. Still open
 
 - Writer that sets `[D6AC]` from a pad hit. Missing observation:
   a named consumer that stores a pad index from panel IPC or
@@ -169,6 +197,6 @@ read it as MIDI.
 - Third `CALLF D9F2:003D` at file `0x397B3` is in a gap. Do
   not seed it.
 - Writer that sets `[8375]` nonzero (overlay select).
-- Identity of the far object at `[E5F9]` (live table base).
+- Meaning of the `9770:` record (not just `+073E`).
 - `C887:09AC` body (mid-hole).
 - TE7774 / panel scan (D19).

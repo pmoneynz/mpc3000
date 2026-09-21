@@ -482,6 +482,14 @@
     "b21a_flag_bytes": "c606758300",
     "cf37_copy_file": "0x4F8DA",
     "cf37_copy_bytes": "81c73e078a8476838e46fe268805474683fe40",
+    "ca45_file": "0x4A458",
+    "ca45_bytes": "558bec837e06007c7b837e0618",
+    "ca45_store_file": "0x4A472",
+    "ca45_store_bytes": "8916fbe5a3f9e5",
+    "da04_file": "0x5A06B",
+    "da04_bytes": "558bec1e8b4e062bc02bd2bb7097",
+    "da04_cmp_file": "0x5A07B",
+    "da04_cmp_bytes": "3b0e02007d0b",
     "midi90_file": "0x56D4A",
     "midi90_bytes": "558bec06c45e06268a0724f83c90"
   }
