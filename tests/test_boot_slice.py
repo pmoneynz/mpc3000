@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from tools.linear_rom import LINEAR_SHA256, load_vailixi_linear, sha256_bytes
+from tools.owner_ledger import gaps, ledger_spans, load_ledger, notes_covered, validate_ledger
 from tools.v53_decode import decode_one
 from tools.verify_boot_slice import FACTS_PATH, verify
 
@@ -130,6 +131,19 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x7B65B:0x7B67C], bytes.fromhex(copy["amx_065b"]["bytes"]))
         self.assertEqual(self.image[0x313A5:0x313B0], bytes.fromhex(copy["ds8010_store_1d11"]["bytes"]))
         self.assertEqual(self.image[src + 0x125C : src + 0x1264], b"\x00" * 8)
+
+    def test_owner_ledger_seed(self) -> None:
+        ledger = load_ledger()
+        meta = self.facts["owner_ledger"]
+        checks = validate_ledger(self.image, ledger)
+        self.assertGreaterEqual(len(checks), 3)
+        self.assertEqual(len(ledger["ranges"]), meta["range_count"])
+        self.assertEqual(ledger["owned_bytes"], meta["owned_bytes"])
+        self.assertEqual(len(gaps(ledger_spans(ledger))), meta["gap_count"])
+        self.assertEqual(notes_covered(ledger), meta["note_rows"])
+        self.assertNotIn("unresolved", ledger["owners"])
+        self.assertFalse(any(rec["owner"] == "excluded_workspace" for rec in ledger["ranges"]))
+        self.assertIsNone(next((rec for rec in ledger["ranges"] if rec["owner"] == "unresolved"), None))
 
     def test_v53_decode_brkxa_retxa(self) -> None:
         brk = decode_one(self.image, 0xFAC0, 0x001C)

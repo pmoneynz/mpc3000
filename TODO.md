@@ -81,9 +81,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
 
 ## G3 — Structural closure (byte and transfer domains)
 
-- [ ] **D12.** Seed a machine-readable owner ledger from ranges in
-      `notes/boot_reset_to_bios_banner.md` and `notes/amx_wait.md`.
-      Owners are `code`, `data`, or `excluded_workspace` only.
+- [x] **D12.** Owner ledger seeded: 51 ranges, 168653 bytes,
+      `code`/`data` only. 25 gaps are debt. No `unresolved` owner.
+      No `excluded_workspace`. `analysis/owner_ledger.json`.
 - [ ] **D13.** Purpose-and-boundary every `0xFF` padding window.
       `[0x00054, 0x20000)` and stub tails are already done.
 - [ ] **D14.** Whole-image string scan. A consumer, not printability,

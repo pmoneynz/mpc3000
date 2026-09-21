@@ -19,6 +19,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`calling_convention.md`](calling_convention.md) | Far cdecl, BIOS walker, AMX registers |
 | [`irq_wrappers.md`](irq_wrappers.md) | FAC0 XA switch and AMX IRET rewrite |
 | [`copy_7c92.md`](copy_7c92.md) | `8010` DGROUP grammar, consumers, writers |
+| [`owner_ledger.md`](owner_ledger.md) | Seeded file-range owners; gaps are debt |
 | [`named_unknowns.md`](named_unknowns.md) | Ranked open uncertainties |
 
 Do not duplicate the MPC2000XL note corpus here. Cite it when a V53

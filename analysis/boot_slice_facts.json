@@ -349,5 +349,12 @@
     "second_init_slot0b_bytes": "b84720a32c00",
     "b03b_slot8_file": "0x552A8",
     "b03b_slot8_bytes": "9a570100fb"
+  },
+  "owner_ledger": {
+    "file": "analysis/owner_ledger.json",
+    "range_count": 51,
+    "owned_bytes": 168653,
+    "gap_count": 25,
+    "note_rows": 91
   }
 }

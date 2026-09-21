@@ -1,0 +1,420 @@
+{
+  "image_size": 524288,
+  "owners": [
+    "code",
+    "data",
+    "excluded_workspace"
+  ],
+  "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
+  "owned_bytes": 168653,
+  "ranges": [
+    {
+      "start": "0x00000",
+      "end": "0x00044",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "leading 0xFF; unused IVT slots 0-0x10"
+    },
+    {
+      "start": "0x00044",
+      "end": "0x0004C",
+      "owner": "data",
+      "kind": "ivt_template",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "ROM IVT[0x11], IVT[0x12]"
+    },
+    {
+      "start": "0x0004C",
+      "end": "0x00050",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "0xFF between IVT templates"
+    },
+    {
+      "start": "0x00050",
+      "end": "0x00054",
+      "owner": "data",
+      "kind": "ivt_template",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "ROM IVT[0x14]"
+    },
+    {
+      "start": "0x00054",
+      "end": "0x20000",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "131020 0xFF bytes"
+    },
+    {
+      "start": "0x20000",
+      "end": "0x27C92",
+      "owner": "data",
+      "kind": "dgroup",
+      "source": "notes/copy_7c92.md",
+      "why": "DS=A000 DGROUP image"
+    },
+    {
+      "start": "0x300DF",
+      "end": "0x301A7",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_create_table.md",
+      "why": "create-table task 7 through RETF"
+    },
+    {
+      "start": "0x303BA",
+      "end": "0x3058A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_first_dispatch.md",
+      "why": "B03B:000A through RETF"
+    },
+    {
+      "start": "0x30600",
+      "end": "0x3060D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_create_table.md",
+      "why": "B060:0000 timed wait"
+    },
+    {
+      "start": "0x314B2",
+      "end": "0x3156E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_create_table.md",
+      "why": "create-table task 5 through RETF"
+    },
+    {
+      "start": "0x32596",
+      "end": "0x32600",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_create_table.md",
+      "why": "create-table task 1 through RETF"
+    },
+    {
+      "start": "0x5518D",
+      "end": "0x55206",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/pgr_live_after_amx.md",
+      "why": "D510:008D port picker through RETF"
+    },
+    {
+      "start": "0x59B95",
+      "end": "0x59BA1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/calling_convention.md",
+      "why": "D9B5:0045 LDS [BP+6]"
+    },
+    {
+      "start": "0x59BD9",
+      "end": "0x59C05",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_first_dispatch.md",
+      "why": "D9BD:0009 task 6 loop"
+    },
+    {
+      "start": "0x5DF1A",
+      "end": "0x5DF42",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_create_table.md",
+      "why": "create-table task 4 through RETF"
+    },
+    {
+      "start": "0x69374",
+      "end": "0x6937C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_create_table.md",
+      "why": "E937:0004 DS=ES=8010 RETF"
+    },
+    {
+      "start": "0x6AD0B",
+      "end": "0x6AD6E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_create_table.md",
+      "why": "create-table task 3 through RETF"
+    },
+    {
+      "start": "0x6C050",
+      "end": "0x6C093",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_create_table.md",
+      "why": "create-table task 2 through RETF"
+    },
+    {
+      "start": "0x707A4",
+      "end": "0x707B6",
+      "owner": "data",
+      "kind": "init_table",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "F07A three 6-byte init records"
+    },
+    {
+      "start": "0x7800A",
+      "end": "0x78144",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "BIOS F800:000A through RETF"
+    },
+    {
+      "start": "0x796AA",
+      "end": "0x796D4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "INT 43 dispatcher"
+    },
+    {
+      "start": "0x796D4",
+      "end": "0x796E4",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "INT 43 eight near targets"
+    },
+    {
+      "start": "0x796E4",
+      "end": "0x7971D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "INT 43 AX=0 LCD init"
+    },
+    {
+      "start": "0x79752",
+      "end": "0x7976E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/int43_ax4.md",
+      "why": "INT 43 AX=4 class walk"
+    },
+    {
+      "start": "0x7976E",
+      "end": "0x7977E",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/int43_ax4.md",
+      "why": "INT 43 AX=4 class table"
+    },
+    {
+      "start": "0x7977E",
+      "end": "0x797CC",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/int43_ax4.md",
+      "why": "INT 43 AX=4 CR/LF/BS/DEL/FF"
+    },
+    {
+      "start": "0x797CC",
+      "end": "0x79808",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/int43_ax4.md",
+      "why": "INT 43 AX=4 default glyph"
+    },
+    {
+      "start": "0x79843",
+      "end": "0x79875",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "cursor 1843 + LCD put"
+    },
+    {
+      "start": "0x79875",
+      "end": "0x79896",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "inline-string walker 1875"
+    },
+    {
+      "start": "0x79896",
+      "end": "0x7989C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/calling_convention.md",
+      "why": "hex helper 1896"
+    },
+    {
+      "start": "0x798CA",
+      "end": "0x798D6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "18CA INT 43 AX=4"
+    },
+    {
+      "start": "0x79946",
+      "end": "0x79B26",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/ivt_inventory.md",
+      "why": "1946 IRET + ladder + F800:1AD4 RETF"
+    },
+    {
+      "start": "0x7AC00",
+      "end": "0x7ACB4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "FAC0 reset through BRKXA 0x14"
+    },
+    {
+      "start": "0x7ACB4",
+      "end": "0x7AD34",
+      "owner": "data",
+      "kind": "pgr",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "second PGR image"
+    },
+    {
+      "start": "0x7AD34",
+      "end": "0x7ADA3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "FAC0:0134 table walk"
+    },
+    {
+      "start": "0x7ADA4",
+      "end": "0x7ADCF",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "IVT[10h] through BRKXA 0x12"
+    },
+    {
+      "start": "0x7ADCF",
+      "end": "0x7AE4F",
+      "owner": "data",
+      "kind": "pgr",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "third PGR image"
+    },
+    {
+      "start": "0x7AE4F",
+      "end": "0x7AE56",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "ROM IVT[12] POP/IRET"
+    },
+    {
+      "start": "0x7AE56",
+      "end": "0x7AED6",
+      "owner": "data",
+      "kind": "pgr",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "first PGR image"
+    },
+    {
+      "start": "0x7AED6",
+      "end": "0x7AF6A",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "I/O tables + sentinels"
+    },
+    {
+      "start": "0x7B00C",
+      "end": "0x7B04E",
+      "owner": "data",
+      "kind": "amx_header",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "AMX header / copyright"
+    },
+    {
+      "start": "0x7B04E",
+      "end": "0x7B5E9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_wait.md",
+      "why": "AMX start through task 0 RETF"
+    },
+    {
+      "start": "0x7B616",
+      "end": "0x7B762",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_public_api.md",
+      "why": "0616 through mailbox 0743"
+    },
+    {
+      "start": "0x7B762",
+      "end": "0x7B7F2",
+      "owner": "data",
+      "kind": "create_table",
+      "source": "notes/amx_wait.md",
+      "why": "eight 18-byte create records"
+    },
+    {
+      "start": "0x7B7F2",
+      "end": "0x7B7F6",
+      "owner": "data",
+      "kind": "create_table",
+      "source": "notes/amx_first_dispatch.md",
+      "why": "create-table FFFF:FFFF terminator"
+    },
+    {
+      "start": "0x7B7F6",
+      "end": "0x7B7FE",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/amx_first_dispatch.md",
+      "why": "CS:[003A] two far pointers"
+    },
+    {
+      "start": "0x7B812",
+      "end": "0x7B813",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_create_table.md",
+      "why": "FB76:00B2 RETF stub"
+    },
+    {
+      "start": "0x7FF00",
+      "end": "0x7FF44",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "FFF0 wait-state stub"
+    },
+    {
+      "start": "0x7FF44",
+      "end": "0x7FFF0",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "stub tail 0xFF"
+    },
+    {
+      "start": "0x7FFF0",
+      "end": "0x7FFF5",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "reset vector"
+    },
+    {
+      "start": "0x7FFF5",
+      "end": "0x80000",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/boot_reset_to_bios_banner.md",
+      "why": "post-reset 0xFF"
+    }
+  ]
+}

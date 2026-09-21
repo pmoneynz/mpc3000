@@ -4,9 +4,10 @@
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 
 This tree was a document-and-dump pack. It now has a project goal, an
-address model, and a static reset-to-AMX-start slice. It does not have a
-byte ledger, a transfer inventory, Ghidra exports, or a named wake
-source for the AMX idle spin.
+address model, a static reset-to-AMX-start slice, and a seeded owner
+ledger (51 ranges). It does not have whole-image coverage, a transfer
+inventory, Ghidra exports, or a named wake source for the AMX idle
+spin.
 
 ## What is established
 
@@ -55,9 +56,12 @@ source for the AMX idle spin.
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
+- Owner ledger seeded from the note Byte-ownership tables: 51
+  ranges, 168653 bytes, 25 gaps. Owners are `code` or `data` only.
 
 Evidence: [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),
-[`notes/copy_7c92.md`](notes/copy_7c92.md).
+[`notes/copy_7c92.md`](notes/copy_7c92.md),
+[`notes/owner_ledger.md`](notes/owner_ledger.md).
 Validator: `python3 tools/verify_boot_slice.py`.
 
 ## What is not established
@@ -72,6 +76,7 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Word `+2` = `0x0100` and the `+0238` numeric-island *meaning*
   (`copy_7c92.md`). Per-string callers stay D14 / slices.
 - Panel ROM, PAL fusemaps, full schematics.
+- Whole-image ledger coverage (D17). 25 gaps, 355635 bytes.
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
   `065B` overlays.
 

@@ -286,7 +286,7 @@ stay open inside that note.
 ## Byte ownership opened by this slice
 
 These ranges now have an evidence-backed owner. Everything else stays
-unresolved.
+unresolved. Machine-readable seed: [`owner_ledger.md`](owner_ledger.md).
 
 | File range | Owner | Why |
 |------------|-------|-----|

@@ -11,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tools.linear_rom import LINEAR_SHA256, load_vailixi_linear, sha256_bytes
+from tools.owner_ledger import gaps, ledger_spans, load_ledger, notes_covered, validate_ledger
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FACTS_PATH = REPO_ROOT / "analysis" / "boot_slice_facts.json"
@@ -289,6 +290,20 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(wrap["irq_enter"]["file"], 16), wrap["irq_enter"]["bytes"], "AMX 0157")
     _expect_hex(image, int(wrap["irq_stack"]["file"], 16), wrap["irq_stack"]["bytes"], "0157 SS:SP")
     checks.append("IRQ wrappers: FAC0 XA switch, AMX IRET rewrite")
+
+    ledger = load_ledger()
+    checks.extend(validate_ledger(image, ledger))
+    meta = facts["owner_ledger"]
+    n_notes = notes_covered(ledger)
+    if n_notes != meta["note_rows"]:
+        raise AssertionError(f"note ownership rows {n_notes} != pinned")
+    if ledger["owned_bytes"] != meta["owned_bytes"]:
+        raise AssertionError("owned_bytes does not match facts")
+    if len(ledger["ranges"]) != meta["range_count"]:
+        raise AssertionError("ledger range_count does not match facts")
+    if len(gaps(ledger_spans(ledger))) != meta["gap_count"]:
+        raise AssertionError("ledger gap_count does not match facts")
+    checks.append(f"owner ledger: {ledger['owned_bytes']} bytes, {n_notes} note rows")
 
     return checks
 
