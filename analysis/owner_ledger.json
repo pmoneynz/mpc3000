@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 341642,
+  "owned_bytes": 342101,
   "ranges": [
     {
       "start": "0x00000",
@@ -1305,7 +1305,15 @@
       "why": "instruction prefix of an indirect CALL dest"
     },
     {
-      "start": "0x55A47",
+      "start": "0x559D1",
+      "end": "0x559F1",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "D547 JMP CS:[DI+0561] 16 near IPs"
+    },
+    {
+      "start": "0x559F1",
       "end": "0x55A9D",
       "owner": "code",
       "kind": "code",
@@ -1313,12 +1321,20 @@
       "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
-      "start": "0x55D77",
+      "start": "0x55D70",
       "end": "0x55D7E",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "switch-table or 0347-plant dest instruction bytes"
+    },
+    {
+      "start": "0x55D7E",
+      "end": "0x55DA3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
       "start": "0x55DDC",
@@ -2809,6 +2825,14 @@
       "why": "DB28 JMP CS:[BX+09EB] 14 near IPs"
     },
     {
+      "start": "0x5BCD4",
+      "end": "0x5BCF9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "instruction prefix of an indirect CALL dest"
+    },
+    {
       "start": "0x5BE64",
       "end": "0x5BF71",
       "owner": "code",
@@ -3745,12 +3769,36 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5DBBC",
+      "end": "0x5DBC8",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/transfer_scan.md",
+      "why": "DD9A MOV CX,CS:[SI+021C] 6 words"
+    },
+    {
       "start": "0x5DBC8",
       "end": "0x5DBCF",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x5DBCF",
+      "end": "0x5DBEF",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/transfer_scan.md",
+      "why": "DD9A MOV BX,CS:[BX+022F] 16 mask words"
+    },
+    {
+      "start": "0x5DBEF",
+      "end": "0x5DC0F",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/transfer_scan.md",
+      "why": "DD9A MOV BX,CS:[BX+024F] 16 mask words"
     },
     {
       "start": "0x5DC0F",
@@ -4537,6 +4585,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x6B694",
+      "end": "0x6B746",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
       "start": "0x6B746",
       "end": "0x6B761",
       "owner": "code",
@@ -5247,6 +5303,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x7A094",
+      "end": "0x7A09A",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/transfer_scan.md",
+      "why": "F800 MOV AX,CS:[BX+2094] 3 words BL<3"
     },
     {
       "start": "0x7A0C4",

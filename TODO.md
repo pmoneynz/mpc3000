@@ -101,9 +101,11 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 341642 owned / 168 gaps. `FB93:0059` is the
-      later `IVT[8]` plant. `F800:1906` is a 16×4-byte OUTSW
-      table. 24 JMP/CALL tables still seed the BFS.
+      Progress: 342101 owned / 166 gaps. `D547` `JMP CS:[DI+0561]`
+      is a 16-IP table (`(AX&0xF)<<1`). `DD9A` CS-relative
+      word tables at `021C`/`022F`/`024F` are owned. `F800:2094`
+      is 3 words (`BL<3`), not the following 42-byte hole.
+      25 JMP/CALL tables seed the BFS (135/187 dests bounded).
       Indirect targets and unentered app ROM remain. The
       1-byte `CF` at `0x7ADA3` has no entry.
 

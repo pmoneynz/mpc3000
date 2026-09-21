@@ -189,6 +189,26 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x7B9AE:0x7B9BD], bytes.fromhex("b893fb8ec0bb5900b2089a470300fb"))
         self.assertEqual(self.image[0x798FB:0x798FF], bytes.fromhex("8db70619"))
         self.assertEqual(self.image[0x79906:0x79916], bytes.fromhex("000008000100090002000a0003000b00"))
+        self.assertEqual(self.image[0x559CC:0x559D1], bytes.fromhex("2effa56105"))
+        self.assertEqual(
+            self.image[0x559D1:0x559F1],
+            bytes.fromhex("81058705a505ab05d605d605c905d605b105d605b705bd05c305d605d605d605"),
+        )
+        self.assertEqual(self.image[0x559F1:0x559F4], bytes.fromhex("bbe107"))
+        self.assertEqual(self.image[0x5DB63:0x5DB68], bytes.fromhex("2e8b8c1c02"))
+        self.assertEqual(self.image[0x5DBBC:0x5DBC8], bytes.fromhex("040001000100040060000100"))
+        self.assertEqual(self.image[0x5DA0B:0x5DA10], bytes.fromhex("2e8b9f2f02"))
+        self.assertEqual(
+            self.image[0x5DBCF:0x5DBEF],
+            bytes.fromhex("000140018001c001000240028002c002000340038003c003000440048004c004"),
+        )
+        self.assertEqual(self.image[0x5DA9D:0x5DAA2], bytes.fromhex("2e8b9f4f02"))
+        self.assertEqual(
+            self.image[0x5DBEF:0x5DC0F],
+            bytes.fromhex("02000400060008000a000c000e0010002000400060008000a000c000e0000001"),
+        )
+        self.assertEqual(self.image[0x79D23:0x79D28], bytes.fromhex("2e8b879420"))
+        self.assertEqual(self.image[0x7A094:0x7A09A], bytes.fromhex("9a20a820b620"))
         self.assertGreaterEqual(
             sum(1 for rec in ledger["ranges"] if rec.get("kind") == "align"), 26
         )

@@ -75,9 +75,9 @@ Task 6 never `RETF`s. That is a resolved loop, not a missing exit
 
 The 74+42 new dests are **candidates** as *entries* (D15). A
 bounded CALL dest on a consumer chain from a D16 entry or a
-bounded switch-table dest is owned as *code* (D17). 24 hole- or
+bounded switch-table dest is owned as *code* (D17). 25 hole- or
 edge-bounded near-IP tables (JMP/CALL CS:[BX+disp], INT 40) seed that
-BFS. 125 of 177 table dests are bounded; 52 stay prefix-only.
+BFS. 135 of 187 table dests are bounded; 52 stay prefix-only.
 `D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
@@ -127,6 +127,7 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x50785, 0x5078D)` | data — `CFC6` `JMP CS:[BX+0B25]` 4 near IPs |
 | `[0x53CAC, 0x53CBC)` | data — `D3A7` `JMP CS:[BX+023C]` 8 near IPs |
 | `[0x559AA, 0x559B8)` | data — `D547` `JMP CS:[BX+053A]` 7 near IPs |
+| `[0x559D1, 0x559F1)` | data — `D547` `JMP CS:[DI+0561]` 16 near IPs (`(AX&0xF)<<1`) |
 | `[0x58BCA, 0x58BDC)` | data — `D8BC` `JMP CS:[BX+000A]` 9 near IPs |
 | `[0x59C95, 0x59C9D)` | data — `D9C0` `JMP CS:[BX+0095]` 4 near IPs |
 | `[0x5B24D, 0x5B25F)` | data — `DAF2` `JMP CS:[BX+032D]` 9 near IPs |
@@ -140,6 +141,10 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x5660C, 0x56618)` | data — `D61A` `JMP CS:[BX+046C]` 6 near IPs |
 | `[0x7B989, 0x7B996)` | code — `FB93:0059` `0347` IVT[8] plant (`INT 42` / `OUT 0xC010,0x60` / `IRET`) |
 | `[0x79906, 0x79946)` | data — `F800:1906` 16×4-byte records (`LEA SI,[BX+1906]` / `OUTSW`) |
+| `[0x5DBBC, 0x5DBC8)` | data — `DD9A` `MOV CX,CS:[SI+021C]` 6 words |
+| `[0x5DBCF, 0x5DBEF)` | data — `DD9A` `MOV BX,CS:[BX+022F]` 16 mask words |
+| `[0x5DBEF, 0x5DC0F)` | data — `DD9A` `MOV BX,CS:[BX+024F]` 16 mask words |
+| `[0x7A094, 0x7A09A)` | data — `F800` `MOV AX,CS:[BX+2094]` 3 words (`BL<3`) |
 
 ---
 
