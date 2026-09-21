@@ -84,7 +84,7 @@ task’s first wait and the select of task 7. AMX public far calls and
 TCB `[SI]` grammar are catalogued. Create-table tasks 0–7 have
 pinned entries and exits. Application calls are far cdecl.
 The `0x7C92` copy is the `8010` DGROUP (directory + strings +
-writable globals). The owner ledger covers 343499 proven bytes;
+writable globals). The owner ledger covers 343688 proven bytes;
 gaps stay unowned. 1096 strings are
 consumer-established; printable-without-consumer
 stays candidate. 143 entries are
