@@ -461,7 +461,7 @@ class BootSliceTests(unittest.TestCase):
                 for rec in ledger["ranges"]
                 if rec.get("kind") == "padding" and int(rec["end"], 16) - int(rec["start"], 16) == 1
             ),
-            31,
+            32,
         )
         self.assertEqual(self.image[0x55E02:0x55E05], bytes.fromhex("e8ff00"))
         self.assertEqual(self.image[0x55F04:0x55F0E], bytes.fromhex("b810808ec02e8b9c2c01"))
@@ -555,18 +555,18 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x44537:0x4453A], bytes.fromhex("e8bf00"))
         self.assertEqual(self.image[0x44549:0x4454C], bytes.fromhex("e81904"))
         self.assertEqual(self.image[0x44552:0x44555], bytes.fromhex("e89a06"))
-        self.assertEqual(self.image[0x445A2:0x445AA], bytes.fromhex("558bec568b7606"))
+        self.assertEqual(self.image[0x445A2:0x445AA], bytes.fromhex("558bec568b7606ff"))
         self.assertEqual(self.image[0x445F8], 0xCB)
-        self.assertEqual(self.image[0x445F9:0x44601], bytes.fromhex("558bec83ec021e"))
+        self.assertEqual(self.image[0x445F9:0x44601], bytes.fromhex("558bec83ec021e68"))
         self.assertEqual(self.image[0x4479E], 0xCB)
-        self.assertEqual(self.image[0x44965:0x4496D], bytes.fromhex("558bec83ec0256"))
+        self.assertEqual(self.image[0x44965:0x4496D], bytes.fromhex("558bec83ec02561e"))
         self.assertEqual(self.image[0x44B95], 0xCB)
-        self.assertEqual(self.image[0x44B96:0x44B9E], bytes.fromhex("558bec56578b76"))
+        self.assertEqual(self.image[0x44B96:0x44B9E], bytes.fromhex("558bec56578b7606"))
         self.assertEqual(self.image[0x44BEE], 0xCB)
-        self.assertEqual(self.image[0x44BEF:0x44BF7], bytes.fromhex("1e68ff519a8922"))
+        self.assertEqual(self.image[0x44BEF:0x44BF7], bytes.fromhex("1e68ff519a892209"))
         self.assertEqual(self.image[0x44C8C], 0xCB)
         self.assertEqual(self.image[0x446ED:0x446F2], bytes.fromhex("9a7200f2d9"))
-        self.assertEqual(self.image[0x59F92:0x59F9A], bytes.fromhex("558bec568b7606"))
+        self.assertEqual(self.image[0x59F92:0x59F9A], bytes.fromhex("558bec568b76068b"))
         self.assertEqual(self.image[0x59FCC], 0xCB)
         self.assertEqual(self.image[0x59FCD], 0xFF)
 
