@@ -251,14 +251,13 @@ FB00:013E  LDS DI, CS:[0042]
            JMP 013E
 ```
 
-`FB00:01EA` walks a list, calls `FB00:0537`, and on `SF=1` drops into
-`STI` plus a four-`NOP` spin at `FB00:023A`.
+`FB00:01EA` / `0537` are partitioned in
+[`amx_wait.md`](amx_wait.md). Empty or bit-15 TCB ? `STI` + NOP spin at
+`FB00:023A`. A ready TCB is resumed (`RETF`) or created (`0240`). Create
+record 7 is `B000:00DF` — same CS:IP as `FAC0:019E`, different path.
 
-**PROVEN:** this is the start call for the KADAK object; the dispatcher
-site is `FB00:013E`. **HYPOTHESIS:** `01EA` / `0537` implement “ready
-task?” and the NOP spin is the idle wait. **UNDETERMINED:** the wait
-source (which IRQ, which RAM flag, which alias). That remainder is
-`U-AMX-WAIT`.
+**PROVEN:** start call, dispatcher site, wait *condition*.
+**UNDETERMINED:** which IRQ leaves the idle spin (`U-AMX-WAIT` remainder).
 
 Reaching `013E` from `004E` walks data-dependent tables. This-trace from
 the header bytes in this image has no `RETF` on that path. All-paths
@@ -333,6 +332,6 @@ kernel. Helpers past `0148` stay unresolved.
 - Any 24-bit access to NVRAM `0x500000`.
 - Later writers or aliases of the `0x7C92`-byte copy.
 
-Next useful uncertainty: `U-AMX-WAIT` (ready-list / IRQ that leaves
-`FB00:01EA`), then `INT 43` AX=4 to pixels, then live PGR after BIOS
-(`U-XA-LIVE`).
+Next useful uncertainty: the IRQ that leaves `FB00:023A`, or proof that
+first `01EA` dispatches a create-table task (`U-AMX-WAIT` remainder).
+Then `INT 43` AX=4 to pixels.

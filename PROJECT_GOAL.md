@@ -78,10 +78,11 @@ interface connected end to end.
 
 Current slice (2026-09-21): reset through the FAC0 boot stub, the first PGR
 map, the `F07A` init table (BIOS `F800:000A`, `F800:1AD4`, AMX
-`FB00:000C`), and LC7981 initialization via `INT 43` AX=0. Reset reaches
-the AMX dispatcher spin at `FB00:013E`. The wake source for that spin is
-still open. See
-[`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md).
+`FB00:000C`), and LC7981 initialization via `INT 43` AX=0. AMX select
+(`FB00:01EA`) either `RETF`s a ready TCB or idles at `FB00:023A`. The
+wake ISR is still open. See
+[`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md)
+and [`notes/amx_wait.md`](notes/amx_wait.md).
 
 ## Priority order
 

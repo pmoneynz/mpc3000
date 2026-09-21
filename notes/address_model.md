@@ -79,8 +79,10 @@ still 0.
 
 Later boot reloads PGR (tables at `FAC0:00B4` and `FAC0:01CF`) to cover more
 of `0x300000-0x3FFFFF`. Those tables are **PROVEN** as bytes and as
-`OUTSW` sources. Which later table is live at the event loop is
-**UNDETERMINED**.
+`OUTSW` sources. On the reset path, BIOS, `F800:1AD4`, and AMX
+`004E`/`01EA`/`0537` do not write `0xFF00-0xFF7E`. The **second** table
+(`FAC0:00B4`) is therefore live when AMX first selects a TCB. Which table
+is live after the first task `RETF` is **UNDETERMINED**.
 
 ## Work RAM and NVRAM
 

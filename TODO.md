@@ -5,9 +5,9 @@ open a second backlog of unexplained code.
 
 ## Now
 
-1. Close `U-AMX-WAIT`: partition `FB00:01EA` / `0537` and name the wake
-   writer (IRQ, RAM flag, alias). That is the missing half of the first
-   milestone.
+1. Name the wake ISR that leaves `FB00:023A` (`U-AMX-WAIT` remainder),
+   or prove a create-table task is ready on first `01EA` so idle is not
+   taken. That is the missing half of the first milestone.
 2. Trace `INT 43` AX=4 from a banner character to LC7981 memory or a
    justified non-display sink (`U-INT43-AX4`).
 3. Inventory consumers of `8010:0000` after the `0x7C92` copy

@@ -88,7 +88,22 @@
     "copyright_bytes": "434f50595249474854202843292031393833204b4144414b2050524f4455435453204c54442e",
     "dispatcher_cs_ip": "FB00:013E",
     "dispatcher_file": "0x7B13E",
-    "dispatcher_bytes": "2ec53e4200e8a400ebf6"
+    "dispatcher_bytes": "2ec53e4200e8a400ebf6",
+    "select_cs_ip": "FB00:01EA",
+    "select_file": "0x7B1EA",
+    "select_bytes": "fa2ec4264a00",
+    "index_cs_ip": "FB00:0537",
+    "index_file": "0x7B537",
+    "index_bytes": "2ec53e4200b8ffff3a550e",
+    "idle_cs_ip": "FB00:023A",
+    "idle_file": "0x7B23A",
+    "idle_bytes": "90909090ebfa",
+    "create_table": {
+      "cs_ip": "FB76:0002",
+      "file": "0x7B762",
+      "record_size": 18,
+      "record7_bytes": "df0000b0803e8793"
+    }
   },
   "copy_7c92": {
     "source_cs": "0xA000",

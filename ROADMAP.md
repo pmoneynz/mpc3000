@@ -14,9 +14,11 @@ changes decode.
 
 Reset to a named loop plus one observable, end to end.
 
-- Done: reset ? FAC0 ? BIOS + second init ? AMX start / dispatcher spin;
-  LC7981 init writes; `0x7C92` copy bounded.
-- Open: AMX wake source; banner glyph path; live PGR after BIOS.
+- Done: reset through AMX start; `01EA`/`0537` TCB select; empty-queue
+  idle; create-table record 7 = `B000:00DF`; second PGR live through
+  first select; `0x7C92` copy bounded; LC7981 init writes.
+- Open: AMX wake ISR; whether a create-table task is ready on first
+  select; banner glyph path; PGR after first task.
 
 ## Gate 2 — Shared machinery
 

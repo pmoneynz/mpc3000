@@ -21,8 +21,11 @@ source for the AMX idle spin.
   `F800:1AD4` both `RETF`. The third record is AMX start `FB00:000C`.
 - BIOS issues `INT 43` AX=0, which programs LC7981 ports `0xE2`/`0xE0`
   through the put at `0x7985A`.
-- The `0x7C92`-byte `DS=A000`?`ES=8010` copy is bounded; its front is an
-  `AA 55` string/resource table, not a proven code image.
+- The `0x7C92`-byte `DS=A000` to `ES=8010` copy is bounded; its front is
+  an `AA 55` string/resource table, not a proven code image.
+- AMX `0537` maps `DL` to a 0x40-byte TCB. `01EA` resumes or creates a
+  ready TCB, else `STI`+NOP at `FB00:023A`. Create record 7 is
+  `B000:00DF`. Second PGR is live through that first select.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
 
@@ -31,9 +34,11 @@ Validator: `python3 tools/verify_boot_slice.py`.
 
 ## What is not established
 
-- What the AMX dispatcher waits on (`U-AMX-WAIT`).
+- Which IRQ leaves the AMX idle spin (`U-AMX-WAIT` remainder). The
+  empty-queue condition is closed; see [`notes/amx_wait.md`](notes/amx_wait.md).
 - Banner glyphs on the LCD (`U-INT43-AX4`).
-- Live PGR after BIOS return (`U-XA-LIVE`).
+- PGR after the first AMX task `RETF` (`U-XA-LIVE`). Second table is live
+  through first `01EA`.
 - Full grammar and later writers of the `0x7C92` copy.
 - Panel ROM, PAL fusemaps, full schematics.
 - Any RAM object lifetime beyond the copy bound and the RAM clear.
@@ -43,5 +48,4 @@ Physical hardware remains deferred.
 ## Progress measure
 
 The useful increment is the removal of a named uncertainty. This session
-removed “does reset reach AMX, and what is the `0x7C92` copy?” It did
-not remove the dispatcher-wake uncertainty.
+removed “what does `01EA`/`0537` wait on?” It did not name the wake ISR.

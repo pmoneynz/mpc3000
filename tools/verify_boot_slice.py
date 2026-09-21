@@ -111,6 +111,13 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(amx["dispatcher_file"], 16), amx["dispatcher_bytes"], "AMX dispatcher")
     checks.append("AMX FB00:000C / dispatcher 013E")
 
+    _expect_hex(image, int(amx["select_file"], 16), amx["select_bytes"], "AMX 01EA")
+    _expect_hex(image, int(amx["index_file"], 16), amx["index_bytes"], "AMX 0537")
+    _expect_hex(image, int(amx["idle_file"], 16), amx["idle_bytes"], "AMX idle")
+    create = amx["create_table"]
+    _expect_hex(image, int(create["file"], 16) + 7 * create["record_size"], create["record7_bytes"], "AMX create[7]")
+    checks.append("AMX 01EA / 0537 / idle / create[7]=B000:00DF")
+
     copy = facts["copy_7c92"]
     _expect_hex(image, int(copy["source_file"], 16), copy["signature_bytes"], "copy signature")
     if image[0x7AC84:0x7AC87] != bytes.fromhex("b9927c"):
