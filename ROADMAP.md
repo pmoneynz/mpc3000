@@ -24,9 +24,10 @@ Reset to a named loop plus one observable, end to end.
 
 ## Gate 2 — Shared machinery
 
-Startup tails, calling convention (D8), interrupt wrappers (D9), dispatchers,
-allocators, resource interpreters. Recover entries, blocks, continuations,
-and shared tails before forcing conventional function bounds.
+Startup tails, calling convention (D8), interrupt wrappers (D9), the
+`0x7C92` DGROUP (D10), dispatchers, allocators, resource interpreters.
+Recover entries, blocks, continuations, and shared tails before forcing
+conventional function bounds. D10 is closed. D11 waits on a named slice.
 
 ## Gate 3 — Structural closure
 

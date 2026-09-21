@@ -21,8 +21,9 @@ source for the AMX idle spin.
   `F800:1AD4` both `RETF`. The third record is AMX start `FB00:000C`.
 - BIOS issues `INT 43` AX=0, which programs LC7981 ports `0xE2`/`0xE0`
   through the put at `0x7985A`.
-- The `0x7C92`-byte `DS=A000` to `ES=8010` copy is bounded; its front is
-  an `AA 55` string/resource table, not a proven code image.
+- The `0x7C92`-byte `DS=A000` to `ES=8010` copy is a relocated DGROUP:
+  directory `[+4, +0x5C8)`, string pool, writable globals. 21
+  `MOV AX,8010`. Dest 24-bit `0x380100` under first and second PGR.
 - AMX `0537` maps `DL` to a 0x40-byte TCB. `01EA` resumes or creates a
   ready TCB, else `STI`+NOP at `FB00:023A`. Create record 7 is
   `B000:00DF`. Second PGR is live through that first select.
@@ -46,13 +47,17 @@ source for the AMX idle spin.
   `024F` keeps the interrupted IP. AMX `02F8`/`02EF` rewrite the
   `IRET` frame to `TCB+18h+AX` when nest is 1..127 and the hook is
   non-null. `0157` stack-switches to `901C:1130`.
+- `U-COPY-7C92` closed: only bulk writer is `FAC0:0074`; BSS zero
+  is `[7C92, FFB8)`; `065B` overlays `8010:125C`..; `A000` is ROM
+  only under the first PGR. No second dest alias.
 - BIOS banner characters take `INT 43` AX=4, then `17CC`, then `LCD_put`
   AH=`0x0C` / AL=char on ports `0xE2`/`0xE0`. Cursor and a 320-cell
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
 
-Evidence: [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md).
+Evidence: [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),
+[`notes/copy_7c92.md`](notes/copy_7c92.md).
 Validator: `python3 tools/verify_boot_slice.py`.
 
 ## What is not established
@@ -64,9 +69,11 @@ Validator: `python3 tools/verify_boot_slice.py`.
   task 6’s first wait and task 7 select. Only three full-table `OUTSW`
   sites exist, all FAC0.
 - First ready of create-table slots 0 and 2.
-- Full grammar and later writers of the `0x7C92` copy.
+- Word `+2` = `0x0100` and the `+0238` numeric-island *meaning*
+  (`copy_7c92.md`). Per-string callers stay D14 / slices.
 - Panel ROM, PAL fusemaps, full schematics.
-- Any RAM object lifetime beyond the copy bound and the RAM clear.
+- RAM object lifetime past the `8010` DGROUP / BSS split and the
+  `065B` overlays.
 
 Physical hardware remains deferred.
 

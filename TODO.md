@@ -68,8 +68,11 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       via ROM `IVT[12]`=`024F` (no IP rewrite). AMX `02F8`/`02EF`
       `IRET` to `TCB+18h+AX` or the interrupted IP. `0157` switches
       `SS:SP` to `901C:1130`. Wake ISR still `U-AMX-WAIT`.
-- [ ] **D10.** Finish `U-COPY-7C92`: grammar past the string front;
-      consumers of `8010:0000`; later writers and aliases.
+- [x] **D10.** `U-COPY-7C92` closed: DGROUP image at `8010:0000`.
+      Directory `[4, 0x5C8)` is 345 `xxxx:8010` ptrs + 19 NULLs +
+      the `+0238` numeric island. 21 `MOV AX,8010`. Bulk writer is
+      only `FAC0:0074`. `065B` overlays `125C`.. when `ES=8010`.
+      `A000` is the ROM source under the first PGR only.
 - [ ] **D11.** Find allocators / resource interpreters only when a
       named slice needs them. No whole-image leaf hunt first.
 

@@ -215,10 +215,37 @@ def verify(image: bytes, facts: dict) -> list[str]:
     checks.append("INT43 AX=4 default -> LCD_put AH=0x0C")
 
     copy = facts["copy_7c92"]
-    _expect_hex(image, int(copy["source_file"], 16), copy["signature_bytes"], "copy signature")
+    src = int(copy["source_file"], 16)
+    _expect_hex(image, src, copy["signature_bytes"], "copy signature")
     if image[0x7AC84:0x7AC87] != bytes.fromhex("b9927c"):
         raise AssertionError("copy length is not MOV CX,0x7C92")
+    if image.count(b"\xaa\x55") != copy["aa55_count"]:
+        raise AssertionError("AA 55 is not unique")
+    if image.count(bytes.fromhex("b81080")) != copy["mov_ax_8010_count"]:
+        raise AssertionError("MOV AX,8010 count is not 21")
+    if image.count(bytes.fromhex("b800a0")) != copy["mov_ax_a000_count"]:
+        raise AssertionError("MOV AX,A000 is not unique")
+    if image.count(bytes.fromhex("00001080")) != copy["farptr_0000_8010_count"]:
+        raise AssertionError("stored 0000:8010 dword exists")
+    island = int(copy["numeric_island_off"], 16)
+    _expect_hex(image, src + island, copy["numeric_island_bytes"], "copy +0238 island")
+    _expect_hex(image, int(copy["fac0_copy"]["file"], 16), copy["fac0_copy"]["bytes"], "FAC0:0074 copy")
+    _expect_hex(image, int(copy["fac0_bss"]["file"], 16), copy["fac0_bss"]["bytes"], "FAC0:0134 BSS zero")
+    _expect_hex(image, int(copy["b03b_es_a90b"]["file"], 16), copy["b03b_es_a90b"]["bytes"], "B03B ES=A90B then 065B")
+    _expect_hex(
+        image,
+        int(copy["b03b_es_8010_mailbox"]["file"], 16),
+        copy["b03b_es_8010_mailbox"]["bytes"],
+        "B03B ES=8010 BX=125C",
+    )
+    _expect_hex(image, int(copy["amx_065b"]["file"], 16), copy["amx_065b"]["bytes"], "AMX 065B")
+    if image[0x7B668:0x7B66B] != bytes.fromhex("268907"):
+        raise AssertionError("065B does not MOV ES:[BX],AX")
+    _expect_hex(image, int(copy["ds8010_store_1d11"]["file"], 16), copy["ds8010_store_1d11"]["bytes"], "DS=8010 [1D11]")
+    moff = int(copy["mailbox_template_off"], 16)
+    _expect_hex(image, src + moff, copy["mailbox_template_bytes"], "8010:125C template")
     checks.append("DS=A000 copy AA 55 / 0x7C92")
+    checks.append("DGROUP 8010: directory, BSS zero, 065B overlays")
 
     if image[0x7AE4F:0x7AE56] != bytes.fromhex("5a595b585e1fcf"):
         raise AssertionError("ROM IVT12 continue is not POP/IRET")

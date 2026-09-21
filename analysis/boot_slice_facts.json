@@ -209,8 +209,48 @@
     "source_file": "0x20000",
     "dest_es": "0x8010",
     "dest_phys24_first_pgr": "0x380100",
+    "dest_phys24_second_pgr": "0x380100",
     "length": 31890,
-    "signature_bytes": "aa550001"
+    "signature_bytes": "aa550001",
+    "numeric_island_off": "0x0238",
+    "numeric_island_bytes": "2c01300032003c003c00b80be001f40158025802",
+    "directory_end": "0x05C8",
+    "mov_ax_8010_count": 21,
+    "mov_ax_a000_count": 1,
+    "aa55_count": 1,
+    "farptr_0000_8010_count": 0,
+    "fac0_copy": {
+      "cs_ip": "FAC0:0074",
+      "file": "0x7AC74",
+      "bytes": "b810808ec0b800a08ed8be0000bf0000b9927c2bcfd1e9e302f3a5"
+    },
+    "fac0_bss": {
+      "cs_ip": "FAC0:0134",
+      "file": "0x7AD34",
+      "bytes": "b810808ed88ec033c0bf927cb9b8ff2bcfd1e9e302f3ab"
+    },
+    "b03b_es_a90b": {
+      "cs_ip": "B03B:000A",
+      "file": "0x303BA",
+      "bytes": "1e06b80ba98ec0b810808ed8b001b9a406bb00009a5b0600fb"
+    },
+    "b03b_es_8010_mailbox": {
+      "cs_ip": "B03B:0065",
+      "file": "0x3041F",
+      "bytes": "b810808ec0b001b91000bb5c129a5b0600fb",
+      "bx": "0x125C"
+    },
+    "amx_065b": {
+      "cs_ip": "FB00:065B",
+      "file": "0x7B65B",
+      "bytes": "509c48250300d1c8d1c80bc1fa26890733c02689470226894704268947069d58cb"
+    },
+    "ds8010_store_1d11": {
+      "file": "0x313A5",
+      "bytes": "b810808ed8c706111d0000"
+    },
+    "mailbox_template_off": "0x125C",
+    "mailbox_template_bytes": "0000000000000000"
   },
   "lcd_put": {
     "file": "0x7985A",

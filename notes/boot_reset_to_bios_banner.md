@@ -120,8 +120,8 @@ BRKXA 0x14                  ; ROM IVT[0x14] = FAC0:0134
 ```
 
 **PROVEN:** the copy length, the segment numbers, and the two extended-mode
-transfers. The copied object is bounded below (`U-COPY-7C92`). It is **not**
-proven to be a single relocated code image.
+transfers. The copied object is a relocated DGROUP (`U-COPY-7C92`
+closed). It is **not** a single relocated code image.
 
 `ndisasm` is not safe from `FAC0:00B4` onward: that is PGR data, not code.
 
@@ -264,21 +264,22 @@ Reaching `013E` from `004E` walks data-dependent tables. This-trace from
 the header bytes in this image has no `RETF` on that path. All-paths
 “never returns” still needs those table bounds.
 
-## 12. Copy bound — `U-COPY-7C92`
+## 12. Copy bound — `U-COPY-7C92` (closed D10)
 
 | Field | Value | Tag |
 |-------|-------|-----|
 | Source | `DS=A000` = file `[0x20000, 0x27C92)` | **PROVEN** |
-| Dest | `ES=8010` = 24-bit `0x380100` under the first PGR (page 32 frame `0xE0`) | **PROVEN** for that map |
+| Dest | `ES=8010` = 24-bit `0x380100` under first *and* second PGR (page 32 frame `0xE0`) | **PROVEN** |
 | Length | `0x7C92` (31900) | **PROVEN** |
 | Boot writer | `FAC0:0074` `REP MOVSW`; only `MOV AX,A000` in the image | **PROVEN** |
 | Signature | `AA 55` then word `0x0100` at `8010:0000`; unique `AA 55` in the image | **PROVEN** as bytes |
-| Front matter | early `8010:xxxx` dwords, some NULL, resolve to UI strings (`ALL EVENTS`, `YES`/`NO`, `MASTER`/`SEQUENCE`/`PROGRAM`, pad labels) | **PROVEN** for those first targets |
-| Grammar of the rest | mixed later dwords; not a uniform far-call table | **UNDETERMINED** |
-| Later writers / aliases | — | **UNDETERMINED** |
+| Directory | `[+4, +0x5C8)`: 345 `xxxx:8010` far ptrs, 19 NULLs, 5 numeric dwords at `+0238` | **PROVEN** |
+| Rest | string pool + initialized scalars; `065B` overlays `+125C`.. when `ES=8010` | **PROVEN** as writer class |
+| Later writers / aliases | boot MOVSW + BSS STOSW + `065B` + per-global stores; dest alias is `8010` only | **PROVEN** — [`copy_7c92.md`](copy_7c92.md) |
 
 The previous “relocated OS body” wording is withdrawn. The copy is a
-relocated data object whose front is a string/resource table.
+relocated writable DGROUP. Word `+2` and the `+0238` island *meaning*
+stay open inside that note.
 
 ---
 
@@ -294,7 +295,7 @@ unresolved.
 | `[0x0004C, 0x00050)` | data / padding | `0xFF` |
 | `[0x00050, 0x00054)` | data / IVT template | vector 0x14 |
 | `[0x00054, 0x20000)` | data / padding | 131,020 `0xFF` bytes; no other non-`FF` in the window |
-| `[0x20000, 0x27C92)` | data | `DS=A000` copy source; `AA 55` + string pointers |
+| `[0x20000, 0x27C92)` | data | `DS=A000` DGROUP image; directory + strings + scalars |
 | `[0x707A4, 0x707B6)` | data | three 6-byte init records |
 | `[0x7AC00, 0x7ACB4)` | code | FAC0 reset body through `BRKXA 0x14` |
 | `[0x7ACB4, 0x7AD34)` | data | second PGR image (consumed by `OUTSW`) |
@@ -334,7 +335,7 @@ kernel. Helpers past `0148` stay unresolved.
 - Panel, MIDI, SCSI, FDC, or DSP behavior.
 - That `INT 46` or the AX=4 port writes paint glyphs.
 - Any 24-bit access to NVRAM `0x500000`.
-- Later writers or aliases of the `0x7C92`-byte copy.
+- Later writers or aliases of the `0x7C92`-byte copy — **closed** D10.
 
-Next useful uncertainty: AMX public API / TCB grammar (D6), or task 7
-body `B000:00DF`.
+Next useful uncertainty: owner ledger (D12), or task 7 body
+`B000:00DF`. Mailbox grammar at `065B` stays D11.

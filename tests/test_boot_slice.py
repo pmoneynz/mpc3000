@@ -114,7 +114,22 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(length, 0x7C92)
         self.assertEqual(self.image[src : src + 4], bytes.fromhex(copy["signature_bytes"]))
         self.assertEqual(self.image[src + 0x66C : src + 0x677], b"ALL EVENTS ")
-        self.assertEqual(self.image.count(b"\xaa\x55"), 1)
+        self.assertEqual(self.image.count(b"\xaa\x55"), copy["aa55_count"])
+        self.assertEqual(self.image.count(bytes.fromhex("b81080")), copy["mov_ax_8010_count"])
+        self.assertEqual(self.image.count(bytes.fromhex("b800a0")), copy["mov_ax_a000_count"])
+        self.assertEqual(self.image.count(bytes.fromhex("00001080")), 0)
+        island = int(copy["numeric_island_off"], 16)
+        self.assertEqual(
+            self.image[src + island : src + island + 20],
+            bytes.fromhex(copy["numeric_island_bytes"]),
+        )
+        self.assertEqual(self.image[0x7AC74:0x7AC8F], bytes.fromhex(copy["fac0_copy"]["bytes"]))
+        self.assertEqual(self.image[0x7AD34:0x7AD4B], bytes.fromhex(copy["fac0_bss"]["bytes"]))
+        self.assertEqual(self.image[0x303BA:0x303D3], bytes.fromhex(copy["b03b_es_a90b"]["bytes"]))
+        self.assertEqual(self.image[0x3041F:0x30431], bytes.fromhex(copy["b03b_es_8010_mailbox"]["bytes"]))
+        self.assertEqual(self.image[0x7B65B:0x7B67C], bytes.fromhex(copy["amx_065b"]["bytes"]))
+        self.assertEqual(self.image[0x313A5:0x313B0], bytes.fromhex(copy["ds8010_store_1d11"]["bytes"]))
+        self.assertEqual(self.image[src + 0x125C : src + 0x1264], b"\x00" * 8)
 
     def test_v53_decode_brkxa_retxa(self) -> None:
         brk = decode_one(self.image, 0xFAC0, 0x001C)
