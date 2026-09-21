@@ -226,7 +226,9 @@ bounds, evidence, unknowns).
       (default `0x0D` at `CF37:0325`). Task 3
       `EAD0:000B` consumes `[E614]` (`JB` if `<0x23`)
       and `CALLF CFB3:0008` (status `& 0xF8`;
-      `0x90` → `CFC6:0007`). Owned `[D6AC]`
+      `0x90` → `CFC6:0007`, note `+2` in
+      `0x23`..`0x62`, `02D6` note-to-slot).
+      Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
       pan ([`notes/pan_table.md`](notes/pan_table.md)).

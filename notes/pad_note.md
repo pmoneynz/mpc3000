@@ -256,7 +256,19 @@ that switch. Task 3's first packet byte is
 `Param+0x90`; if Param is `0..3` then
 `& 0xF8` is `0x90` and that arm is taken
 (**HYPOTHESIS** live Param stays `0..3`).
-Do not BFS a new `CFC6` meaning this pass.
+
+`CFC6:0007` (file `0x4FC67`, same owned span).
+`ES:[BX+2]` must be `0x23`..`0x62` else
+`02D2` `POP`/`LEAVE`/`RETF`. Else
+`AX=note*0x18`; `LES BX,[E5F9]`;
+`ADD BX,0xFCF6`; `AL=ES:[BX+0x0D]`.
+**PROVEN** as that index (effective
+`[E5F9]+note*0x18+FD03`, not `+FD0D`).
+Leftover `02D6` (file `0x4FF36`, `CALLN`
+from `0066`): `DX=[BP+6]-0x23`; clamp
+`0`..`0x3F`. **PROVEN** note-to-slot
+on that arm. Not a pad-hit. Do not name
+the `+0x0D` field.
 
 ---
 
