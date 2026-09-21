@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 349456,
+  "owned_bytes": 351693,
   "ranges": [
     {
       "start": "0x00000",
@@ -519,6 +519,38 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "B3ED:000F cdecl through RETF; CALLF C425:01B5"
+    },
+    {
+      "start": "0x33FD6",
+      "end": "0x34841",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B3FD:0006 through three JMP CS:[BX]; CALLF C425:011F"
+    },
+    {
+      "start": "0x34841",
+      "end": "0x3485D",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "B3FD JMP CS:[BX+0871] 14 near IPs BX<=0x0D then SHL 1"
+    },
+    {
+      "start": "0x3485D",
+      "end": "0x34877",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "B3FD JMP CS:[BX+088D] 13 near IPs BX<=0x0C then SHL 1"
+    },
+    {
+      "start": "0x34877",
+      "end": "0x34893",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "B3FD JMP CS:[BX+08A7] 14 near IPs BX<=0x0D then SHL 1"
     },
     {
       "start": "0x370F1",

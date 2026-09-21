@@ -5,7 +5,7 @@
 
 This tree was a document-and-dump pack. It now has a project goal, an
 address model, a static reset-to-AMX-start slice, a seeded owner
-ledger (774 ranges, 349456 bytes), a consumer-established string
+ledger (778 ranges, 351693 bytes), a consumer-established string
 inventory, an entry inventory (143 unique `CS:IP`), and a
 local-exit inventory (128 bounded / 14 indirect / 1 idle loop).
 It does not have whole-image coverage, Ghidra exports, or a named
@@ -58,7 +58,7 @@ wake source for the AMX idle spin.
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
-- Owner ledger: 774 ranges, 349456 bytes, 132 gaps. Owners are
+- Owner ledger: 778 ranges, 351693 bytes, 132 gaps. Owners are
   `code` or `data` only. Every `0xFF` run of 4+ bytes is classified.
 - String scan (D14): 1096 C-string starts are text because a
   consumer points at them (directory 345 `8010` ptrs, 27 disk
@@ -108,9 +108,9 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `DCA2:0154`, `C425:0269`, `F800:242D`, `C2D0:000C`,
   `B3ED:000F`, `C44E:0005`/`00B8`, `C2E6:0007`,
   `CEBF:0008`/`026A`, `BE1A:0002`/`01FB`, `BE1A:0203`/
-  `022B`, `BE1A:026C` (three packed tables), and `C303:0004`
-  (`0BCC`/`0BE8`) are seed-only. Those switch tables are not
-  BFS seeds.
+  `022B`, `BE1A:026C` (three packed tables), `C303:0004`
+  (`0BCC`/`0BE8`), and `B3FD:0006` (`0871`/`088D`/`08A7`)
+  are seed-only. Those switch tables are not BFS seeds.
   Indirect *targets* and unentered app ROM stay
   debt. The 1-byte `CF` at `0x7ADA3` has no entry.
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
