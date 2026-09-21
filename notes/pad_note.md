@@ -304,8 +304,14 @@ indexes the same table (`+5*0x18+FCF6`,
 file `0x4FD23`). When event `+3` is at
 or below `+4`, `+3` is the note
 (`CMP 0x23` file `0x4FD54`; load file
-`0x4FD61`). **PROVEN** as note-floor
-bytes. Do not name `+1` / `+2` / `+4`.
+`0x4FD61`). When `+1==3` (file `0x4FD92`)
+the compare key is `+0C` (file `0x4FD95`),
+or event `+4` if event status `& 3 == 1`
+(file `0x4FDA5` / `0x4FDAD`). Then the
+same `+5` / `+3` note-floor arms.
+**PROVEN** as note-floor
+bytes. Do not name `+1` / `+2` / `+4` /
+`+0C`.
 Leftover `02D6`
 (file `0x4FF36`, `CALLN` from `0066`):
 `DX=[BP+6]-0x23`; clamp
