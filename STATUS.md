@@ -144,7 +144,9 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `0007` `CALLN 039E` leftover
   indexes `+7`/`+8` through
   `[E5F9]+FCF6`; `D9C0:0006` is
-  the same Param `0..3` pair map).
+  the same Param `0..3` pair map;
+  `DC2A:0033` / `DC85:0047` consume
+  `[81B3]==0`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).

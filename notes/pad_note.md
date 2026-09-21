@@ -236,6 +236,20 @@ init as `01DD` `MOV [8375],0`): `MOV [81B3],0`.
 **PROVEN** default is the `VELOCITY` arm. Gap store
 `A2 B3 81` at file `0x5771E` is mid-gap. Do not seed it.
 
+Already-owned leftover `DC2A:0033` (file
+`0x5C2D3`) branches to `0067`: `CMP
+ES:[BX],0x90` (file `0x5C30A`); if
+`[81B3]==0` (file `0x5C317`) it loads
+event `+2` (file `0x5C321`). Sibling
+`DC85:0047` (file `0x5C897`) starts a
+loop at `0x23` (file `0x5C89F`) and
+uses the same `[81B3]==0` gate (file
+`0x5C8C4`). **PROVEN** as consumers
+of the named VELOCITY default. Not a
+pad-hit. Do not name the compared
+RAM. Do not invent a 16-level
+algorithm.
+
 `BE1A:0203` (file `0x3E3A3`, already owned): if
 `[81B3]==0`, `DX=4`. Else `AX=[BP+6]*0x18`;
 `LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`. `0002` passes the
