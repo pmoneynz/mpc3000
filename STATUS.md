@@ -103,9 +103,9 @@ Validator: `python3 tools/verify_boot_slice.py`.
   not drum-pad labels. Owned printer `B354:01C6` is called with
   title `Pan:` ([`notes/pan_table.md`](notes/pan_table.md)).
 - D20 assign UI is `C44E:0119` with `D9F2:000C`/`003D`/`0072`
-  (slot/note, index `<0x40`). Owned `[D6AC]` stores are the
-  UI clamp, `B060:0504` (`'N'` remap from `[D6AD]`), and
-  `5A50:00C5` (MIDI `0x90` remap). Pad-hit writer is unnamed
+  (slot/note, index `<0x40`). ROM default `+0859` is
+  `0x23`..`0x62` (`B21A:0033` / `CF37:04AD` overlay).
+  Owned `[D6AC]` stores are remaps. Pad-hit writer is unnamed
   ([`notes/pad_note.md`](notes/pad_note.md)).
 - PGR page 61 word `0x0140` maps to 24-bit `0x500000`
   (full-word `v33_translate`). Consumer is `D9B5`

@@ -210,10 +210,11 @@ bounds, evidence, unknowns).
       unnamed. See [`notes/front_panel.md`](notes/front_panel.md).
       Missing: the dump and one captured panel frame.
 - [ ] **D20.** Pad / note entry. Assign UI is `C44E:0119`;
-      `D9F2:000C`/`003D`/`0072` are slot/note. Owned
-      `[D6AC]` stores are the UI clamp, `B060:0504` (`'N'`
-      to `003D`(`[D6AD]`)), and `5A50:00C5` (MIDI `0x90` to
-      `003D`). None is a pad-hit. See
+      `D9F2:000C`/`003D`/`0072` are slot/note. ROM default
+      at DGROUP `+0859` is 64 bytes `0x23`..`0x62`
+      (`B21A:0033` copies to `[8376]`; `CF37:04AD` copies
+      overlay to far `+073E`). Owned `[D6AC]` stores are
+      remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
       pan ([`notes/pan_table.md`](notes/pan_table.md)).
 - [ ] **D21.** Sequencer transport (play/stop/position).

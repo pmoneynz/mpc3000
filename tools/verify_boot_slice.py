@@ -145,8 +145,19 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(pad["sa50_midi90_file"], 16), pad["sa50_midi90_bytes"], "5A50 CMP AX,0x90")
     _expect_hex(image, int(pad["sa50_call_file"], 16), pad["sa50_call_bytes"], "5A50 CALL 003D / MOV [D6AC]")
     _expect_hex(image, int(pad["d6ad_midi_store_file"], 16), pad["d6ad_midi_store_bytes"], "56D4 MOV [D6AD],AL")
+    _expect_hex(image, int(pad["def_file"], 16), pad["def_bytes"], "DGROUP +0859 first 8")
+    _expect_hex(image, int(pad["def_last_file"], 16), pad["def_last_bytes"], "DGROUP +0859 last 4")
+    _expect_hex(image, int(pad["b21a_copy_file"], 16), pad["b21a_copy_bytes"], "B21A:0033 copy 0859->8376")
+    _expect_hex(image, int(pad["b21a_flag_file"], 16), pad["b21a_flag_bytes"], "B21A:01DD MOV [8375],0")
+    _expect_hex(image, int(pad["cf37_copy_file"], 16), pad["cf37_copy_bytes"], "CF37 overlay to +073E")
     _expect_hex(image, int(pad["midi90_file"], 16), pad["midi90_bytes"], "56D4:000A AND/CMP 90")
-    checks.append("D20: C44E assign; D9F2 000C/003D/0072; owned [D6AC] writers are remaps")
+    def_off = int(pad["def_file"], 16)
+    def_n = int(pad["def_count"])
+    got = list(image[def_off : def_off + def_n])
+    expect = list(range(int(pad["def_first"]), int(pad["def_last"]) + 1))
+    if got != expect:
+        raise AssertionError(f"+0859 default table {got[:4]}.. != {expect[:4]}..")
+    checks.append("D20: C44E assign; D9F2 slot/note; +0859 default 0x23..0x62; overlay copy")
 
     if image[0x7AC1C:0x7AC1F] != bytes.fromhex("0fe011"):
         raise AssertionError("missing BRKXA 0x11 at FAC0:001C")

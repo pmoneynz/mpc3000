@@ -23,7 +23,7 @@ Reproduction: `python3 tools/verify_boot_slice.py`.
 | Observable | `C44E:0119` title `Assign Pads to Note Numbers`; `D9F2:000C` / `003D` / `0072` |
 | Inputs | `[D6AC]` 0..0x3F; `D9F2` `[BP+6]` index or note; `0072` `[BP+8]` note |
 | Outputs | `000C` returns a byte; `003D` returns a slot or `-1`; `0072` stores a byte clamped `0x22`..`0x62` |
-| Confidence | Screen strings, `[D6AC]` 0..0x3F, `D9F2` encodings, and the two owned remap stores **PROVEN**. That the table byte is a MIDI note **HYPOTHESIS** (range + ` = Note:`). Pad-hit writer of `[D6AC]` **UNDETERMINED** |
+| Confidence | Screen strings, `[D6AC]` 0..0x3F, `D9F2` encodings, remap stores, and `+0859` `0x23`..`0x62` **PROVEN**. That the table byte is a MIDI note **HYPOTHESIS** (range + ` = Note:`). Pad-hit writer of `[D6AC]` **UNDETERMINED** |
 | Hardware deferred | Pad scan on the wire (D19 / P1 / P4) |
 
 ---
@@ -76,7 +76,41 @@ at `0x28375` is `0xFF` padding, not the live table.
 
 ---
 
-## 3. Owned writers of `[D6AC]` (not pad-hit)
+## 3. ROM default and overlay
+
+DGROUP `+0859` (file `0x20859`) is 64 bytes `0x23`..`0x62`.
+Already owned as DGROUP data. **PROVEN** as the default
+slot-to-byte table: pad 0 = `0x23`, pad 63 = `0x62`. That
+range matches `0072`'s store clamp and `003D`'s `DI<0x23`
+reject. `000C` returns `0x23` when `SI>=0x40` (the default
+for slot 0).
+
+`B21A:0033` (file `0x321D3`, already owned leftover after
+`000F` `RETF`). `SI=0`; `AL=[SI+0859]`; `MOV [SI+8376],AL`;
+`INC SI`; while `SI<0x40`; `RETF`. **PROVEN** copy of the
+ROM default into the `8010:8376` overlay. Callers include
+`CALLF B21A:000F` (which calls `0033`) and `CALLF B21A:0033`
+at file `0x48722`.
+
+`B21A:01DD` (file `0x3237D`, inside `0107` init):
+`C6 06 75 83 00` — `MOV [8375],0`. **PROVEN.** No owned
+store sets `[8375]` nonzero. The `000C` overlay-read arm
+is encoded; who selects it is **UNDETERMINED**.
+
+`CF37:04AD` (file `0x4F81D`, leftover after `044F` `RETF`,
+already owned). At `056A` (file `0x4F8DA`): `ADD DI,0x073E`;
+`MOV AL,[SI+8376]`; `MOV ES,[BP-2]`; `MOV ES:[DI],AL`;
+loop `SI<0x40`. **PROVEN** as overlay to far-`+073E`
+(the live table `000C` reads when `[8375]==0`).
+`CALLF CF37:0002` at file `0x507AC` pins CS `CF37`.
+
+`C44E:0137` `PUSH 0x8375` is an argument to `B354:01C6`
+(`ADD SP,0x0E`). Not a store. Purpose of that arg is
+**UNDETERMINED**.
+
+---
+
+## 4. Owned writers of `[D6AC]` (not pad-hit)
 
 Whole-image `AC D6` has 18 hits. Owned stores:
 
@@ -114,7 +148,7 @@ No owned `IN` / `OUT` sits next to an `[D6AC]` store.
 
 ---
 
-## 4. Related owned `0x90` sites (not pad-hit)
+## 5. Related owned `0x90` sites (not pad-hit)
 
 `56D4:000A` (file `0x56D4A`): `LES BX,[BP+6]`; `AND ES:[BX],0xF8`;
 `CMP AL,0x90`; on match take `ES:[BX+2]` and `CALL DA09:0000`.
@@ -125,7 +159,7 @@ read it as MIDI.
 
 ---
 
-## 5. Still open
+## 6. Still open
 
 - Writer that sets `[D6AC]` from a pad hit. Missing observation:
   a named consumer that stores a pad index from panel IPC or
@@ -134,6 +168,7 @@ read it as MIDI.
   `3C 10 73 21` is not hole-start cdecl. Do not seed it.
 - Third `CALLF D9F2:003D` at file `0x397B3` is in a gap. Do
   not seed it.
-- Grammar of the 64 bytes at `[E5F9]+073E` / `8010:8376`.
+- Writer that sets `[8375]` nonzero (overlay select).
+- Identity of the far object at `[E5F9]` (live table base).
 - `C887:09AC` body (mid-hole).
 - TE7774 / panel scan (D19).
