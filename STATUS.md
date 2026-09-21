@@ -117,6 +117,7 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `[E613]` (default `0x0D` at `CF37:0325`).
   Task 3 `EAD0:000B` consumes `[E614]` (`JB` if
   `<0x23`) and `CALLF CFB3:0008` (`& 0xF8`;
+  `0x80` via `FCF6`;
   `0x90` to `CFC6:0007`, note `+2` in
   `0x23`..`0x62`, `02D6` note-to-slot,
   `[E5F9]+slot*4+063E` when `[E60F]==2`;

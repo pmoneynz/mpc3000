@@ -256,8 +256,13 @@ note-on **HYPOTHESIS**.
 (`009D`, file `0x4FBCD`) `CALLF CFC6:0007`
 (already owned, same span). The `0x80` arm
 requires `ES:[BX+2]` in `0x23`..`0x62` and
-indexes `[E5F9]` by that note. **PROVEN** as
-that switch. Task 3's first packet byte is
+indexes `[E5F9]` by that note via
+`ADD BX,0xFCF6` (file `0x4FBA3`). Then
+`CMP ES:[BX],0xFF` (file `0x4FBB0`) and
+`CMP ES:[BX+6],2` (file `0x4FBB9`).
+**PROVEN** as that switch. Same
+`0x18`-byte table as `CFC6:0007`.
+Do not name `+0` / `+6`. Task 3's first packet byte is
 `Param+0x90`; if Param is `0..3` then
 `& 0xF8` is `0x90` and that arm is taken
 (**HYPOTHESIS** live Param stays `0..3`).
