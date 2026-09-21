@@ -41,6 +41,8 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x00050, 0x00054, "data", "ivt_template", "notes/boot_reset_to_bios_banner.md", "ROM IVT[0x14]"),
     (0x00054, 0x20000, "data", "padding", "notes/boot_reset_to_bios_banner.md", "131020 0xFF bytes"),
     (0x20000, 0x27C92, "data", "dgroup", "notes/copy_7c92.md", "DS=A000 DGROUP image"),
+    (0x27C92, 0x27CA0, "data", "padding", "notes/padding.md", "0xFF after DGROUP copy source"),
+    (0x27CB0, 0x3000E, "data", "padding", "notes/padding.md", "unprogrammed ROM before C prologue at 0x3000E"),
     (0x300DF, 0x301A7, "code", "code", "notes/amx_create_table.md", "create-table task 7 through RETF"),
     (0x303BA, 0x3058A, "code", "code", "notes/amx_first_dispatch.md", "B03B:000A through RETF"),
     (0x30600, 0x3060D, "code", "code", "notes/amx_create_table.md", "B060:0000 timed wait"),
@@ -53,7 +55,9 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x69374, 0x6937C, "code", "code", "notes/amx_create_table.md", "E937:0004 DS=ES=8010 RETF"),
     (0x6AD0B, 0x6AD6E, "code", "code", "notes/amx_create_table.md", "create-table task 3 through RETF"),
     (0x6C050, 0x6C093, "code", "code", "notes/amx_create_table.md", "create-table task 2 through RETF"),
+    (0x7079C, 0x707A4, "data", "padding", "notes/padding.md", "0xFF after RETF before F07A table"),
     (0x707A4, 0x707B6, "data", "init_table", "notes/boot_reset_to_bios_banner.md", "F07A three 6-byte init records"),
+    (0x707C8, 0x7800A, "data", "padding", "notes/padding.md", "unprogrammed ROM before BIOS F800:000A"),
     (0x7800A, 0x78144, "code", "code", "notes/boot_reset_to_bios_banner.md", "BIOS F800:000A through RETF"),
     (0x796AA, 0x796D4, "code", "code", "notes/boot_reset_to_bios_banner.md", "INT 43 dispatcher"),
     (0x796D4, 0x796E4, "data", "table", "notes/boot_reset_to_bios_banner.md", "INT 43 eight near targets"),
@@ -67,6 +71,7 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x79896, 0x7989C, "code", "code", "notes/calling_convention.md", "hex helper 1896"),
     (0x798CA, 0x798D6, "code", "code", "notes/boot_reset_to_bios_banner.md", "18CA INT 43 AX=4"),
     (0x79946, 0x79B26, "code", "code", "notes/ivt_inventory.md", "1946 IRET + ladder + F800:1AD4 RETF"),
+    (0x7A78E, 0x7AC00, "data", "padding", "notes/padding.md", "unprogrammed ROM before FAC0:0000"),
     (0x7AC00, 0x7ACB4, "code", "code", "notes/boot_reset_to_bios_banner.md", "FAC0 reset through BRKXA 0x14"),
     (0x7ACB4, 0x7AD34, "data", "pgr", "notes/boot_reset_to_bios_banner.md", "second PGR image"),
     (0x7AD34, 0x7ADA3, "code", "code", "notes/boot_reset_to_bios_banner.md", "FAC0:0134 table walk"),
@@ -75,13 +80,17 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x7AE4F, 0x7AE56, "code", "code", "notes/boot_reset_to_bios_banner.md", "ROM IVT[12] POP/IRET"),
     (0x7AE56, 0x7AED6, "data", "pgr", "notes/boot_reset_to_bios_banner.md", "first PGR image"),
     (0x7AED6, 0x7AF6A, "data", "table", "notes/boot_reset_to_bios_banner.md", "I/O tables + sentinels"),
+    (0x7AF6A, 0x7B00C, "data", "padding", "notes/padding.md", "0xFF between I/O tables and AMX header"),
     (0x7B00C, 0x7B04E, "data", "amx_header", "notes/boot_reset_to_bios_banner.md", "AMX header / copyright"),
     (0x7B04E, 0x7B5E9, "code", "code", "notes/amx_wait.md", "AMX start through task 0 RETF"),
     (0x7B616, 0x7B762, "code", "code", "notes/amx_public_api.md", "0616 through mailbox 0743"),
     (0x7B762, 0x7B7F2, "data", "create_table", "notes/amx_wait.md", "eight 18-byte create records"),
     (0x7B7F2, 0x7B7F6, "data", "create_table", "notes/amx_first_dispatch.md", "create-table FFFF:FFFF terminator"),
     (0x7B7F6, 0x7B7FE, "data", "table", "notes/amx_first_dispatch.md", "CS:[003A] two far pointers"),
+    (0x7B7FE, 0x7B802, "data", "table", "notes/padding.md", "CS:[003A] FFFF:FFFF terminator"),
+    (0x7B80E, 0x7B812, "data", "table", "notes/padding.md", "kernel far-ptr table FFFF:FFFF terminator"),
     (0x7B812, 0x7B813, "code", "code", "notes/amx_create_table.md", "FB76:00B2 RETF stub"),
+    (0x7BA01, 0x7FF00, "data", "padding", "notes/padding.md", "unprogrammed ROM before wait-state stub"),
     (0x7FF00, 0x7FF44, "code", "code", "notes/boot_reset_to_bios_banner.md", "FFF0 wait-state stub"),
     (0x7FF44, 0x7FFF0, "data", "padding", "notes/boot_reset_to_bios_banner.md", "stub tail 0xFF"),
     (0x7FFF0, 0x7FFF5, "code", "code", "notes/boot_reset_to_bios_banner.md", "reset vector"),
@@ -156,6 +165,52 @@ def owner_at(spans: list[tuple[int, int, str, str]], offset: int) -> str | None:
     return None
 
 
+def kind_at(spans: list[tuple[int, int, str, str]], offset: int) -> str | None:
+    for start, end, _owner, kind in spans:
+        if start <= offset < end:
+            return kind
+    return None
+
+
+def ff_runs(image: bytes, minimum: int = 4) -> list[tuple[int, int]]:
+    runs: list[tuple[int, int]] = []
+    i = 0
+    n = len(image)
+    while i < n:
+        if image[i] == 0xFF:
+            j = i
+            while j < n and image[j] == 0xFF:
+                j += 1
+            if j - i >= minimum:
+                runs.append((i, j))
+            i = j
+        else:
+            i += 1
+    return runs
+
+
+def validate_ff_windows(image: bytes, ledger: dict) -> int:
+    spans = ledger_spans(ledger)
+    n = 0
+    for start, end in ff_runs(image, 4):
+        n += 1
+        if start == 0x7FFF4 and end == IMAGE_SIZE:
+            if kind_at(spans, start) != "code":
+                raise AssertionError("reset CS high byte is not in the reset vector")
+            if any(kind_at(spans, off) != "padding" for off in range(0x7FFF5, IMAGE_SIZE)):
+                raise AssertionError("post-reset 0xFF is not padding")
+            continue
+        kinds = {kind_at(spans, off) for off in range(start, end)}
+        if kinds <= {"padding"}:
+            continue
+        if kinds <= {"create_table", "table"}:
+            continue
+        raise AssertionError(
+            f"FF run [0x{start:05X}, 0x{end:05X}) has kinds {sorted(k or 'gap' for k in kinds)}"
+        )
+    return n
+
+
 def validate_ledger(image: bytes, ledger: dict) -> list[str]:
     checks: list[str] = []
     if ledger["image_size"] != IMAGE_SIZE:
@@ -197,6 +252,8 @@ def validate_ledger(image: bytes, ledger: dict) -> list[str]:
     if not holes:
         raise AssertionError("seed ledger unexpectedly covers the whole image")
     checks.append(f"ledger {len(holes)} gaps left as debt")
+    n_ff = validate_ff_windows(image, ledger)
+    checks.append(f"FF windows >=4 classified: {n_ff}")
     return checks
 
 

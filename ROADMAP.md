@@ -32,8 +32,8 @@ conventional function bounds. D10 is closed. D11 waits on a named slice.
 ## Gate 3 — Structural closure
 
 Every persistent byte owned. Every transfer in scope resolved or excluded.
-Machine-audited ledger. D12 seeded `analysis/owner_ledger.json` (51
-ranges, 25 gaps). Ghidra is the planned navigation environment; its
+Machine-audited ledger. D12/D13 seeded `analysis/owner_ledger.json`
+(60 ranges, 25 gaps; every `0xFF` run ? 4 classified). Ghidra is the planned navigation environment; its
 processor spec must be checked against V53 `BRKXA`/`RETXA` and PGR, not
 assumed from “8086-compatible.”
 

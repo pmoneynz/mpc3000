@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 168653,
+  "owned_bytes": 252062,
   "ranges": [
     {
       "start": "0x00000",
@@ -55,6 +55,22 @@
       "kind": "dgroup",
       "source": "notes/copy_7c92.md",
       "why": "DS=A000 DGROUP image"
+    },
+    {
+      "start": "0x27C92",
+      "end": "0x27CA0",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF after DGROUP copy source"
+    },
+    {
+      "start": "0x27CB0",
+      "end": "0x3000E",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "unprogrammed ROM before C prologue at 0x3000E"
     },
     {
       "start": "0x300DF",
@@ -153,12 +169,28 @@
       "why": "create-table task 2 through RETF"
     },
     {
+      "start": "0x7079C",
+      "end": "0x707A4",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF after RETF before F07A table"
+    },
+    {
       "start": "0x707A4",
       "end": "0x707B6",
       "owner": "data",
       "kind": "init_table",
       "source": "notes/boot_reset_to_bios_banner.md",
       "why": "F07A three 6-byte init records"
+    },
+    {
+      "start": "0x707C8",
+      "end": "0x7800A",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "unprogrammed ROM before BIOS F800:000A"
     },
     {
       "start": "0x7800A",
@@ -265,6 +297,14 @@
       "why": "1946 IRET + ladder + F800:1AD4 RETF"
     },
     {
+      "start": "0x7A78E",
+      "end": "0x7AC00",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "unprogrammed ROM before FAC0:0000"
+    },
+    {
       "start": "0x7AC00",
       "end": "0x7ACB4",
       "owner": "code",
@@ -329,6 +369,14 @@
       "why": "I/O tables + sentinels"
     },
     {
+      "start": "0x7AF6A",
+      "end": "0x7B00C",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF between I/O tables and AMX header"
+    },
+    {
       "start": "0x7B00C",
       "end": "0x7B04E",
       "owner": "data",
@@ -377,12 +425,36 @@
       "why": "CS:[003A] two far pointers"
     },
     {
+      "start": "0x7B7FE",
+      "end": "0x7B802",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/padding.md",
+      "why": "CS:[003A] FFFF:FFFF terminator"
+    },
+    {
+      "start": "0x7B80E",
+      "end": "0x7B812",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/padding.md",
+      "why": "kernel far-ptr table FFFF:FFFF terminator"
+    },
+    {
       "start": "0x7B812",
       "end": "0x7B813",
       "owner": "code",
       "kind": "code",
       "source": "notes/amx_create_table.md",
       "why": "FB76:00B2 RETF stub"
+    },
+    {
+      "start": "0x7BA01",
+      "end": "0x7FF00",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "unprogrammed ROM before wait-state stub"
     },
     {
       "start": "0x7FF00",

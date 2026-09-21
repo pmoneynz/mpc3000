@@ -4,9 +4,8 @@
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 **Date:** 2026-09-21.
 
-Closes D12. D13 still owes purpose-and-boundary on every `0xFF`
-window that is not already in the seed. D17 still owes no-gap
-closure.
+Closes D12. D13 padding windows are in [`padding.md`](padding.md).
+D17 still owes no-gap closure.
 
 Reproduction: `python3 tools/owner_ledger.py --write` then
 `python3 tools/verify_boot_slice.py`.
@@ -18,7 +17,7 @@ Reproduction: `python3 tools/owner_ledger.py --write` then
 | Field | Value |
 |-------|-------|
 | Purpose | Machine-readable owner map for proven file ranges |
-| Observable | `analysis/owner_ledger.json`; 51 ranges; 168653 owned bytes |
+| Observable | `analysis/owner_ledger.json`; 60 ranges; 252062 owned bytes |
 | Inputs | Byte-ownership tables in the notes |
 | Outputs | Owner `code` or `data` only. 25 gaps left as debt |
 | Confidence | Seed spans **PROVEN** as the union of those tables. Gaps are **UNDETERMINED**, not owners |

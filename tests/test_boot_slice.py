@@ -7,7 +7,14 @@ import unittest
 from pathlib import Path
 
 from tools.linear_rom import LINEAR_SHA256, load_vailixi_linear, sha256_bytes
-from tools.owner_ledger import gaps, ledger_spans, load_ledger, notes_covered, validate_ledger
+from tools.owner_ledger import (
+    gaps,
+    ledger_spans,
+    load_ledger,
+    notes_covered,
+    validate_ff_windows,
+    validate_ledger,
+)
 from tools.v53_decode import decode_one
 from tools.verify_boot_slice import FACTS_PATH, verify
 
@@ -141,6 +148,7 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(ledger["owned_bytes"], meta["owned_bytes"])
         self.assertEqual(len(gaps(ledger_spans(ledger))), meta["gap_count"])
         self.assertEqual(notes_covered(ledger), meta["note_rows"])
+        self.assertEqual(validate_ff_windows(self.image, ledger), meta["ff_runs_ge4"])
         self.assertNotIn("unresolved", ledger["owners"])
         self.assertFalse(any(rec["owner"] == "excluded_workspace" for rec in ledger["ranges"]))
         self.assertIsNone(next((rec for rec in ledger["ranges"] if rec["owner"] == "unresolved"), None))

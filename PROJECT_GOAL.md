@@ -84,8 +84,8 @@ task’s first wait and the select of task 7. AMX public far calls and
 TCB `[SI]` grammar are catalogued. Create-table tasks 0–7 have
 pinned entries and exits. Application calls are far cdecl.
 The `0x7C92` copy is the `8010` DGROUP (directory + strings +
-writable globals). A seeded owner ledger covers 168653 proven
-bytes; gaps stay unowned. Glass pixels and the later
+writable globals). The owner ledger covers 252062 proven bytes;
+gaps stay unowned. Glass pixels and the later
 empty-queue wake ISR stay open. See
 [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),
 [`notes/int43_ax4.md`](notes/int43_ax4.md),

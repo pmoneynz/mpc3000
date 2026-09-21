@@ -11,7 +11,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tools.linear_rom import LINEAR_SHA256, load_vailixi_linear, sha256_bytes
-from tools.owner_ledger import gaps, ledger_spans, load_ledger, notes_covered, validate_ledger
+from tools.owner_ledger import (
+    gaps,
+    ledger_spans,
+    load_ledger,
+    notes_covered,
+    validate_ff_windows,
+    validate_ledger,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FACTS_PATH = REPO_ROOT / "analysis" / "boot_slice_facts.json"
@@ -303,6 +310,8 @@ def verify(image: bytes, facts: dict) -> list[str]:
         raise AssertionError("ledger range_count does not match facts")
     if len(gaps(ledger_spans(ledger))) != meta["gap_count"]:
         raise AssertionError("ledger gap_count does not match facts")
+    if validate_ff_windows(image, ledger) != meta["ff_runs_ge4"]:
+        raise AssertionError("FF run count does not match facts")
     checks.append(f"owner ledger: {ledger['owned_bytes']} bytes, {n_notes} note rows")
 
     return checks

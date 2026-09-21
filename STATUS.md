@@ -56,8 +56,8 @@ spin.
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
-- Owner ledger seeded from the note Byte-ownership tables: 51
-  ranges, 168653 bytes, 25 gaps. Owners are `code` or `data` only.
+- Owner ledger: 60 ranges, 252062 bytes, 25 gaps. Owners are
+  `code` or `data` only. Every `0xFF` run ? 4 bytes is classified.
 
 Evidence: [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),
 [`notes/copy_7c92.md`](notes/copy_7c92.md),
@@ -76,7 +76,7 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Word `+2` = `0x0100` and the `+0238` numeric-island *meaning*
   (`copy_7c92.md`). Per-string callers stay D14 / slices.
 - Panel ROM, PAL fusemaps, full schematics.
-- Whole-image ledger coverage (D17). 25 gaps, 355635 bytes.
+- Whole-image ledger coverage (D17). 25 gaps remain after padding.
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
   `065B` overlays.
 

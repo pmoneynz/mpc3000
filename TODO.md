@@ -84,8 +84,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
 - [x] **D12.** Owner ledger seeded: 51 ranges, 168653 bytes,
       `code`/`data` only. 25 gaps are debt. No `unresolved` owner.
       No `excluded_workspace`. `analysis/owner_ledger.json`.
-- [ ] **D13.** Purpose-and-boundary every `0xFF` padding window.
-      `[0x00054, 0x20000)` and stub tails are already done.
+- [x] **D13.** Every `0xFF` run ≥ 4 bytes classified: 11 padding
+      windows, 3 table terminators, reset `CS` high byte. Short
+      `FFFF` runs are immediates, not windows.
 - [ ] **D14.** Whole-image string scan. A consumer, not printability,
       establishes text.
 - [ ] **D15.** Whole-image entry-candidate scan (reset, IVT, far-call
