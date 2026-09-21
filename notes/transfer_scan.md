@@ -114,7 +114,14 @@ fill `[0x63A99, 0x63EA5)`.
 `DCA2:0166` / `0371` / `03C9` are the
 hole-start chain after `0154` (`CALLN`
 `DCA2:0019`); they close `[0x5CB86, 0x5CE02)`.
-`D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
+`D61A:000A` is not a BFS seed. `B261:000A` is the mid-gap
+`CALLF` dest (`9A` at `0x30A85` / `0x30C4D` in owned
+`B060` prefix code) at file `0x3261A`, +0x1A into
+`[0x32600, 0x32811)`. Walk is hole-exact through
+`0200 RETF`. `0273` is the leftover `CALLN` after
+already-owned `0201`. Prefix cdecls at
+`[0x32600, 0x3261A)` have no `9A` and stay unowned.
+Do not BFS `000A`. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
 ---
@@ -207,6 +214,8 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x6B0B2, 0x6B0B6)` | data — `EB0B` `MOV AX/DX,CS:[0002]`/`[0004]` 32-bit dividend; `CALLF` `DC08:0046` |
 | `[0x7A094, 0x7A09A)` | data — `F800` `MOV AX,CS:[BX+2094]` 3 words (`BL<3`) |
 | `[0x31B32, 0x31B36)` | code — `B1B1:0022` `MOV AX,[1D1A]` / `RETF`; `CALLF` `DE5C:0040` |
+| `[0x3261A, 0x32811)` | code — `B261:000A` cdecl through `RETF`; `CALLF` `B060:0A7B`/`08E6`/`0715`; dest sits +0x1A into the post-task-1 gap |
+| `[0x32883, 0x32922)` | code — `B261:0273` cdecl through `RETF`; `CALLN` from `000A`; `CALLF` `B060:08E6` |
 | `[0x32922, 0x32928)` | code — `B261:0312` `MOV [E748],0` / `RETF`; `CALLF` `B060:03B7` |
 | `[0x670C1, 0x670CB)` | code — `E704:0081` `PUSH CS` / `CALL 0007` / `CALLF E614:0008` / `RETF` |
 | `[0x65815, 0x65820)` | code — `E56F:0125` CLI snapshot through `RETF`; `CALLF` `DE5C:0489` |

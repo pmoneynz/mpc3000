@@ -501,6 +501,12 @@ class BootSliceTests(unittest.TestCase):
         )
         self.assertEqual(self.image[0x7B7F6:0x7B7FE], bytes.fromhex("080081fb0a003bb0"))
         self.assertEqual(self.image[0x7B886:0x7B88B], bytes.fromhex("9a5b0600fb"))
+        self.assertEqual(self.image[0x30A85:0x30A8A], bytes.fromhex("9a0a0061b2"))
+        self.assertEqual(self.image[0x30C4D:0x30C52], bytes.fromhex("9a0a0061b2"))
+        self.assertEqual(self.image[0x3261A:0x32624], bytes.fromhex("558bec565733ff8a4606"))
+        self.assertEqual(self.image[0x32810], 0xCB)
+        self.assertEqual(self.image[0x32883:0x3288A], bytes.fromhex("558bec83ec0657"))
+        self.assertEqual(self.image[0x32921], 0xCB)
 
     def test_string_scan_consumers(self) -> None:
         scan = load_scan()

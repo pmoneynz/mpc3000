@@ -18,9 +18,9 @@ Reproduction: `python3 tools/owner_ledger.py --write` then
 | Field | Value |
 |-------|-------|
 | Purpose | Machine-readable owner map for proven file ranges |
-| Observable | `analysis/owner_ledger.json`; 840 ranges; 360379 owned bytes |
+| Observable | `analysis/owner_ledger.json`; 842 ranges; 361041 owned bytes |
 | Inputs | Byte-ownership tables in the notes; D16 walks; bounded CALL dests to fixpoint from D15 and switch-table IPs |
-| Outputs | Owner `code` or `data` only. 116 gaps left as debt |
+| Outputs | Owner `code` or `data` only. 115 gaps left as debt |
 | Confidence | Seed spans **PROVEN** as the union of those tables. Gaps are **UNDETERMINED**, not owners |
 | Hardware deferred | None |
 
@@ -65,6 +65,8 @@ Closed earlier this pass:
 | `[0x7B5E9, 0x7B616)` | 45 | code — `05E9` / `060B` |
 | `[0x7B802, 0x7B80E)` | 12 | data — kernel far-ptr table |
 | `[0x7B813, 0x7B899)` | 134 | `FB81:0008` list init + `0061` |
+| `[0x3261A, 0x32811)` | 503 | code — `B261:000A` through `RETF` |
+| `[0x32883, 0x32922)` | 159 | code — `B261:0273` through `RETF` |
 
 Smallest remaining named hole: `[0x7ADA3, 0x7ADA4)` is `CF`
 (`IRET`) between `FAC0:019E` `jmp B000:00DF` and `FAC0:01A4`.

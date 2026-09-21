@@ -101,7 +101,7 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 360379 owned / 116 gaps. Owned seed and
+      Progress: 361041 owned / 115 gaps. Owned seed and
       extra-only walks reach no gap instruction bytes
       and no hole-start `CALLF`/`CALLN` dest. A
       real-modrm CS-relative pass owned `D5DD:0124`
@@ -129,8 +129,13 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       and `D3A7:0005` / `D6D4:003F` still have no
       owned caller; DS-default abs16 is DGROUP RAM.
       INT 43 AX=1..7 dests were already owned extras
-      (now seeded). Next D17 hunt: far dests a few
-      bytes into a gap, or another named consumer.
+      (now seeded). Mid-gap `CALLF` from owned code
+      owned `B261:000A` (file `0x3261A`, +0x1A after
+      task 1) through `RETF` and leftover `0273`.
+      Prefix cdecls `[0x32600, 0x3261A)` have no `9A`.
+      Next D17 hunt: another mid-gap named dest, not
+      the exhausted hole-start / CS-rel / DS-abs16
+      passes.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.

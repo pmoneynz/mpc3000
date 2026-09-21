@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 360379,
+  "owned_bytes": 361041,
   "ranges": [
     {
       "start": "0x00000",
@@ -521,12 +521,28 @@
       "why": "create-table task 1 through RETF"
     },
     {
+      "start": "0x3261A",
+      "end": "0x32811",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B261:000A cdecl through RETF; CALLF B060:0A7B/08E6/0715"
+    },
+    {
       "start": "0x32811",
       "end": "0x32883",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x32883",
+      "end": "0x32922",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B261:0273 cdecl through RETF; CALLN from 000A; CALLF B060:08E6"
     },
     {
       "start": "0x32922",
