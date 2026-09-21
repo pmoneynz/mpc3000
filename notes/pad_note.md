@@ -325,8 +325,25 @@ then `MOV AL,[81B3]` (file
 `0x3E2C3`). **PROVEN** as the
 read side that calls the named
 `0203` FD0D helper with the
-note. Not a pad-hit. Do not
-invent a 16-level algorithm.
+note. Then `CS: CALLN 022B`
+(file `0x3E2C7` `90 0E E8 FF 00`)
+with `[81B3]` as `[BP+8]`.
+**PROVEN.** Not a pad-hit. Do
+not invent a 16-level algorithm.
+
+Already-owned leftover `BE1A:022B`
+(file `0x3E3CB`) after `0203`'s
+`022A RETF`. `CMP [BP+6],1` /
+`CMP [BP+8],0` (files `0x3E3DA`
+/ `0x3E3E0`); on match `PUSH
++3EB9` / `CALLF B1B1:005B`
+(files `0x3E3E7` / `0x3E3EA`).
+**PROVEN** as the named
+`Center pad:` string on the
+`VELOCITY` (`[81B3]==0`) arm.
+Not a pad-hit. Do not name the
+other string. Do not invent a
+16-level algorithm.
 
 Already-owned `0002` switch dest
 `0131` (file `0x3E2D1`, table word
@@ -336,9 +353,14 @@ store on the VELOCITY default.
 Else clamp `[BP-2]` to `0..3`
 (file `0x3E2D8`); `AX=[BP-1]*0x18`;
 `LES [E5F9]`; `MOV ES:[BX+FD0D],AL`
-(file `0x3E2F4`). **PROVEN** as the
-NOTE VAR write of that Param byte.
-Not a pad-hit. Do not invent a
+(file `0x3E2F4`). Then
+`MOV AL,[81B3]` (file `0x3E317`)
+and `CS: CALLN 022B` (file
+`0x3E31B` `90 0E E8 AB 00`).
+**PROVEN** as the NOTE VAR write
+of that Param byte and the same
+`022B` put-string dest. Not a
+pad-hit. Do not invent a
 16-level algorithm.
 
 `00A5` (file `0x3E245`): `B354:03B1` with label

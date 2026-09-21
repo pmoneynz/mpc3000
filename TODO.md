@@ -294,7 +294,12 @@ bounds, evidence, unknowns).
       `[E60F]`/`[E610]==1`
       taken arms `CALLF`
       `DC3A:000A`, the named
-      `DC2A:010A` linear).
+      `DC2A:010A` linear;
+      `BE1A:022B` leftover after
+      `0203` put-strings
+      `Center pad:` when
+      `[81B3]==0` and
+      `[BP+6]==1`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
