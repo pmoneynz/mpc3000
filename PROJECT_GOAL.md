@@ -74,7 +74,11 @@ reads `[81B3]`. `DCE4:000C`
 is the same `0xF0` /
 `+2==0x47` / `+5` in
 `{0x45,0x46}` gate plus
-`[E60F]`/`[E610]==1`).
+`[E60F]`/`[E610]==1`.
+`CA45:0008` then loads
+`+11` `*0x18` `FD0D` into
+`[996B]` like `BE1A:0329`
+/ `0380`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

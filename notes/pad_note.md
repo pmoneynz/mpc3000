@@ -126,6 +126,17 @@ record size, word `+2` is count, records start at `+4`.
 `MOV [E5FB],DX`; `MOV [E5F9],AX`; `MOV [E60E],AL`.
 **PROVEN** as the selector that writes `[E5F9]`. Then
 `CALLF C4C8:1D83` / `1C57` (mid-hole; do not BFS).
+After that store: `LES BX,[E5F9]` (file
+`0x4A4AC`); `MOV AL,ES:[BX+11]` (file
+`0x4A4B0`); `MOV DX,0x18` / `IMUL DX`
+(file `0x4A4B8`); `ADD BX,AX`;
+`MOV AL,ES:[BX+FD0D]` (file `0x4A4BF`);
+`MOV [996B],AL` (file `0x4A4C4`); then
+the already-named `CALLF D9C0:0006`.
+**PROVEN** as the same `+11` /
+`*0x18` / `FD0D` / `[996B]` path as
+`BE1A:0329` / `0380`. Not a pad-hit.
+Do not name the other copy dests.
 
 `D9F2:000C` when `[8375]==0` reads
 `ES:[BX+SI+073E]` after `LES BX,[E5F9]`. The 64-byte
@@ -158,7 +169,9 @@ At `0380` (file `0x3E520`): if `[996C]>=0x23`,
 the `Param:` index. `+FD0D` is a 16-bit disp
 (effective `(BX+AX+FD0D)&0xFFFF`). `055D` (file
 `0x3E6FD`) writes `[996B]` back to `ES:[BX+FD0D]`.
-**PROVEN** as that store.
+**PROVEN** as that store. `CA45:0008` repeats
+this load after the `[E5F9]` store (files
+`0x4A4B0` / `0x4A4BF` / `0x4A4C4`).
 
 `B354:01C6` is called with table `DS:0224` and index
 `[996B]`. Directory `+0224`..`+0230` is four

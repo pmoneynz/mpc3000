@@ -164,7 +164,11 @@ Validator: `python3 tools/verify_boot_slice.py`.
   is the same `0xF0` /
   `+2==0x47` / `+5` in
   `{0x45,0x46}` gate plus
-  `[E60F]`/`[E610]==1`).
+  `[E60F]`/`[E610]==1`;
+  `CA45:0008` then loads
+  `+11` `*0x18` `FD0D` into
+  `[996B]` like `BE1A:0329`
+  / `0380`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).
