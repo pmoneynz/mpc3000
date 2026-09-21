@@ -267,7 +267,16 @@ and `CALLF C887:1BE8` (file `0x4FBFF`
 `9770:` / `[E5F9]` selector. **PROVEN**
 as that alias. Do not BFS `C887`. That
 live `+2` stays in `0..0x17` is
-**HYPOTHESIS**. The `0x80` arm
+**HYPOTHESIS**. The `0xF0` arm (file
+`0x4FC09`) requires `ES:[BX+2]==0x47`
+and `ES:[BX+5]` in `{0x45,0x46}`
+(files `0x4FC16` / `0x4FC1D`), then
+pushes `+8` / `+6` / `+7` and
+`CALLF D0AE:0002` (file `0x4FC36`
+`9A 02 00 AE D0`). That dest is
+already owned (`[0x509F3, 0x50E79)`).
+**PROVEN** as that gate and call. Do
+not name `D0AE`. The `0x80` arm
 requires `ES:[BX+2]` in `0x23`..`0x62` and
 indexes `[E5F9]` by that note via
 `ADD BX,0xFCF6` (file `0x4FBA3`). Then

@@ -51,7 +51,8 @@ consumes `[E614]` and `CALLF CFB3:0008` /
 `CFC6:0007` (note `+2` / `02D6`/`033A`
 slot / `+063E` / `[E639]`;
 `FCF6+17=FD0D`; `+5`/`+3` note-floor).
-`CFB3` `0xC0` is `CA45:0008`. Owned
+`CFB3` `0xC0` is `CA45:0008`; `0xF0`
+is `D0AE:0002`. Owned
 `[D6AC]` writers are remaps, not pad-hit
 ([`notes/pad_note.md`](notes/pad_note.md)).
 

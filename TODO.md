@@ -228,6 +228,8 @@ bounds, evidence, unknowns).
       and `CALLF CFB3:0008` (status `& 0xF8`;
       `0xB0` writes `[D6AB]=0x50` not `[D6AC]`;
       `0xC0` `CALLF C887:1BE8` is `CA45:0008`;
+      `0xF0` gates `+2==0x47` / `+5` in
+      `{0x45,0x46}` then `CALLF D0AE:0002`;
       `0x80` via `FCF6`;
       `0x90` → `CFC6:0007`, note `+2` in
       `0x23`..`0x62`, `02D6` note-to-slot,
