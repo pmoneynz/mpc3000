@@ -146,6 +146,46 @@
       "phys20": "0xD9BD9",
       "phys24_second_pgr": "0x0D9BD9",
       "bytes": "9a040037e9"
+    },
+    "public_api": {
+      "far_call_count": 76,
+      "far_call_ips": [
+        "0x0157", "0x0194", "0x0347", "0x038A", "0x0396",
+        "0x03B3", "0x0469", "0x0484", "0x04AC", "0x0552",
+        "0x0586", "0x0624", "0x0637", "0x0648", "0x065B",
+        "0x067C", "0x06B9", "0x06E8", "0x0725"
+      ],
+      "wait_primitive": {
+        "cs_ip": "FB00:01CF",
+        "file": "0x7B1CF",
+        "bytes": "2ec53e42008b750afa8b1481e201800bc28904",
+        "mask": "8001"
+      },
+      "timed_wait": {
+        "cs_ip": "FB00:0484",
+        "file": "0x7B484",
+        "bytes": "1e56572ec53e42008b750a33c0fa894c0a89440c"
+      },
+      "wait_ax4": {
+        "cs_ip": "FB00:0469",
+        "file": "0x7B469",
+        "bytes": "061e50515253565755b804000ee856fd"
+      },
+      "wake_if_bit2": {
+        "cs_ip": "FB00:04AC",
+        "file": "0x7B4AC",
+        "bytes": "1e5657e885007824b8faff9cfaf70404007416c7040200"
+      },
+      "irq_enter": {
+        "cs_ip": "FB00:0157",
+        "file": "0x7B157",
+        "bytes": "505152535657558bec"
+      },
+      "running_word": {
+        "file": "0x7B21C",
+        "bytes": "c7040040"
+      },
+      "tcb_stride": 64
     }
   },
   "copy_7c92": {

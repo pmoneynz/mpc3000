@@ -150,6 +150,43 @@ def verify(image: bytes, facts: dict) -> list[str]:
         raise AssertionError("first task index must be 6")
     checks.append("AMX 01EA / 0537 / idle / create[6]=D9BD:0009")
 
+    public = amx["public_api"]
+    far_ips = {int(x, 16) for x in public["far_call_ips"]}
+    far_hits = []
+    pos = 0
+    needle_end = bytes((0x00, 0xFB))
+    while True:
+        j = image.find(b"\x9a", pos)
+        if j < 0 or j + 5 > len(image):
+            break
+        if image[j + 3 : j + 5] == needle_end:
+            tip = image[j + 1] | (image[j + 2] << 8)
+            far_hits.append(tip)
+        pos = j + 1
+    if len(far_hits) != public["far_call_count"]:
+        raise AssertionError(
+            f"CALL FAR FB00 count {len(far_hits)} != {public['far_call_count']}"
+        )
+    if set(far_hits) != far_ips:
+        raise AssertionError(f"CALL FAR FB00 IPs {sorted(set(far_hits))} != pinned")
+    waitp = public["wait_primitive"]
+    _expect_hex(image, int(waitp["file"], 16), waitp["bytes"], "AMX 01CF")
+    timed = public["timed_wait"]
+    _expect_hex(image, int(timed["file"], 16), timed["bytes"], "AMX 0484")
+    if image[0x7B492:0x7B495] != bytes.fromhex("894c0a"):
+        raise AssertionError("0484 does not store CX at [SI+0Ah]")
+    ax4 = public["wait_ax4"]
+    _expect_hex(image, int(ax4["file"], 16), ax4["bytes"], "AMX 0469")
+    wake = public["wake_if_bit2"]
+    _expect_hex(image, int(wake["file"], 16), wake["bytes"], "AMX 04AC")
+    enter = public["irq_enter"]
+    _expect_hex(image, int(enter["file"], 16), enter["bytes"], "AMX 0157")
+    runw = public["running_word"]
+    _expect_hex(image, int(runw["file"], 16), runw["bytes"], "AMX 01EA MOV [SI],4000")
+    if public["tcb_stride"] != 64:
+        raise AssertionError("TCB stride must be 0x40")
+    checks.append("AMX public far-call surface / TCB [SI] grammar")
+
     ivt = facts["ivt"]
     _expect_hex(image, int(ivt["fac0_slot10_file"], 16), ivt["fac0_slot10_bytes"], "FAC0 IVT[10h]")
     _expect_hex(image, int(ivt["default_iret_file"], 16), ivt["default_iret_bytes"], "BIOS default IRET")

@@ -14,6 +14,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`int43_ax4.md`](int43_ax4.md) | Banner character → LC7981 ports |
 | [`pgr_live_after_amx.md`](pgr_live_after_amx.md) | PGR writers after first AMX select |
 | [`ivt_inventory.md`](ivt_inventory.md) | Reset-path IVT plants and writers |
+| [`amx_public_api.md`](amx_public_api.md) | AMX far-call surface and TCB grammar |
 | [`named_unknowns.md`](named_unknowns.md) | Ranked open uncertainties |
 
 Do not duplicate the MPC2000XL note corpus here. Cite it when a V53

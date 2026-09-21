@@ -105,7 +105,10 @@ Sole `CALL 01EA`: `FB00:0143`. Sole other entry: `JMP 0281` after `0240`.
 
 ## 4. What idle waits on
 
-The NOP spin does **not** re-scan TCBs. Setting `[SI] |= 1` at `FB00:03A3` (and `044E`) is a ready-bit writer; it does not leave `023A` by itself.
+The NOP spin does **not** re-scan TCBs. Setting `[SI] |= 1` at
+`FB00:03A3` (`0396`) and `044E` (success tail of `03B3`) is a ready-bit
+writer; it does not leave `023A` by itself. Full TCB grammar:
+[`amx_public_api.md`](amx_public_api.md).
 
 No `INT 0` / `INT 8` instruction exists in this image (the `CD 00` / `CD 08` hits are immediates or PGR data). AMX plants `IVT[0]=FB00:02F8` and `IVT[4]=FB00:02EF`. Those handlers IRET to a hook table at `[DI+0Ah]+18h+AX`, or IRET to the interrupted IP if the hook is null.
 

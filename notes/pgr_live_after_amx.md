@@ -71,7 +71,8 @@ loop:
   CALL B060:0000           ; CX=14h; CALL FB00:0484
 ```
 
-`0484` stores `CX` at `[SI+10h]`, then `0469` calls `01CF` with `AX=4`.
+`0484` stores `CX` at `[SI+0Ah]` (not `+10h`) and zeros `[SI+0Ch]`,
+then `0469` calls `01CF` with `AX=4`.
 `01CF` does `[SI] = ([SI] & 8001h) | 4` (bit 2 = blocked), saves
 `SS:SP`, and falls into `01EA`.
 

@@ -34,6 +34,9 @@ source for the AMX idle spin.
 - Only three `MOV DX,0xFF00` sites exist; all are FAC0 `OUTSW`. Second
   PGR is live through task 6’s first wait (`01CF` AX=4) and task 7
   select (`B000:00DF`).
+- AMX public far-call surface is 76 `CALL FAR FB00` sites, 19 IPs.
+  TCB `[SI]` bits 0/1/2/3/14/15, stack at `+4/+6`, timed wait at
+  `+0Ah`, stride `0x40`. Mailbox/pool objects at `ES:[BX]` stay D11.
 - BIOS banner characters take `INT 43` AX=4, then `17CC`, then `LCD_put`
   AH=`0x0C` / AL=char on ports `0xE2`/`0xE0`. Cursor and a 320-cell
   shadow live at `0040:68AB` / `0040:662B`.
@@ -51,6 +54,7 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - PGR after task 7 runs (`U-XA-LIVE`). Second table is live through
   task 6’s first wait and task 7 select. Only three full-table `OUTSW`
   sites exist, all FAC0.
+- Create-table task 0–5 and 7 bodies (D7).
 - Full grammar and later writers of the `0x7C92` copy.
 - Panel ROM, PAL fusemaps, full schematics.
 - Any RAM object lifetime beyond the copy bound and the RAM clear.

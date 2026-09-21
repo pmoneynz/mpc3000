@@ -55,8 +55,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
 - [x] **D5.** Reset-path IVT inventoried through `B03B:000A`.
       `IVT[10h]` is `FAC0:01A4` (not `IVT[2]`). 219 slots are
       `F800:1952` `IRET`. Later `0347` plants listed, not applied.
-- [ ] **D6.** Recover AMX public far-call surface and TCB word grammar
-      (`[SI]` bits 0/1/2/3/15, `+4/+6` stack, stride `0x40`).
+- [x] **D6.** 76 far `CALL FB00` sites, 19 IPs. `[SI]` bits
+      0/1/2/3/14/15, `+4/+6` stack, `+0Ah` timed wait, stride `0x40`.
+      Mailbox/pool objects stay D11.
 - [ ] **D7.** Identify create-table tasks 0–6 (`FB76:0002` + `0x12*n`)
       the same way record 7 is `B000:00DF`. Follow each entry; pin exits.
 - [ ] **D8.** Establish the dominant calling convention (near vs far,
