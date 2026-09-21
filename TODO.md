@@ -101,13 +101,13 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 352384 owned / 132 gaps. `B3FD:0006` follows
-      `B3ED` with packed tables `0871` / `088D` / `08A7`.
-      Dests fill all three walk holes. Seed-only leftover
-      cdecls `08C3`..`0A2F` sit after those tables;
-      `C303:0C0E` / `0C64` sit after `C303` tables.
-      Mid-hole `C4C8` / `B77C` stay unowned. Next
-      hole-starts `0x34A66` and `0x43D1E` are not cdecls.
+      Progress: 353250 owned / 131 gaps. `B060:0715` /
+      `086E` sit after the `0701` table; `0982`..`0A4A`
+      sit after owned `08E6`; `0C6C` / `0CBF` sit after
+      `0C58`. All have named `CALLN`/`CALLF`. `0A7B` has
+      no owned caller. Mid-hole `C4C8` / `B77C` stay
+      unowned. `C44E:00C2` / `CEBF:0272` / `BE1A:0649`
+      leftover cdecls have no owned caller.
       Isolated 1-byte `0xFF` between owned ranges is align
       padding (28 bytes). `D3A7:0005` `INT 40` still has
       no owned caller. `0xC0xx` bit meaning is not claimed.

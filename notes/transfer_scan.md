@@ -90,7 +90,9 @@ are the packed leftover cdecls after those tables.
 pattern after `B3ED` (`0871` 14 IPs, `088D` 13 IPs,
 `08A7` 14 IPs). `B3FD:08C3` / `0953` / `097B` / `09AC` /
 `09E2` / `0A2F` are the packed leftover cdecls after
-those tables.
+those tables. `B060:0715` / `086E` sit after the `0701`
+table; `0982`..`0A4A` sit after owned `08E6`; `0C6C` /
+`0CBF` sit after the `0C58` table.
 `D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
@@ -135,7 +137,16 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x79E81, 0x79E97)` | code — `F800:1E81` hop-1 CALLN dest of INT 40 `AH<=7` through `RET` |
 | `[0x5614D, 0x561A9)` | code — `D5F3:021D` hop-1 CALLN dest of `D5F3` switch IPs through `RET` |
 | `[0x30D01, 0x30D15)` | data — `B060` `JMP CS:[BX+0701]` 10 near IPs |
+| `[0x30D15, 0x30E6E)` | code — `B060:0715` cdecl through `RETF`; `CALLN` `B060:05E8`/`0601`/`0611` |
+| `[0x30E6E, 0x30EE6)` | code — `B060:086E` cdecl through `RETF`; `CALLN` `B060:0769` |
+| `[0x30F82, 0x30FB1)` | code — `B060:0982` cdecl through `RETF`; `CALLN` `B060:07B1` |
+| `[0x30FB1, 0x30FE4)` | code — `B060:09B1` cdecl through `RETF`; `CALLN` `B060:098D` |
+| `[0x30FE4, 0x31004)` | code — `B060:09E4` cdecl through `RETF`; `CALLN` `B060:09A9` |
+| `[0x31004, 0x3104A)` | code — `B060:0A04` cdecl through `RETF`; `CALLN` `B060:099B` |
+| `[0x3104A, 0x3107B)` | code — `B060:0A4A` cdecl through `RETF`; `CALLN` `B060:07D7` |
 | `[0x31258, 0x3126C)` | data — `B060` `JMP CS:[BX+0C58]` 10 near IPs |
+| `[0x3126C, 0x312BF)` | code — `B060:0C6C` cdecl through `RETF`; `CALLF` `C303:04A9` |
+| `[0x312BF, 0x31304)` | code — `B060:0CBF` cdecl through `RETF`; `CALLF` `BE1A:04D1`/`04E1` |
 | `[0x44483, 0x444B9)` | data — `C425` `JMP CS:[BX+0233]` 27 near IPs |
 | `[0x50785, 0x5078D)` | data — `CFC6` `JMP CS:[BX+0B25]` 4 near IPs |
 | `[0x53CAC, 0x53CBC)` | data — `D3A7` `JMP CS:[BX+023C]` 8 near IPs |

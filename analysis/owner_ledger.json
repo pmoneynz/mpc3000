@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 352384,
+  "owned_bytes": 353250,
   "ranges": [
     {
       "start": "0x00000",
@@ -153,12 +153,68 @@
       "why": "B060 JMP CS:[BX+0701] 10 near IPs"
     },
     {
+      "start": "0x30D15",
+      "end": "0x30E6E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:0715 cdecl through RETF; CALLN B060:05E8/0601/0611"
+    },
+    {
+      "start": "0x30E6E",
+      "end": "0x30EE6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:086E cdecl through RETF; CALLN B060:0769"
+    },
+    {
       "start": "0x30EE6",
       "end": "0x30F82",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x30F82",
+      "end": "0x30FB1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:0982 cdecl through RETF; CALLN B060:07B1"
+    },
+    {
+      "start": "0x30FB1",
+      "end": "0x30FE4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:09B1 cdecl through RETF; CALLN B060:098D"
+    },
+    {
+      "start": "0x30FE4",
+      "end": "0x31004",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:09E4 cdecl through RETF; CALLN B060:09A9"
+    },
+    {
+      "start": "0x31004",
+      "end": "0x3104A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:0A04 cdecl through RETF; CALLN B060:099B"
+    },
+    {
+      "start": "0x3104A",
+      "end": "0x3107B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:0A4A cdecl through RETF; CALLN B060:07D7"
     },
     {
       "start": "0x310D9",
@@ -191,6 +247,22 @@
       "kind": "jump_table",
       "source": "notes/transfer_scan.md",
       "why": "B060 JMP CS:[BX+0C58] 10 near IPs"
+    },
+    {
+      "start": "0x3126C",
+      "end": "0x312BF",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:0C6C cdecl through RETF; CALLF C303:04A9"
+    },
+    {
+      "start": "0x312BF",
+      "end": "0x31304",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:0CBF cdecl through RETF; CALLF BE1A:04D1/04E1"
     },
     {
       "start": "0x314B2",

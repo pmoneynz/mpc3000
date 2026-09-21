@@ -5,7 +5,7 @@
 
 This tree was a document-and-dump pack. It now has a project goal, an
 address model, a static reset-to-AMX-start slice, a seeded owner
-ledger (786 ranges, 352384 bytes), a consumer-established string
+ledger (795 ranges, 353250 bytes), a consumer-established string
 inventory, an entry inventory (143 unique `CS:IP`), and a
 local-exit inventory (128 bounded / 14 indirect / 1 idle loop).
 It does not have whole-image coverage, Ghidra exports, or a named
@@ -58,7 +58,7 @@ wake source for the AMX idle spin.
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
-- Owner ledger: 786 ranges, 352384 bytes, 132 gaps. Owners are
+- Owner ledger: 795 ranges, 353250 bytes, 131 gaps. Owners are
   `code` or `data` only. Every `0xFF` run of 4+ bytes is classified.
 - String scan (D14): 1096 C-string starts are text because a
   consumer points at them (directory 345 `8010` ptrs, 27 disk
@@ -100,7 +100,7 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Instruction bounds for CALL dests that are still indirect or
   have no named consumer. Jump-table *selection* (`BX` domain)
   at the six `CS:[BX+disp]` sites.
-- Whole-image ledger coverage (D17). 132 gaps remain. Later
+- Whole-image ledger coverage (D17). 131 gaps remain. Later
   `IVT[8]` is `FB93:0059` (file `0x7B989`). `F800:1906` is
   a 16×4-byte OUTSW table.   `D547:0561` is a 16-IP `DI` switch. `D547:053A` is 8 IPs
   (`AND BX,0x0E`); slot 7 is `054A`.
@@ -110,9 +110,10 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `CEBF:0008`/`026A`, `BE1A:0002`/`01FB`, `BE1A:0203`/
   `022B`, `BE1A:026C` (three packed tables), `C303:0004`
   (`0BCC`/`0BE8`), `B3FD:0006` (`0871`/`088D`/`08A7`), and
-  `B3FD:08C3`/`0953`/`097B`/`09AC`/`09E2`/`0A2F` and
-  `C303:0C0E`/`0C64` are seed-only. Those switch tables
-  are not BFS seeds.
+  `B3FD:08C3`/`0953`/`097B`/`09AC`/`09E2`/`0A2F`,
+  `C303:0C0E`/`0C64`, and `B060:0715`/`086E`/`0982`..
+  `0A4A`/`0C6C`/`0CBF` are seed-only. Those switch
+  tables are not BFS seeds.
   Indirect *targets* and unentered app ROM stay
   debt. The 1-byte `CF` at `0x7ADA3` has no entry.
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
