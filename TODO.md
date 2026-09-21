@@ -215,7 +215,8 @@ bounds, evidence, unknowns).
       (`B21A:0033` copies to `[8376]`; `CF37:04AD` copies
       overlay to far `+073E`). `[E5F9]` is the selected
       `9770:` record (`CA45:0008` / `DA04:002B`, index
-      `0..0x17`). Owned `[D6AC]` stores are remaps, not
+      `0..0x17`). `BE40:000C` is `Assign Note Var Slider
+      (Pgm:  )`. Owned `[D6AC]` stores are remaps, not
       pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
       pan ([`notes/pan_table.md`](notes/pan_table.md)).

@@ -154,6 +154,13 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(pad["ca45_store_file"], 16), pad["ca45_store_bytes"], "CA45 MOV [E5F9]")
     _expect_hex(image, int(pad["da04_file"], 16), pad["da04_bytes"], "DA04:002B")
     _expect_hex(image, int(pad["da04_cmp_file"], 16), pad["da04_cmp_bytes"], "DA04 CMP CX,[0002]")
+    _expect_hex(image, int(pad["be40_file"], 16), pad["be40_bytes"], "BE40:000C")
+    _expect_hex(image, int(pad["be40_title_file"], 16), pad["be40_title_bytes"], "Assign Note Var Slider")
+    _expect_hex(image, int(pad["be40_note_file"], 16), pad["be40_note_bytes"], "Note:")
+    _expect_hex(image, int(pad["be40_param_file"], 16), pad["be40_param_bytes"], "Param:")
+    _expect_hex(image, int(pad["be40_lo_file"], 16), pad["be40_lo_bytes"], "Low range:")
+    _expect_hex(image, int(pad["be40_hi_file"], 16), pad["be40_hi_bytes"], "High range:")
+    _expect_hex(image, int(pad["be40_f11_file"], 16), pad["be40_f11_bytes"], "BE40 LES +11")
     _expect_hex(image, int(pad["midi90_file"], 16), pad["midi90_bytes"], "56D4:000A AND/CMP 90")
     def_off = int(pad["def_file"], 16)
     def_n = int(pad["def_count"])
@@ -161,7 +168,7 @@ def verify(image: bytes, facts: dict) -> list[str]:
     expect = list(range(int(pad["def_first"]), int(pad["def_last"]) + 1))
     if got != expect:
         raise AssertionError(f"+0859 default table {got[:4]}.. != {expect[:4]}..")
-    checks.append("D20: C44E assign; D9F2 slot/note; +0859 default; [E5F9] via 9770 array")
+    checks.append("D20: C44E assign; [E5F9] 9770: Pgm; BE40 Note Var Slider")
 
     if image[0x7AC1C:0x7AC1F] != bytes.fromhex("0fe011"):
         raise AssertionError("missing BRKXA 0x11 at FAC0:001C")

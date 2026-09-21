@@ -15,7 +15,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`front_panel.md`](front_panel.md) | D19 PARTIAL: panel ROM absent; `0xC0-0xDF` I/O only |
 | [`pgr61.md`](pgr61.md) | P7/P8: page 61 word `0x0140` → `0x500000`; consumer `D9B5` |
 | [`pan_table.md`](pan_table.md) | DGROUP `+0054` is pan names `50L`..`50R`; not pad labels |
-| [`pad_note.md`](pad_note.md) | D20: `C44E:0119`; `+0859` default; `[E5F9]` is `9770:` record; hit open |
+| [`pad_note.md`](pad_note.md) | D20: `C44E:0119`; `[E5F9]` is `9770:` `Pgm`; `BE40` Note Var Slider; hit open |
 | [`pgr_live_after_amx.md`](pgr_live_after_amx.md) | PGR writers after first AMX select |
 | [`ivt_inventory.md`](ivt_inventory.md) | Reset-path IVT plants and writers |
 | [`amx_public_api.md`](amx_public_api.md) | AMX far-call surface and TCB grammar |

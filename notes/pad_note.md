@@ -130,8 +130,20 @@ record size, word `+2` is count, records start at `+4`.
 `D9F2:000C` when `[8375]==0` reads
 `ES:[BX+SI+073E]` after `LES BX,[E5F9]`. The 64-byte
 note table is field `+073E` of the selected record.
-**PROVEN** as that dataflow. What the record *is*
-(program, sound, other) stays **UNDETERMINED**.
+**PROVEN** as that dataflow.
+
+`BE40:000C` (file `0x3E40C`, already owned) is the
+`Assign Note Var Slider (Pgm:  )` screen (`+3EE3` via
+`B509:2289`). Labels `Note:` / `Param:` / `Low range:` /
+`High range:` (`+3EAA` / `+3EB0` / `+3F03` / `+3F0E`).
+At `00C9` (file `0x3E4C9`): `LES BX,[E5F9]`;
+`AL=ES:[BX+11]`; `MOV [996C],AL`; then `B354:03B1` with
+bounds `0x22` / `0x62`. **PROVEN** this screen consumes
+the `[E5F9]` record and names it `Pgm` in its title.
+Field `+11` is the `Note:` value on that screen
+(**HYPOTHESIS** a note number: same `0x22`..`0x62`
+clamp as `D9F2:0072`). Do not BFS `B77C:20C5` or
+`C887:09AC`.
 
 `CF37:04AD` also `CALLF DA04:002B` (file `0x4F828`)
 before the overlay-to-`+073E` copy.
@@ -197,6 +209,6 @@ read it as MIDI.
 - Third `CALLF D9F2:003D` at file `0x397B3` is in a gap. Do
   not seed it.
 - Writer that sets `[8375]` nonzero (overlay select).
-- Meaning of the `9770:` record (not just `+073E`).
+- Full `9770:` / `Pgm` record grammar past `+11` / `+073E`.
 - `C887:09AC` body (mid-hole).
 - TE7774 / panel scan (D19).

@@ -42,8 +42,8 @@ DGROUP `+0054` is a 101-slot pan-name table (`Pan:` /
 `B354:01C6`), not pad labels ([`notes/pan_table.md`](notes/pan_table.md)).
 D20 assign UI is `C44E:0119` / `D9F2` (`000C`/`003D`/`0072`).
 ROM default `+0859` is `0x23`..`0x62`. `[E5F9]` selects a
-`9770:` record (`CA45:0008` / `DA04:002B`). Owned `[D6AC]`
-writers are remaps, not pad-hit
+`9770:` record that `BE40:000C` titles `Pgm`. Owned
+`[D6AC]` writers are remaps, not pad-hit
 ([`notes/pad_note.md`](notes/pad_note.md)).
 
 Physical hardware qualification is deferred. Continue software-verifiable
