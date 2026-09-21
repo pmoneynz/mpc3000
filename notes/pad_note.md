@@ -254,7 +254,12 @@ note-on **HYPOTHESIS**.
 `AX=ES:[BX] & 0xF8`; switch `0xB0` / `0x80` /
 `0x90` / `0xC0` / `0xF0`. The `0x90` arm
 (`009D`, file `0x4FBCD`) `CALLF CFC6:0007`
-(already owned, same span). The `0x80` arm
+(already owned, same span). The `0xB0`
+arm (file `0x4FBDD`) requires
+`ES:[BX+2]==7`, stores `ES:[BX+3]` to
+`[E739]`, and `MOV [D6AB],0x50` (file
+`0x4FBEE`). **PROVEN.** Not `[D6AC]`.
+Do not name `[D6AB]` / `[E739]`. The `0x80` arm
 requires `ES:[BX+2]` in `0x23`..`0x62` and
 indexes `[E5F9]` by that note via
 `ADD BX,0xFCF6` (file `0x4FBA3`). Then
