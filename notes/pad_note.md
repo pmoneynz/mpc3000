@@ -211,6 +211,10 @@ note already held in `[D6AD]`, not a pad-hit.
 `[81B3]`. Directory `+3E22` / `+3E26` is `VELOCITY` /
 `NOTE VAR` plus a NULL. **PROVEN** as the `Param:` names.
 `[81B3]` is RAM (linear `0x281B3` is `0xFF` padding).
+The owned store is `B21A:01E2` (file `0x32382`, same
+init as `01DD` `MOV [8375],0`): `MOV [81B3],0`.
+**PROVEN** default is the `VELOCITY` arm. Gap store
+`A2 B3 81` at file `0x5771E` is mid-gap. Do not seed it.
 
 `BE1A:0203` (file `0x3E3A3`, already owned): if
 `[81B3]==0`, `DX=4`. Else `AX=[BP+6]*0x18`;
@@ -220,6 +224,15 @@ Param byte as `026C`; `VELOCITY` is the other arm
 (return 4 indexes the empty `+3E2E` slot). Do not name
 a 16-level algorithm from this. Do not BFS
 `B77C:202D` / `20C5`.
+
+`00A5` (file `0x3E245`): `B354:03B1` with label
+`Center pad:` (`+3EB9`) and value `[E613]`, bounds
+`0` / `0x0D`. **PROVEN** as that display. `CF37:0305`
+(file `0x4F675`, leftover after `0304` `RETF`,
+`CALLN` from `0259`) stores `MOV [E613],0x0D` and
+`MOV [E614],0x23` (file `0x4F695` / `0x4F69A`).
+Also zeros `[E60E]` (the `Pgm` index). **PROVEN** as
+those defaults. Do not read `0x0D` as a pad-hit.
 
 ---
 
@@ -282,6 +295,8 @@ read it as MIDI.
 - Third `CALLF D9F2:003D` at file `0x397B3` is in a gap. Do
   not seed it.
 - Writer that sets `[8375]` nonzero (overlay select).
+- Writer that sets `[81B3]` nonzero (gap `0x5771E`;
+  do not seed).
 - Full `9770:` / `Pgm` record grammar past `+11` /
   `+12`..`+19` / `+073E` / `+FD0D`.
 - `C887:09AC` body (mid-hole).

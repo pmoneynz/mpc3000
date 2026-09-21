@@ -45,7 +45,8 @@ ROM default `+0859` is `0x23`..`0x62`. `[E5F9]` selects a
 `9770:` record that `BE1A:026C` titles `Pgm`. Param
 `0..3` is `TUNING`/`DECAY`/`ATTACK`/`FILTER`.
 `BE1A:0002` is `Assign '16 Levels'` (`[D6AD]` /
-`[81B3]` `VELOCITY`/`NOTE VAR`). Owned
+`[81B3]` `VELOCITY`/`NOTE VAR`; `Center pad:`
+`[E613]` default `0x0D`). Owned
 `[D6AC]` writers are remaps, not pad-hit
 ([`notes/pad_note.md`](notes/pad_note.md)).
 

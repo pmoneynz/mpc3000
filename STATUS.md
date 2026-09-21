@@ -112,7 +112,9 @@ Validator: `python3 tools/verify_boot_slice.py`.
   is `TUNING`/`DECAY`/`ATTACK`/`FILTER` (`+0224` /
   `BE1A:0641`). `BE1A:0002` (`C425:01F6`) is
   `Assign '16 Levels'`; `Note:` is `[D6AD]`;
-  `[81B3]` selects `VELOCITY` / `NOTE VAR`.
+  `[81B3]` selects `VELOCITY` / `NOTE VAR`
+  (default 0 at `B21A:01E2`). `Center pad:` is
+  `[E613]` (default `0x0D` at `CF37:0325`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).
