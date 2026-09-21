@@ -261,7 +261,14 @@ uses the same `[81B3]==0` gate (file
 of the named VELOCITY default. Not a
 pad-hit. Do not name the compared
 RAM. Do not invent a 16-level
-algorithm.
+algorithm. On that same
+`[81B3]==0` arm both leftovers
+then `MOV AL,[996B]` (files
+`0x5C333` / `0x5C8D9`).
+**PROVEN** as consumers of the
+named Param byte `CA45` /
+`BE1A:0380` write. Do not name
+the other copy dests.
 
 Already-owned leftover `DC2A:010A`
 (file `0x5C3AA`) after `0033`'s

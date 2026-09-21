@@ -284,7 +284,9 @@ bounds, evidence, unknowns).
       `CALLN 013B`; `DC85:011A`
       leftover `CALLF`s
       `DCE4:000C` with
-      `CMP SI,0x100`).
+      `CMP SI,0x100`;
+      `DC2A:0033` / `DC85:0047`
+      also read `[996B]`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

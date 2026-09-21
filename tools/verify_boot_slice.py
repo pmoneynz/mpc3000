@@ -340,6 +340,8 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(pad["dc85_011a_si_file"], 16), pad["dc85_011a_si_bytes"], "DC85:011A XOR SI,SI")
     _expect_hex(image, int(pad["dc85_011a_dce4_file"], 16), pad["dc85_011a_dce4_bytes"], "DC85:011A CALLF DCE4:000C")
     _expect_hex(image, int(pad["dc85_011a_bound_file"], 16), pad["dc85_011a_bound_bytes"], "DC85:011A CMP SI,0x100")
+    _expect_hex(image, int(pad["dc2a_996b_file"], 16), pad["dc2a_996b_bytes"], "DC2A:0033 MOV AL,[996B]")
+    _expect_hex(image, int(pad["dc85_996b_file"], 16), pad["dc85_996b_bytes"], "DC85:0047 MOV AL,[996B]")
     _expect_hex(image, int(pad["cfb3_note_file"], 16), pad["cfb3_note_bytes"], "CFB3 CMP [BX+2],0x23")
     _expect_hex(image, int(pad["cfb3_fcf6_file"], 16), pad["cfb3_fcf6_bytes"], "CFB3 ADD BX,FCF6")
     _expect_hex(image, int(pad["cfb3_empty_file"], 16), pad["cfb3_empty_bytes"], "CFB3 CMP ES:[BX],0xFF")
