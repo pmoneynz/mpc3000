@@ -85,9 +85,10 @@ Specimens:
 ## 3. Later plants, not reset-path entries
 
 `9A 47 03 00 FB` (`CALL FB00:0347`) also at `0x305B8` (`B03B:0208`,
-`DL=9`) and `0x7B9B8` (`FB00:09B8`, `DL=8`). D5 listed these. They
-are real CALLF sites. They are not the resting IVT after `B03B:000A`.
-Slot-9 first ready stays UNDETERMINED.
+`DL=9`) and `0x7B9B8` (`FB00:09B8`, `DL=8`, dest `FB93:0059`).
+D5 listed these. They are real CALLF sites. They are not the
+resting IVT after `B03B:000A`. Slot-9 first ready stays
+UNDETERMINED.
 
 ---
 

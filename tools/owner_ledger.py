@@ -99,6 +99,7 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x79875, 0x79896, "code", "code", "notes/boot_reset_to_bios_banner.md", "inline-string walker 1875"),
     (0x79896, 0x7989C, "code", "code", "notes/calling_convention.md", "hex helper 1896"),
     (0x798CA, 0x798D6, "code", "code", "notes/boot_reset_to_bios_banner.md", "18CA INT 43 AX=4"),
+    (0x79906, 0x79946, "data", "table", "notes/transfer_scan.md", "F800:1906 16x4-byte records; LEA SI,[BX+1906] OUTSW"),
     (0x79946, 0x79B26, "code", "code", "notes/ivt_inventory.md", "1946 IRET + ladder + F800:1AD4 RETF"),
     (0x79B26, 0x79B36, "data", "jump_table", "notes/ivt_inventory.md", "INT 40 CALL CS:[SI] 8 near IPs at F800:1B26"),
     (0x7A78E, 0x7AC00, "data", "padding", "notes/padding.md", "unprogrammed ROM before FAC0:0000"),
@@ -283,7 +284,7 @@ SWITCH_TABLES: tuple[tuple[int, int, int], ...] = (
     (0x79B26, 0x79B36, 0xF800),
 )
 
-PLANTED_IVT: tuple[str, ...] = ("D61A:000A",)
+PLANTED_IVT: tuple[str, ...] = ("D61A:000A", "FB93:0059")
 
 
 def switch_and_planted_ranges(image: bytes) -> list[tuple[int, int]]:
@@ -291,7 +292,8 @@ def switch_and_planted_ranges(image: bytes) -> list[tuple[int, int]]:
 
     Table dests have a named JMP/CALL [rm] consumer. D61A:000A is
     IVT[9] after B03B:01F7 MOV ES,D61A / MOV BX,000A / MOV DL,9.
-    Indirect dests contribute prefixes only.
+    FB93:0059 is IVT[8] after FB00:09B8 MOV ES,FB93 / MOV BX,0059
+    / MOV DL,8. Indirect dests contribute prefixes only.
     """
     established = set(scan_entries(image)["_unique"])
     dests: set[str] = set(PLANTED_IVT)

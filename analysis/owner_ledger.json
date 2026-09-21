@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 341565,
+  "owned_bytes": 341642,
   "ranges": [
     {
       "start": "0x00000",
@@ -5065,6 +5065,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x79906",
+      "end": "0x79946",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/transfer_scan.md",
+      "why": "F800:1906 16x4-byte records; LEA SI,[BX+1906] OUTSW"
+    },
+    {
       "start": "0x79946",
       "end": "0x79B26",
       "owner": "code",
@@ -5519,6 +5527,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x7B989",
+      "end": "0x7B996",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "switch-table or 0347-plant dest instruction bytes"
     },
     {
       "start": "0x7B996",

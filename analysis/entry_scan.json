@@ -297,7 +297,7 @@
     {
       "file": "0x7B9B8",
       "bytes": "9a470300fb",
-      "note": "FB00:09B8 CALL 0347 DL=8; not reset-path"
+      "note": "FB00:09B8 CALL 0347 DL=8 dest FB93:0059; not reset-path"
     }
   ]
 }

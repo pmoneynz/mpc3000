@@ -181,8 +181,11 @@ Other `01h–1Fh` ladder slots follow `F800:(1953+3*n)` except 0, 4, 8,
 | `0x305B8` | `B03B:0208` | 9 ? `D61A:000A` | no; callee of task 7 `B03B:01F7` |
 | `0x7B9B8` | `FB00:09B8` | 8 | no |
 
-Those overwrite slots 9 and 8 after first select. D5 does not claim
-the post-task-7 map.
+`FB00:09B8` is `MOV AX,FB93` / `MOV ES,AX` / `MOV BX,0059` /
+`MOV DL,8` / `CALL 0347`. Dest `FB93:0059` = file `0x7B989`
+(`50 52 CD 42 BA 10 C0 B0 60 EE 5A 58 CF`). Same 13 bytes as
+`FB00:0989`. **PROVEN** as the later `IVT[8]` plant. D5 does not
+claim the post-task-7 map.
 
 ---
 

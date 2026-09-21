@@ -315,7 +315,7 @@ def scan(image: bytes) -> dict:
         ],
         "later_ivt_plants": [
             {"file": "0x305B8", "bytes": "9a470300fb", "note": "B03B:0208 CALL 0347 DL=9; not reset-path"},
-            {"file": "0x7B9B8", "bytes": "9a470300fb", "note": "FB00:09B8 CALL 0347 DL=8; not reset-path"},
+            {"file": "0x7B9B8", "bytes": "9a470300fb", "note": "FB00:09B8 CALL 0347 DL=8 dest FB93:0059; not reset-path"},
         ],
         "_unique": unique,
         "_callees": d14,

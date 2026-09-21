@@ -138,6 +138,8 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x553FF, 0x55417)` | data — `D52A` `CALL CS:[BX+015F]` 12 near IPs |
 | `[0x55420, 0x55430)` | data — `D52A` `CALL CS:[BX+0180]` 8 near IPs |
 | `[0x5660C, 0x56618)` | data — `D61A` `JMP CS:[BX+046C]` 6 near IPs |
+| `[0x7B989, 0x7B996)` | code — `FB93:0059` `0347` IVT[8] plant (`INT 42` / `OUT 0xC010,0x60` / `IRET`) |
+| `[0x79906, 0x79946)` | data — `F800:1906` 16×4-byte records (`LEA SI,[BX+1906]` / `OUTSW`) |
 
 ---
 
