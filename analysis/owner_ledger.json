@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 344149,
+  "owned_bytes": 344767,
   "ranges": [
     {
       "start": "0x00000",
@@ -695,6 +695,38 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x4EBF8",
+      "end": "0x4ED2E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "CEBF:0008 through JMP CS:[BX+026A]; CALLF C425:01D8"
+    },
+    {
+      "start": "0x4ED2E",
+      "end": "0x4EDA2",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "CEBF 026A dests 013E/0175/0189"
+    },
+    {
+      "start": "0x4EDA2",
+      "end": "0x4EE5A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "CEBF shared 01B2 through RETF"
+    },
+    {
+      "start": "0x4EE5A",
+      "end": "0x4EE62",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "CEBF JMP CS:[BX+026A] 4 near IPs BX<=3 then SHL 1"
     },
     {
       "start": "0x4EEA4",

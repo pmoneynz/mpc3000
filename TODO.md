@@ -101,11 +101,11 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 344149 owned / 132 gaps. `C2E6:0007` is the
-      461-byte hole-start cdecl after `C2D0:000C` (`CALLF`
-      `C425:019B`). `C4C8:0099` and `B77C:00B9` are proven
-      5/9-slot switches but sit mid-hole; not owned. `C44E:00B8`
-      is 5 IPs, seed-only, not a BFS seed.
+      Progress: 344767 owned / 132 gaps. `CEBF:026A` is 4
+      IPs (`CMP BX,3` / `SHL 1`) at hole-start `4EBF8`;
+      prefix, dests, shared `RETF`, and table are seed-only.
+      `C2E6:0007` follows `C2D0:000C`. Mid-hole `C4C8` /
+      `B77C` switches stay unowned.
       Isolated 1-byte `0xFF` between owned ranges is align
       padding (28 bytes). `D3A7:0005` `INT 40` still has
       no owned caller. `0xC0xx` bit meaning is not claimed.
