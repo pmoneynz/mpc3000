@@ -126,7 +126,8 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x44483, 0x444B9)` | data — `C425` `JMP CS:[BX+0233]` 27 near IPs |
 | `[0x50785, 0x5078D)` | data — `CFC6` `JMP CS:[BX+0B25]` 4 near IPs |
 | `[0x53CAC, 0x53CBC)` | data — `D3A7` `JMP CS:[BX+023C]` 8 near IPs |
-| `[0x559AA, 0x559B8)` | data — `D547` `JMP CS:[BX+053A]` 7 near IPs |
+| `[0x559AA, 0x559BA)` | data — `D547` `JMP CS:[BX+053A]` 8 near IPs (`(nibble<<1)&0xE`) |
+| `[0x559BA, 0x559C5)` | code — `D547:054A` slot-7 dest through fall into `0555` |
 | `[0x559D1, 0x559F1)` | data — `D547` `JMP CS:[DI+0561]` 16 near IPs (`(AX&0xF)<<1`) |
 | `[0x58BCA, 0x58BDC)` | data — `D8BC` `JMP CS:[BX+000A]` 9 near IPs |
 | `[0x59C95, 0x59C9D)` | data — `D9C0` `JMP CS:[BX+0095]` 4 near IPs |

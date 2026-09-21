@@ -5,7 +5,7 @@
 
 This tree was a document-and-dump pack. It now has a project goal, an
 address model, a static reset-to-AMX-start slice, a seeded owner
-ledger (748 ranges, 342802 bytes), a consumer-established string
+ledger (749 ranges, 342815 bytes), a consumer-established string
 inventory, an entry inventory (143 unique `CS:IP`), and a
 local-exit inventory (128 bounded / 14 indirect / 1 idle loop).
 It does not have whole-image coverage, Ghidra exports, or a named
@@ -58,7 +58,7 @@ wake source for the AMX idle spin.
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
-- Owner ledger: 748 ranges, 342802 bytes, 133 gaps. Owners are
+- Owner ledger: 749 ranges, 342815 bytes, 132 gaps. Owners are
   `code` or `data` only. Every `0xFF` run of 4+ bytes is classified.
 - String scan (D14): 1096 C-string starts are text because a
   consumer points at them (directory 345 `8010` ptrs, 27 disk
@@ -100,9 +100,10 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Instruction bounds for CALL dests that are still indirect or
   have no named consumer. Jump-table *selection* (`BX` domain)
   at the six `CS:[BX+disp]` sites.
-- Whole-image ledger coverage (D17). 133 gaps remain. Later
+- Whole-image ledger coverage (D17). 132 gaps remain. Later
   `IVT[8]` is `FB93:0059` (file `0x7B989`). `F800:1906` is
-  a 16×4-byte OUTSW table.   `D547:0561` is a 16-IP `DI` switch.
+  a 16×4-byte OUTSW table.   `D547:0561` is a 16-IP `DI` switch. `D547:053A` is 8 IPs
+  (`AND BX,0x0E`); slot 7 is `054A`.
   `B2DA:000F`, `DB28:0A2D`, `F800:20F7`, `B1BC:0040`, and
   `DCA2:0154` are seed-only CALL dests. Indirect *targets*
   and unentered app ROM stay
