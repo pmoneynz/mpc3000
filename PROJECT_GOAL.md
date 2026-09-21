@@ -52,7 +52,9 @@ consumes `[E614]` and `CALLF CFB3:0008` /
 slot / `+063E` / `[E639]`;
 `FCF6+17=FD0D`; `+5`/`+3` note-floor;
 `0007` `CALLN 039E` leftover indexes
-`+7`/`+8` through `[E5F9]+FCF6`).
+`+7`/`+8` through `[E5F9]+FCF6`.
+`D9C0:0006` is the same Param
+`0..3` pair map as `BE1A`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

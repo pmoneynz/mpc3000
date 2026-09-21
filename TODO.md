@@ -252,7 +252,8 @@ bounds, evidence, unknowns).
       `+1==1` uses `+3` / `+5`;
       `0007` `CALLN 039E` leftover
       indexes `+7`/`+8` through
-      `[E5F9]+FCF6`).
+      `[E5F9]+FCF6`; `D9C0:0006` is
+      the same Param `0..3` pair map).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

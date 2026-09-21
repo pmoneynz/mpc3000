@@ -188,6 +188,26 @@ Those IPs load signed pairs into `Low range:` /
 **PROVEN** as that map. `0x3EA41` is `BE40:0641`
 (wrong CS) and sits in a gap. Do not seed it.
 
+Already-owned `D9C0:0006` (file `0x59C06`)
+takes `[BP+8]`, rejects `>3` (file
+`0x59C0F`), and `JMP CS:[BX+0095]`
+(file `0x59C16`). Table at file
+`0x59C95` is `001B` / `003F` /
+`0053` / `0067`. Those dests
+`LES [E5F9]` and load `+12`/`+13`,
+`+14`/`+15`, `+16`/`+17`,
+`+18`/`+19` (files `0x59C1B` /
+`0x59C3F` / `0x59C53` /
+`0x59C67`). **PROVEN** as the same
+Param `0..3` pair map. Shared tail
+`007F` is uninterpreted. Owned
+callers: `BE1A:026C` (file
+`0x3E79C`, pushes `[996B]`) and
+`CA45:0008` (file `0x4A4CC`).
+Gap `CALLF`s at `0x5564F` /
+`0x556DB` / `0x55C0E` stay
+unseeded.
+
 Do not BFS `B77C:20C5`, `B77C:202D`, or `C887:09AC`.
 
 `CF37:04AD` also `CALLF DA04:002B` (file `0x4F828`)
@@ -491,6 +511,8 @@ read it as MIDI.
 - Gap leftover `D9A2:008D` at file `0x59AAD`
   (owned `9A` dest; leftover after `005F`
   `RETF`). Do not seed.
+- Gap `CALLF D9C0:0006` at files `0x5564F` /
+  `0x556DB` / `0x55C0E`. Do not seed.
 - Full `9770:` / `Pgm` record grammar past `+11` /
   `+12`..`+19` / `+063E` / `+073E` / `+FCF6` /
   `+FD0D`.
