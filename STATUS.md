@@ -118,7 +118,8 @@ Validator: `python3 tools/verify_boot_slice.py`.
   Task 3 `EAD0:000B` consumes `[E614]` (`JB` if
   `<0x23`) and `CALLF CFB3:0008` (`& 0xF8`;
   `0x90` to `CFC6:0007`, note `+2` in
-  `0x23`..`0x62`, `02D6` note-to-slot).
+  `0x23`..`0x62`, `02D6` note-to-slot,
+  `[E5F9]+slot*4+063E` when `[E60F]==2`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).

@@ -267,8 +267,15 @@ that switch. Task 3's first packet byte is
 Leftover `02D6` (file `0x4FF36`, `CALLN`
 from `0066`): `DX=[BP+6]-0x23`; clamp
 `0`..`0x3F`. **PROVEN** note-to-slot
-on that arm. Not a pad-hit. Do not name
-the `+0x0D` field.
+on that arm. Not a pad-hit. If
+`[E60F]==2` (CF37 default), `AX=slot<<2`;
+`DX:AX = [E5F9] + AX + 0x063E`. **PROVEN.**
+`+063E + 0x40*4 = +073E`, so `+063E` is
+64 dwords immediately before the note
+table. Do not name those dwords.
+`033A` (file `0x4FF9A`) is the same map
+gated on `[E610]==2` (also default 2).
+Do not name the `+0x0D` field.
 
 ---
 

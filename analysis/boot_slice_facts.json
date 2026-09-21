@@ -594,6 +594,12 @@
     "cfc6_slot_bytes": "558bec8b560683c2dd",
     "cfc6_clamp_file": "0x4FF45",
     "cfc6_clamp_bytes": "83fa40",
+    "cfc6_e60f_file": "0x4FF4D",
+    "cfc6_e60f_bytes": "803e0fe602",
+    "cfc6_063e_file": "0x4FF54",
+    "cfc6_063e_bytes": "8bc2c1e0028b16fbe550a1f9e55b03c3053e06",
+    "cfc6_e610_file": "0x4FFB1",
+    "cfc6_e610_bytes": "803e10e602",
     "midi90_file": "0x56D4A",
     "midi90_bytes": "558bec06c45e06268a0724f83c90"
   }
