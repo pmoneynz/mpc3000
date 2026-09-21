@@ -61,7 +61,7 @@ rest UNDETERMINED” bound is replaced by the regions below.
 | `+0002` | `00 01` (`0x0100`) | Adjacent word. No proven consumer. **UNDETERMINED** |
 | `+0004` .. `+05C8` | 369 dwords | Directory. 345 far ptrs `xxxx:8010`, 19 `0000:0000`, 5 other dwords |
 | `+0238` .. `+024C` | 10 words | The five “other” dwords: `012C 0030 0032 003C 003C 0BB8 01E0 01F4 0258 0258` (300, 48, 50, 60, 60, 3000, 480, 500, 600, 600). **HYPOTHESIS:** tempo / SMPTE / display scalars. No consumer pinned |
-| `+05C8` .. `+7C92` | rest of the copy | String pool (`ALL EVENTS`, pad labels, `MTrk`, format strings) mixed with initialized scalars. `+125C`..`+12CC` are eight-byte zeros that `065B` overlays |
+| `+05C8` .. `+7C92` | rest of the copy | String pool (`ALL EVENTS`, `MTrk`, format strings, assign-screen text) mixed with initialized scalars. `+125C`..`+12CC` are eight-byte zeros that `065B` overlays |
 
 Directory groups that resolve (DS=`8010`):
 

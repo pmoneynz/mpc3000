@@ -128,6 +128,19 @@ def verify(image: bytes, facts: dict) -> list[str]:
         raise AssertionError("pan table NULL is not at +01E8")
     checks.append("pan table: 101 names 50L..C..50R; B354:01C6 / Pan:")
 
+    pad = facts["pad_note"]
+    _expect_hex(image, int(pad["c44e_file"], 16), pad["c44e_bytes"], "C44E:0119")
+    _expect_hex(image, int(pad["title_push_file"], 16), pad["title_push_bytes"], "PUSH +5032")
+    _expect_hex(image, int(pad["d6ac_lo_file"], 16), pad["d6ac_lo_bytes"], "[D6AC]>=0")
+    _expect_hex(image, int(pad["d6ac_hi_file"], 16), pad["d6ac_hi_bytes"], "[D6AC]<=3F")
+    _expect_hex(image, int(pad["pad_push_file"], 16), pad["pad_push_bytes"], "PUSH Pad:")
+    _expect_hex(image, int(pad["d9f2_rd_call_file"], 16), pad["d9f2_rd_call_bytes"], "CALL D9F2:000C")
+    _expect_hex(image, int(pad["note_push_file"], 16), pad["note_push_bytes"], "PUSH = Note:")
+    _expect_hex(image, int(pad["d9f2_000c_file"], 16), pad["d9f2_000c_bytes"], "D9F2:000C")
+    _expect_hex(image, int(pad["d9f2_0072_file"], 16), pad["d9f2_0072_bytes"], "D9F2:0072")
+    _expect_hex(image, int(pad["midi90_file"], 16), pad["midi90_bytes"], "56D4:000A AND/CMP 90")
+    checks.append("D20: C44E:0119 assign UI; D9F2 64-slot table; 56D4 note-on test")
+
     if image[0x7AC1C:0x7AC1F] != bytes.fromhex("0fe011"):
         raise AssertionError("missing BRKXA 0x11 at FAC0:001C")
     checks.append("BRKXA 0x11")

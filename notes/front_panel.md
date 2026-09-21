@@ -75,8 +75,9 @@ this 8-bit range.
    event.
 
 Until those exist, front-panel navigation cannot be a complete
-slice. D20 (pad / note entry) stays open: the `50L`..`50R`
-block is pan display, not pad entry. The hit path is not named.
+slice. D20 assign UI is named (`C44E:0119` /
+[`pad_note.md`](pad_note.md)); the pad-hit writer of `[D6AC]`
+is not.
 
 D11 stays gated. Mailbox/pool objects are not promoted from this
 boundary.
