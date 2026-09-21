@@ -33,7 +33,8 @@ Provenance, chip-versus-linear identity, and address forms are in
 Stock 3.08 / 3.11 / 3.12, floppy OS 3.16, and the panel µPD78C10 ROM are
 supporting evidence. Full annotation of those images is a later milestone.
 Hardware and panel behavior needed to explain Vailixi 3.50 remain tracked as
-debt until resolved.
+debt until resolved. D19 is PARTIAL: the panel ROM is absent
+([`notes/front_panel.md`](notes/front_panel.md)).
 
 Physical hardware qualification is deferred. Continue software-verifiable
 work. Record any fact that cannot be distinguished without hardware as an

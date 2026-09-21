@@ -303,6 +303,18 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(wrap["irq_stack"]["file"], 16), wrap["irq_stack"]["bytes"], "0157 SS:SP")
     checks.append("IRQ wrappers: FAC0 XA switch, AMX IRET rewrite")
 
+    panel = facts["front_panel"]
+    if panel["rom_present"] is not False:
+        raise AssertionError("front_panel.rom_present must stay false while the dump is absent")
+    rom_hits = list((REPO_ROOT / "07-rom").rglob("*ic602*")) + list(
+        (REPO_ROOT / "07-rom").rglob("*op_v1*")
+    )
+    if rom_hits:
+        raise AssertionError(f"panel ROM dump appeared under 07-rom/: {rom_hits[0]}")
+    _expect_hex(image, int(panel["b03b_out_c2_file"], 16), panel["b03b_out_c2_bytes"], "B03B OUT 0xC2")
+    _expect_hex(image, int(panel["d547_in_d2_file"], 16), panel["d547_in_d2_bytes"], "D547 IN 0xD2")
+    checks.append("D19 PARTIAL: panel ROM absent; 0xC0-0xDF I/O encodings pinned")
+
     ledger = load_ledger()
     checks.extend(validate_ledger(image, ledger))
     meta = facts["owner_ledger"]

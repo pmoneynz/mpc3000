@@ -96,7 +96,9 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - First ready of create-table slots 0 and 2.
 - Word `+2` = `0x0100` and the `+0238` numeric-island *meaning*
   (`copy_7c92.md`). Per-screen string meaning stays D25.
-- Panel ROM, PAL fusemaps, full schematics.
+- Panel ROM, PAL fusemaps, full schematics. D19 is PARTIAL
+  ([`notes/front_panel.md`](notes/front_panel.md)): `0xC0-0xDF`
+  encodings exist; navigation meaning does not.
 - Instruction bounds for CALL dests that are still indirect or
   have no named consumer. Jump-table *selection* (`BX` domain)
   at the six `CS:[BX+disp]` sites.

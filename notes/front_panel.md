@@ -1,0 +1,81 @@
+# Front-panel navigation (D19)
+
+**Image:** Vailixi 3.50 linear
+`a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
+**Date:** 2026-09-21.
+
+Marks D19 **PARTIAL**. The panel µPD78C10 is not on the V53 program
+bus. Its AM27C256 is absent (`U-PANEL-ROM` / P1). No owned V53
+consumer has been shown to decode a panel message. Button, dial,
+and mode-key meaning stay unnamed.
+
+Reproduction: `python3 tools/verify_boot_slice.py`.
+
+---
+
+## Contract
+
+| Field | Value |
+|-------|-------|
+| Purpose | Name the software boundary for front-panel navigation |
+| Observable | None on this tree. No panel frame is recovered from Vailixi 3.50 |
+| Inputs | Missing AM27C256 (`subcpu`, MAME SHA-1 `a60016184fc07ba00dcc19ba4da60e78aceff63c`) |
+| Outputs | No owned writer of a panel scan code is established |
+| Confidence | ROM absence **PROVEN**. V53 `0xC0-0xDF` I/O sites **PROVEN** as encodings. Device and bit meaning **UNDETERMINED** (`U-TE7774`). MAME RX2/RX3 wiring **HYPOTHESIS** |
+| Hardware deferred | Panel dump, pad/button/dial scan, wire capture (`U-PANEL-ROM`, `U-PHYS`, P5) |
+
+---
+
+## 1. What is on this bus
+
+The V53 linear image does not contain panel MCU code. That is a
+separate 32 KiB EPROM. File search under `07-rom/` for the MAME
+`ic602` / `op_v1` names is empty. **PROVEN.**
+
+DGROUP pad labels (`50L` .. `16R`) are string-pool text
+([`copy_7c92.md`](copy_7c92.md)). They are not a navigation
+state machine.
+
+---
+
+## 2. V53 I/O in `0xC0-0xDF`
+
+Owned code has immediate `IN`/`OUT` in that window. Specimens:
+
+| CS:IP | File | Bytes | Port |
+|-------|------|-------|------|
+| `B03B:00F3` | `0x304A3` | `E6 C2` | `OUT 0xC2,AL` |
+| `B03B:011F` | `0x304CF` | `E6 CA` | `OUT 0xCA,AL` |
+| `B03B:014B` | `0x304FB` | `E6 D2` | `OUT 0xD2,AL` |
+| `B03B:0177` | `0x30527` | `E6 DA` | `OUT 0xDA,AL` |
+| `D547:0077` | `0x554E7` | `E4 D2` | `IN AL,0xD2` |
+| `D547:0087` | `0x554F7` | `E4 C2` | `IN AL,0xC2` |
+| `D547:009A` | `0x5550A` | `E4 CA` | `IN AL,0xCA` |
+
+`B03B:000A` also uses `OUT DX,AL` / `IN AL,DX` after `MOV DX,0x00C0`
+.. `0x00DE`. `D5DD` / `D5F3` / `DCF0` have further `DX` sites in
+the same window. **PROVEN** as encodings.
+
+These ports are the named `U-TE7774` window. Which site is MIDI
+versus panel IPC, and every bit, stay **UNDETERMINED**. Do not
+read MAME RX2/RX3 as a Vailixi fact
+([`address_model.md`](address_model.md)).
+
+`0xC000-0xC033` is the relocated V53/board window (`U-C0XX`), not
+this 8-bit range.
+
+---
+
+## 3. Missing observation
+
+1. The AM27C256 dump MAME names `mp3000__op_v1.0…ic602.bin`.
+2. One captured panel IPC frame on the wire (P5).
+3. A named V53 consumer that parses that frame into a navigation
+   event.
+
+Until those exist, front-panel navigation cannot be a complete
+slice. D20 (pad / note entry) stays open: pad *labels* are
+established text; the entry path is not.
+
+D11 stays gated. Mailbox/pool objects are not promoted from this
+boundary.

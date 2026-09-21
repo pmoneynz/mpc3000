@@ -164,8 +164,14 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       or refused mid-hole families. Next D17
       hunt: owned-code `JMPN` into a gap, or
       another transfer class not already
-      exhausted. Do not repeat `CALLN`/`9A`/
-      CS-rel / far-ptr-to-hole-start.
+      exhausted. 2026-09-21 10:20 hunt:
+      owned-code `JMPN`/`JMPS`/`JMPF` dests
+      in gaps = 0; `JCC` dests in gaps = 0.
+      Next D17 class: another transfer not
+      already exhausted (not `CALLN`/`9A`/
+      CS-rel / far-ptr-to-hole-start /
+      JMP/JCC). Small `55 8B EC` holes
+      without a named consumer stay unowned.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.
@@ -181,8 +187,11 @@ bounds, evidence, unknowns).
 - [x] **D18.** Boot / banner / LCD init (close D2–D3). INT 43
       AX=0..7 software contracts are in `int43_ax4.md`. Glass
       stays D3-glass.
-- [ ] **D19.** Front-panel navigation (blocked on panel traffic if the
-      ROM is absent — then PARTIAL).
+- [PARTIAL] **D19.** Front-panel navigation. Panel AM27C256
+      absent (`U-PANEL-ROM`). V53 `0xC0-0xDF` I/O encodings
+      are pinned; bit meaning and the wire path stay
+      unnamed. See [`notes/front_panel.md`](notes/front_panel.md).
+      Missing: the dump and one captured panel frame.
 - [ ] **D20.** Pad / note entry.
 - [ ] **D21.** Sequencer transport (play/stop/position).
 - [ ] **D22.** Sampling / DSP register path (`0x0060`, DMA3).
