@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 353250,
+  "owned_bytes": 356579,
   "ranges": [
     {
       "start": "0x00000",
@@ -505,6 +505,14 @@
       "why": "B261:0312 MOV [E748],0 RETF; CALLF B060:03B7"
     },
     {
+      "start": "0x32928",
+      "end": "0x32A07",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B292:0008 cdecl through RETF; CALLF B060:06A1"
+    },
+    {
       "start": "0x32BA3",
       "end": "0x32C5C",
       "owner": "code",
@@ -537,6 +545,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x32F12",
+      "end": "0x331B7",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B2F1:0002 cdecl through RETF; CALLF B060:0661"
+    },
+    {
       "start": "0x333C4",
       "end": "0x33506",
       "owner": "code",
@@ -567,6 +583,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x33B38",
+      "end": "0x33B8E",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B354:05F8 cdecl through RETF; CALLF C303:00D4"
     },
     {
       "start": "0x33B8E",
@@ -4913,6 +4937,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x64FAC",
+      "end": "0x65110",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E4FA:000C cdecl through RETF; CALLF C303:06D1"
+    },
+    {
       "start": "0x651D3",
       "end": "0x65216",
       "owner": "code",
@@ -5025,6 +5057,14 @@
       "why": "E56F:0125 CLI snapshot RETF; CALLF DE5C:0489"
     },
     {
+      "start": "0x65820",
+      "end": "0x6595A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E582:0000 cdecl through RETF; CALLF B3FD:0615"
+    },
+    {
       "start": "0x65AF1",
       "end": "0x65B20",
       "owner": "code",
@@ -5063,6 +5103,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x6676D",
+      "end": "0x66883",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E676:000D cdecl through RETF; CALLF B3FD:0042"
     },
     {
       "start": "0x66883",
@@ -5135,6 +5183,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x67E0A",
+      "end": "0x67F57",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E7E0:000A cdecl through RETF; CALLF CEBF:021C"
     },
     {
       "start": "0x68025",
@@ -5257,6 +5313,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x6B1A2",
+      "end": "0x6B4F2",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "EB1A:0002 cdecl through RETF; CALLF DE5C:0496"
+    },
+    {
       "start": "0x6B4F2",
       "end": "0x6B5B1",
       "owner": "code",
@@ -5343,6 +5407,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x6BC83",
+      "end": "0x6BD59",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "EBC8:0003 cdecl through RETF; CALLF C44E:0031"
     },
     {
       "start": "0x6BD59",

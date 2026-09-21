@@ -93,6 +93,11 @@ pattern after `B3ED` (`0871` 14 IPs, `088D` 13 IPs,
 those tables. `B060:0715` / `086E` sit after the `0701`
 table; `0982`..`0A4A` sit after owned `08E6`; `0C6C` /
 `0CBF` sit after the `0C58` table.
+Owned `CALLF` dests that sit at hole-starts and walk
+through `RETF` are seed-only: `B292:0008`, `B2F1:0002`,
+`B354:05F8`, `E4FA:000C`, `E582:0000`, `E676:000D`,
+`E7E0:000A`, `EB1A:0002`, `EBC8:0003`. Leftovers after
+those walks stay unowned until a named caller exists.
 `D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
@@ -181,6 +186,15 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x53AC8, 0x53B20)` | code — `D3A7:0058` `0xC0xx` I/O through `RET`; `CALLN` from `00B0` |
 | `[0x53B20, 0x53B78)` | code — `D3A7:00B0` port poll / `CALL 0058` / `RET`; six `CALLN` sites |
 | `[0x32DAF, 0x32E79)` | code — `B2DA:000F` cdecl through `RETF`; `CALLF` `B060:0681` |
+| `[0x32928, 0x32A07)` | code — `B292:0008` cdecl through `RETF`; `CALLF` `B060:06A1` |
+| `[0x32F12, 0x331B7)` | code — `B2F1:0002` cdecl through `RETF`; `CALLF` `B060:0661` |
+| `[0x33B38, 0x33B8E)` | code — `B354:05F8` cdecl through `RETF`; `CALLF` `C303:00D4` |
+| `[0x64FAC, 0x65110)` | code — `E4FA:000C` cdecl through `RETF`; `CALLF` `C303:06D1` |
+| `[0x65820, 0x6595A)` | code — `E582:0000` cdecl through `RETF`; `CALLF` `B3FD:0615` |
+| `[0x6676D, 0x66883)` | code — `E676:000D` cdecl through `RETF`; `CALLF` `B3FD:0042` |
+| `[0x67E0A, 0x67F57)` | code — `E7E0:000A` cdecl through `RETF`; `CALLF` `CEBF:021C` |
+| `[0x6B1A2, 0x6B4F2)` | code — `EB1A:0002` cdecl through `RETF`; `CALLF` `DE5C:0496` |
+| `[0x6BC83, 0x6BD59)` | code — `EBC8:0003` cdecl through `RETF`; `CALLF` `C44E:0031` |
 | `[0x5BCAD, 0x5BCD4)` | code — `DB28:0A2D` `ES:[BX]` init through `RETF`; `CALLN` `DB28:077B` |
 | `[0x7A0F7, 0x7A0FA)` | code — `F800:20F7` `POP CX`/`PUSH CS`/`PUSH CX`; `CALLN` `F800:2687`/`26A8` |
 | `[0x31C00, 0x31C6F)` | code — `B1BC:0040` `LES DI`/`SCASB` count through `RETF`; `CALLN` `B1BC:0382` |
