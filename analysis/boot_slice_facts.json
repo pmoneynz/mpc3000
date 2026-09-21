@@ -1,0 +1,66 @@
+{
+  "target": "vailixi-3.50",
+  "checked": "2026-09-21",
+  "images": {
+    "ls": {
+      "path": "07-rom/Vailixi 3.50/3.50 Vailixi (LSE).BIN",
+      "size": 262144,
+      "sha256": "cb4531fab4f2a43d3ad71465ac9efbe4bd6c3b23401cdbac379eea37234c4004",
+      "sha1": "c270a92f8ed273a1ede16388bb8f30c85ac1faab",
+      "crc32": "9f3031b5"
+    },
+    "ms": {
+      "path": "07-rom/Vailixi 3.50/3.50 Vailixi (MSO).BIN",
+      "size": 262144,
+      "sha256": "514c745dea6bb711d19cf6e09bb4e7987f732c1bfa6b01857068c9982e295801",
+      "sha1": "f6d080481de40bea2c94bbc96b222c5f9b7afaf4",
+      "crc32": "e62ebb26"
+    },
+    "linear": {
+      "size": 524288,
+      "interleave": "LS even, MS odd",
+      "sha256": "a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9"
+    }
+  },
+  "reset": {
+    "cs": "0xFFFF",
+    "ip": "0x0000",
+    "phys20": "0xFFFF0",
+    "file": "0x7FFF0",
+    "bytes": "ea0000f0ff",
+    "target": "FFF0:0000"
+  },
+  "wait_state_stub": {
+    "cs_ip": "FFF0:0000",
+    "file": "0x7FF00",
+    "end_file": "0x7FF44",
+    "final_jmp": "ea0000c0fa",
+    "target": "FAC0:0000"
+  },
+  "rom_ivt_templates": {
+    "file_base": "0x00000",
+    "note": "Fetched only while XA=0. After BRKXA, linear 0 maps to work RAM.",
+    "vector_11": {"file": "0x00044", "cs_ip": "FAC0:001F", "bytes": "1f00c0fa"},
+    "vector_12": {"file": "0x00048", "cs_ip": "FAC0:024F", "bytes": "4f02c0fa"},
+    "vector_14": {"file": "0x00050", "cs_ip": "FAC0:0134", "bytes": "3401c0fa"}
+  },
+  "pgr0": {
+    "file": "0x7AE56",
+    "cs_ip": "FAC0:0256",
+    "count": 64,
+    "first_word": "00c0",
+    "page0_phys": "0x300000"
+  },
+  "bios": {
+    "entry": "F800:000A",
+    "file": "0x7800A",
+    "banner_call_file": "0x78122",
+    "banner_bytes": "4d50432d333030302042494f532032312f30382f30370d0a00",
+    "banner_text": "MPC-3000 BIOS 21/08/07"
+  },
+  "lcd_put": {
+    "file": "0x7985A",
+    "ports": {"status_control": "0x00E2", "data": "0x00E0"},
+    "busy_mask": "0x80"
+  }
+}
