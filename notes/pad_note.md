@@ -282,7 +282,18 @@ byte is the already-named Param.
 (file `0x4FCDB` `50 90 0E E8 B9 02`)
 both pass the event note. **PROVEN.**
 Do not seed `CFC6:039E` at file
-`0x4FFFE` (span end). Leftover `02D6`
+`0x4FFFE` (span end). After those
+calls, `AL=ES:[BX+1]` (file `0x4FCED`)
+is compared to `2` and `3`. When `+1==2`
+and event `+3` is above `+4`, `+5` must
+be `>=0x23` (file `0x4FD16`) and then
+indexes the same table (`+5*0x18+FCF6`,
+file `0x4FD23`). When event `+3` is at
+or below `+4`, `+3` is the note
+(`CMP 0x23` file `0x4FD54`; load file
+`0x4FD61`). **PROVEN** as note-floor
+bytes. Do not name `+1` / `+2` / `+4`.
+Leftover `02D6`
 (file `0x4FF36`, `CALLN` from `0066`):
 `DX=[BP+6]-0x23`; clamp
 `0`..`0x3F`. **PROVEN** note-to-slot
