@@ -102,7 +102,35 @@
       "cs_ip": "FB76:0002",
       "file": "0x7B762",
       "record_size": 18,
+      "record6_bytes": "0900bdd9f0034893",
       "record7_bytes": "df0000b0803e8793"
+    },
+    "ready_api": {
+      "cs_ip": "FB00:0396",
+      "file": "0x7B396",
+      "bytes": "1e5657e89b0178119cfaff4408830c01"
+    },
+    "create_path": {
+      "cs_ip": "FB00:0240",
+      "file": "0x7B240",
+      "bytes": "b012f6e22ec41e360003d8",
+      "retf_file": "0x7B2EE",
+      "retf_bytes": "cb"
+    },
+    "pre_dispatch_init": {
+      "cs_ip": "B03B:000A",
+      "file": "0x303BA",
+      "entry_bytes": "1e06b80ba98e",
+      "ready_tail_file": "0x30579",
+      "ready_tail_bytes": "b2079a960300fbb2069a960300fb071fcb"
+    },
+    "first_task": {
+      "index": 6,
+      "cs_ip": "D9BD:0009",
+      "file": "0x59BD9",
+      "phys20": "0xD9BD9",
+      "phys24_second_pgr": "0x0D9BD9",
+      "bytes": "9a040037e9"
     }
   },
   "copy_7c92": {

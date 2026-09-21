@@ -257,7 +257,9 @@ FB00:013E  LDS DI, CS:[0042]
 record 7 is `B000:00DF` — same CS:IP as `FAC0:019E`, different path.
 
 **PROVEN:** start call, dispatcher site, wait *condition*.
-**UNDETERMINED:** which IRQ leaves the idle spin (`U-AMX-WAIT` remainder).
+First `01EA` creates task 6; see
+[`amx_first_dispatch.md`](amx_first_dispatch.md). A later empty-queue
+wake ISR is still `U-AMX-WAIT`.
 
 Reaching `013E` from `004E` walks data-dependent tables. This-trace from
 the header bytes in this image has no `RETF` on that path. All-paths
@@ -323,8 +325,8 @@ kernel. Helpers past `0148` stay unresolved.
 
 ## What this slice does *not* prove
 
-- What the AMX dispatcher waits on (`U-AMX-WAIT`). The spin is proven;
-  the wake source is not.
+- What leaves a later AMX idle spin (`U-AMX-WAIT` remainder). First
+  select creates task 6 and does not idle.
 - That `B000:00DF` runs after reset. The instruction exists; AMX start
   does not return on the traced path.
 - Panel, MIDI, SCSI, FDC, or DSP behavior.
@@ -332,6 +334,5 @@ kernel. Helpers past `0148` stay unresolved.
 - Any 24-bit access to NVRAM `0x500000`.
 - Later writers or aliases of the `0x7C92`-byte copy.
 
-Next useful uncertainty: the IRQ that leaves `FB00:023A`, or proof that
-first `01EA` dispatches a create-table task (`U-AMX-WAIT` remainder).
-Then `INT 43` AX=4 to pixels.
+Next useful uncertainty: the first-task observable at `D9BD:0009`
+(`E937:0004` / `B060:0000` / `[D6A1]`) or `INT 43` AX=4 to pixels.

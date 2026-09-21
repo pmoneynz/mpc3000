@@ -4,7 +4,9 @@
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 **Date:** 2026-09-21.
 
-Closes the *condition* half of `U-AMX-WAIT`. The wake ISR is still open.
+Closes the *condition* half of `U-AMX-WAIT`. First `01EA` does not take
+this idle; see [`amx_first_dispatch.md`](amx_first_dispatch.md). The wake
+ISR for a later empty queue is still open.
 
 Reproduction: `python3 tools/verify_boot_slice.py`.
 
@@ -108,7 +110,8 @@ The NOP spin does **not** re-scan TCBs. Setting `[SI] |= 1` at `FB00:03A3` (and 
 No `INT 0` / `INT 8` instruction exists in this image (the `CD 00` / `CD 08` hits are immediates or PGR data). AMX plants `IVT[0]=FB00:02F8` and `IVT[4]=FB00:02EF`. Those handlers IRET to a hook table at `[DI+0Ah]+18h+AX`, or IRET to the interrupted IP if the hook is null.
 
 **PROVEN:** leave `023A` only by transferring control off that RIP (ISR frame rewrite, `JMP 01EA`/`0281`, or a task `RETF`).  
-**UNDETERMINED:** which IRQ or hook does that. That is the remainder of `U-AMX-WAIT`.
+**UNDETERMINED:** which IRQ or hook does that on a later empty queue.
+First select does not reach `023A`.
 
 ---
 

@@ -26,6 +26,8 @@ source for the AMX idle spin.
 - AMX `0537` maps `DL` to a 0x40-byte TCB. `01EA` resumes or creates a
   ready TCB, else `STI`+NOP at `FB00:023A`. Create record 7 is
   `B000:00DF`. Second PGR is live through that first select.
+- First `01EA` does not idle. `B03B:000A` readies TCB 6 and 7 via
+  `0396`; scan from index 0 creates task 6 at `D9BD:0009`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
 
@@ -34,8 +36,8 @@ Validator: `python3 tools/verify_boot_slice.py`.
 
 ## What is not established
 
-- Which IRQ leaves the AMX idle spin (`U-AMX-WAIT` remainder). The
-  empty-queue condition is closed; see [`notes/amx_wait.md`](notes/amx_wait.md).
+- Which IRQ leaves a later AMX idle spin (`U-AMX-WAIT` remainder). First
+  select is closed; see [`notes/amx_first_dispatch.md`](notes/amx_first_dispatch.md).
 - Banner glyphs on the LCD (`U-INT43-AX4`).
 - PGR after the first AMX task `RETF` (`U-XA-LIVE`). Second table is live
   through first `01EA`.
@@ -47,5 +49,5 @@ Physical hardware remains deferred.
 
 ## Progress measure
 
-The useful increment is the removal of a named uncertainty. This session
-removed “what does `01EA`/`0537` wait on?” It did not name the wake ISR.
+The useful increment is the removal of a named uncertainty. First `01EA`
+creates task 6. The later empty-queue wake ISR is still open.

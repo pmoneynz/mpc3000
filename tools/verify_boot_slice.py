@@ -115,8 +115,25 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(amx["index_file"], 16), amx["index_bytes"], "AMX 0537")
     _expect_hex(image, int(amx["idle_file"], 16), amx["idle_bytes"], "AMX idle")
     create = amx["create_table"]
-    _expect_hex(image, int(create["file"], 16) + 7 * create["record_size"], create["record7_bytes"], "AMX create[7]")
-    checks.append("AMX 01EA / 0537 / idle / create[7]=B000:00DF")
+    rec_size = create["record_size"]
+    create_file = int(create["file"], 16)
+    _expect_hex(image, create_file + 6 * rec_size, create["record6_bytes"], "AMX create[6]")
+    _expect_hex(image, create_file + 7 * rec_size, create["record7_bytes"], "AMX create[7]")
+    if image[create_file + 8 * rec_size : create_file + 8 * rec_size + 4] != bytes.fromhex("ffffffff"):
+        raise AssertionError("create table is not terminated by FFFF:FFFF")
+    ready = amx["ready_api"]
+    _expect_hex(image, int(ready["file"], 16), ready["bytes"], "AMX 0396")
+    path = amx["create_path"]
+    _expect_hex(image, int(path["file"], 16), path["bytes"], "AMX 0240")
+    _expect_hex(image, int(path["retf_file"], 16), path["retf_bytes"], "AMX 02EE RETF")
+    init = amx["pre_dispatch_init"]
+    _expect_hex(image, int(init["file"], 16), init["entry_bytes"], "B03B:000A")
+    _expect_hex(image, int(init["ready_tail_file"], 16), init["ready_tail_bytes"], "B03B ready 7 then 6")
+    task = amx["first_task"]
+    _expect_hex(image, int(task["file"], 16), task["bytes"], "D9BD:0009")
+    if task["index"] != 6:
+        raise AssertionError("first task index must be 6")
+    checks.append("AMX 01EA / 0537 / idle / create[6]=D9BD:0009")
 
     copy = facts["copy_7c92"]
     _expect_hex(image, int(copy["source_file"], 16), copy["signature_bytes"], "copy signature")

@@ -6,7 +6,7 @@ A guess is not listed as a fact.
 | ID | Unknown | Why it matters | What would close it |
 |----|---------|----------------|---------------------|
 | U-XA-LIVE | Which PGR is live after the first AMX task runs | Later RAM citations after `01EA` `RETF` | Trace `0xFF00-0xFF7E` writers from the first task entry (create-table CS:IPs) |
-| U-AMX-WAIT | Which IRQ or hook leaves the `FB00:023A` idle spin | Empty-queue wait is closed; wake writer is not | Find an ISR that rewrites the `023A` frame, `JMP`s `01EA`/`0281`, or `RETF`s a TCB |
+| U-AMX-WAIT | Which IRQ or hook leaves a later `FB00:023A` idle | First `01EA` creates task 6; later empty-queue wake is open | Find an ISR that rewrites the `023A` frame, `JMP`s `01EA`/`0281`, or `RETF`s a TCB |
 | U-INT43-AX4 | `INT 43` AX=4 path from a banner character to LC7981 memory | Whether the banner is an observed display write or only a string consumer | Finish the `0x79752` / `0x797CC` partition to `LCD_put` or a glyph blit |
 | U-LC7981 | Meaning of the seven AX values used in `INT 43` AX=0 | LCD init is proven as port writes, not as controller state | LC7981 / HD61830 register manual applied to those exact pairs |
 | U-C0XX | Board decode of `0xC000-0xC033` | BIOS and FAC0 program this window | Schematic or a tested PAL fusemap; MAME is a hypothesis |

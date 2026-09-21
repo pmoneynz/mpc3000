@@ -34,9 +34,9 @@ mark `[PARTIAL]`, name the missing observation, and continue.
 - [x] Partition `01EA` / `0537` and the `FB00:023A` empty-queue idle.
 - [x] Bound the `0x7C92` copy (`AA 55` + string pointers, dest `0x380100`).
 - [x] Prove `INT 43` AX=0 writes LC7981 ports `0xE2`/`0xE0`.
-- [ ] **D1.** Prove whether first `01EA` dispatches a create-table task
-      (records 0–7 at `FB76:0002`) or idles. If it idles, name the ISR
-      that leaves `023A` (`U-AMX-WAIT`).
+- [x] **D1.** First `01EA` creates task 6 (`D9BD:0009`) after
+      `B03B:000A` readies slots 6 and 7. Idle is not taken. Wake ISR
+      for a later empty queue remains `U-AMX-WAIT`.
 - [ ] **D2.** Trace `INT 43` AX=4 from a banner character to LC7981
       memory or a justified non-display sink (`U-INT43-AX4`).
 - [ ] **D3.** Connect one observable end to end (banner glyphs **or**
