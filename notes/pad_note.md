@@ -363,6 +363,17 @@ accessor. Not a pad-hit. Do not name
 `0x50B7E` / `0x50BBF`), same as the
 `0xB0` arm.
 
+Leftover cdecl at file `0x50A07` (same
+owned span, after the 32-loop `RETF`)
+clamps event `+2` to `0x23`..`0x62`,
+indexes `[E5F9]+FCF6` (file `0x50A41`),
+and returns `+5` or `+3` from the same
+`+1==2` / `+1==3` note-floor arms as
+`CFC6:0007` (files `0x50A4E` / `0x50A73`
+/ `0x50A8C`). **PROVEN** as a second
+consumer of that table. Do not name
+`D0AE`.
+
 ---
 
 ## 6. Owned writers of `[D6AC]` (not pad-hit)

@@ -232,6 +232,8 @@ bounds, evidence, unknowns).
       `{0x45,0x46}` then `CALLF D0AE:0002`;
       leftover after that `RETF` paints
       matching `D9F2:000C` slots;
+      sibling cdecl at `0x50A07` is a
+      second `FCF6` `+3`/`+5` picker;
       `0x80` via `FCF6`;
       `0x90` → `CFC6:0007`, note `+2` in
       `0x23`..`0x62`, `02D6` note-to-slot,
