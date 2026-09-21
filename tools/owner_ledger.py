@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tools.entry_scan import scan as scan_entries
 from tools.linear_rom import load_vailixi_linear
-from tools.transfer_scan import follow_entry
+from tools.transfer_scan import classify_exits, follow_entry
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LEDGER_PATH = REPO_ROOT / "analysis" / "owner_ledger.json"
@@ -125,6 +125,26 @@ def _parse_cs_ip(cs_ip: str) -> tuple[int, int]:
     return int(cs, 16), int(ip, 16)
 
 
+def _merge_runs(raw: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    raw = sorted(raw)
+    merged: list[tuple[int, int]] = []
+    for start, end in raw:
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def _is_bounded(exits: list[dict], hit_limit: bool) -> bool:
+    if hit_limit or not exits:
+        return False
+    kinds = {item["kind"] for item in exits}
+    if kinds & {"unknown0f", "indirect", "call_indirect"}:
+        return False
+    return True
+
+
 def transfer_insn_ranges(image: bytes) -> list[tuple[int, int]]:
     """Merged instruction-byte runs from every D16 local walk."""
     established = set(scan_entries(image)["_unique"])
@@ -134,14 +154,33 @@ def transfer_insn_ranges(image: bytes) -> list[tuple[int, int]]:
         insns, _extra, _hit = follow_entry(image, cs, ip, established)
         for insn in insns:
             raw.append((insn.file, insn.file + insn.length))
-    raw.sort()
-    merged: list[tuple[int, int]] = []
-    for start, end in raw:
-        if merged and start <= merged[-1][1]:
-            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
-        else:
-            merged.append((start, end))
-    return merged
+    return _merge_runs(raw)
+
+
+def callee_insn_ranges(image: bytes) -> list[tuple[int, int]]:
+    """Instruction bytes of bounded CALL dests of D16 entries.
+
+    A dest is promoted only when a D16 walk names it and its own
+    local walk is bounded. Indirect dests stay candidates.
+    """
+    established = set(scan_entries(image)["_unique"])
+    dests: set[str] = set()
+    for cs_ip in established:
+        cs, ip = _parse_cs_ip(cs_ip)
+        insns, _extra, _hit = follow_entry(image, cs, ip, established)
+        for item in classify_exits(insns, established):
+            if item["kind"] in ("callf", "calln") and not item.get("established"):
+                dests.add(item["dest"])
+    raw: list[tuple[int, int]] = []
+    for dest in dests:
+        cs, ip = _parse_cs_ip(dest)
+        insns, extra, hit = follow_entry(image, cs, ip, established)
+        exits = classify_exits(insns, established) + extra
+        if not _is_bounded(exits, hit):
+            continue
+        for insn in insns:
+            raw.append((insn.file, insn.file + insn.length))
+    return _merge_runs(raw)
 
 
 def _subtract_owned(
@@ -179,6 +218,19 @@ def emit_ledger(image: bytes | None = None) -> dict:
                 "code",
                 "notes/transfer_scan.md",
                 "D16 local-walk instruction bytes",
+            )
+        )
+    owned_spans = [(start, end) for start, end, *_ in seed]
+    callees = _subtract_owned(callee_insn_ranges(image), owned_spans)
+    for start, end in callees:
+        seed.append(
+            (
+                start,
+                end,
+                "code",
+                "code",
+                "notes/transfer_scan.md",
+                "bounded CALL dest of a D16 entry",
             )
         )
     tmp_spans = [(start, end, "code", "code") for start, end, *_ in seed]

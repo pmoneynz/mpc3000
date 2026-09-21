@@ -71,9 +71,10 @@ Task 6 never `RETF`s. That is a resolved loop, not a missing exit
 | `brkxa` | 3 | `0F E0 ib` |
 | `retxa` | 2 | `0F F0 ib` |
 
-The 74+42 new dests are **candidates**. A `55 8B EC` prologue does
-not accept them (D15 rule). D18+ / a later entry pass may promote
-them after investigation.
+The 74+42 new dests are **candidates** as *entries* (D15). A
+bounded first-hop dest of a D16 CALL is owned as *code* (D17):
+111 dests this pass; 5 indirect dests stay unowned. A `55 8B EC`
+prologue still does not accept a dest as an entry.
 
 ---
 
@@ -100,12 +101,15 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 |------------|-------|
 | `[0x7B23A, 0x7B240)` | code — idle `NOP*4` / `JMP` (already inside AMX) |
 | `[0x56E40, 0x56E41)` | code — specimen `NOP` between owned ranges |
+| `[0x59BC3, 0x59BD9)` | code — `D9B5:0073` bounded CALLF dest through `RETF` |
+| `[0x7989C, 0x798CA)` | code — `F800:189C` bounded CALLN dest through `RET` |
 
 ---
 
 ## What this note does *not* prove
 
-- Instruction bounds for the 74+42 new callees.
+- Instruction bounds for the five indirect first-hop dests.
+- Second-hop CALL dests of the 111 promoted callees.
 - Jump-table contents at the six `CS:[BX+disp]` sites.
 - That a bounded cdecl body is fully owned (D17).
 - The later empty-queue wake (`U-AMX-WAIT`).
