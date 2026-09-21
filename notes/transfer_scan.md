@@ -163,6 +163,8 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x5CB74, 0x5CB79)` | code — `DCA2:0154` `MOV AL,0x59` / `JMP 0016`; `CALLF` `DE5C:055B` |
 | `[0x444B9, 0x444E5)` | code — `C425:0269` cdecl through `RETF`; `CALLN` `C425:0220` |
 | `[0x7A42D, 0x7A45B)` | code — `F800:242D` copy through `RET 8`; 6 `CALLN` from `24A5`.. |
+| `[0x33EDF, 0x33FD6)` | code — `B3ED:000F` cdecl through `RETF`; `CALLF` `C425:01B5` |
+| `[0x42D0C, 0x42E67)` | code — `C2D0:000C` cdecl through `RETF`; `CALLF` `C425:012F` |
 
 ---
 

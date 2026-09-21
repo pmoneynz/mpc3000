@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 342905,
+  "owned_bytes": 343499,
   "ranges": [
     {
       "start": "0x00000",
@@ -513,6 +513,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x33EDF",
+      "end": "0x33FD6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B3ED:000F cdecl through RETF; CALLF C425:01B5"
+    },
+    {
       "start": "0x370F1",
       "end": "0x37319",
       "owner": "code",
@@ -559,6 +567,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x42D0C",
+      "end": "0x42E67",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "C2D0:000C cdecl through RETF; CALLF C425:012F"
     },
     {
       "start": "0x44259",
