@@ -204,6 +204,8 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(pad["cfb3_90_file"], 16), pad["cfb3_90_bytes"], "CFB3 CALLF CFC6:0007")
     _expect_hex(image, int(pad["cfb3_b0_file"], 16), pad["cfb3_b0_bytes"], "CFB3 0xB0 CMP [BX+2],7")
     _expect_hex(image, int(pad["cfb3_d6ab_file"], 16), pad["cfb3_d6ab_bytes"], "CFB3 MOV [D6AB],0x50")
+    _expect_hex(image, int(pad["cfb3_c0_file"], 16), pad["cfb3_c0_bytes"], "CFB3 0xC0 PUSH [BX+2]")
+    _expect_hex(image, int(pad["cfb3_c0_callf_file"], 16), pad["cfb3_c0_callf_bytes"], "CFB3 CALLF C887:1BE8")
     _expect_hex(image, int(pad["cfb3_note_file"], 16), pad["cfb3_note_bytes"], "CFB3 CMP [BX+2],0x23")
     _expect_hex(image, int(pad["cfb3_fcf6_file"], 16), pad["cfb3_fcf6_bytes"], "CFB3 ADD BX,FCF6")
     _expect_hex(image, int(pad["cfb3_empty_file"], 16), pad["cfb3_empty_bytes"], "CFB3 CMP ES:[BX],0xFF")

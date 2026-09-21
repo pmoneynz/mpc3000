@@ -259,7 +259,15 @@ arm (file `0x4FBDD`) requires
 `ES:[BX+2]==7`, stores `ES:[BX+3]` to
 `[E739]`, and `MOV [D6AB],0x50` (file
 `0x4FBEE`). **PROVEN.** Not `[D6AC]`.
-Do not name `[D6AB]` / `[E739]`. The `0x80` arm
+Do not name `[D6AB]` / `[E739]`. The `0xC0`
+arm (file `0x4FBF5`) pushes `ES:[BX+2]`
+and `CALLF C887:1BE8` (file `0x4FBFF`
+`9A E8 1B 87 C8`). That linear file is
+`CA45:0008` (`0x4A458`), the already-named
+`9770:` / `[E5F9]` selector. **PROVEN**
+as that alias. Do not BFS `C887`. That
+live `+2` stays in `0..0x17` is
+**HYPOTHESIS**. The `0x80` arm
 requires `ES:[BX+2]` in `0x23`..`0x62` and
 indexes `[E5F9]` by that note via
 `ADD BX,0xFCF6` (file `0x4FBA3`). Then
