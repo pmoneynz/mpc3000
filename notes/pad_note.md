@@ -279,6 +279,17 @@ Not a pad-hit. Do not name
 `0281` / `013B`. Do not invent
 `0xC0` meaning.
 
+Already-owned leftover `DC85:011A`
+(file `0x5C96A`) after `0047`'s
+`0119 RETF`. `XOR SI,SI` (file
+`0x5C976`); `CALLF DCE4:000C`
+(file `0x5CA0A`); bound
+`CMP SI,0x100` (file `0x5CA18`).
+**PROVEN** as a second owned
+caller of the named `0xF0` gate.
+Not a pad-hit. Do not name the
+packet bytes or RAM.
+
 `BE1A:0203` (file `0x3E3A3`, already owned): if
 `[81B3]==0`, `DX=4`. Else `AX=[BP+6]*0x18`;
 `LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`. `0002` passes the
@@ -392,8 +403,9 @@ as the same `0xF0` gate as
 `CFB3` plus the named overlay
 flags. Not a pad-hit. Do not
 name the `0x98` / `0xF8` arms.
-Owned caller `DC85` (file
-`0x5C94E` `9A 0C 00 E4 DC`).
+Owned callers `DC85:0047` (file
+`0x5C94E`) and leftover `011A`
+(file `0x5CA0A`).
 
 `CFC6:0007` (file `0x4FC67`, same owned span).
 `ES:[BX+2]` must be `0x23`..`0x62` else

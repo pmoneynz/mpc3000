@@ -172,7 +172,10 @@ Validator: `python3 tools/verify_boot_slice.py`.
   leftover is `0033`'s
   `DC3A:000A` dest, `AND
   0xF8` / `CMP 0xC0` then
-  `CALLN 013B`).
+  `CALLN 013B`; `DC85:011A`
+  leftover `CALLF`s
+  `DCE4:000C` with
+  `CMP SI,0x100`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).

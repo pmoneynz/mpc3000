@@ -82,7 +82,10 @@ is the same `0xF0` /
 leftover is `0033`'s
 `DC3A:000A` dest, `AND
 0xF8` / `CMP 0xC0` then
-`CALLN 013B`).
+`CALLN 013B`. `DC85:011A`
+leftover `CALLF`s
+`DCE4:000C` with
+`CMP SI,0x100`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`
