@@ -61,6 +61,8 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x50785, 0x5078D, "data", "jump_table", "notes/transfer_scan.md", "CFC6 JMP CS:[BX+0B25] 4 near IPs"),
     (0x53A7C, 0x53A84, "data", "table", "notes/transfer_scan.md", "D3A7 OR AL,CS:[BX+000C] 8 bit masks BX<=7"),
     (0x53AAA, 0x53AC8, "code", "code", "notes/transfer_scan.md", "D3A7:003A OUT 0xA4 pulse / CALL FB00:0484 RET"),
+    (0x53AC8, 0x53B20, "code", "code", "notes/transfer_scan.md", "D3A7:0058 0xC0xx I/O through RET; CALLN from 00B0"),
+    (0x53B20, 0x53B78, "code", "code", "notes/transfer_scan.md", "D3A7:00B0 port poll / CALL 0058 / RET; 6 CALLN sites"),
     (0x53CAC, 0x53CBC, "data", "jump_table", "notes/transfer_scan.md", "D3A7 JMP CS:[BX+023C] 8 near IPs"),
     (0x5518D, 0x55206, "code", "code", "notes/pgr_live_after_amx.md", "D510:008D port picker through RETF"),
     (0x55206, 0x55218, "data", "table", "notes/pgr_live_after_amx.md", "D510 JMP CS:[BX+0106] 9 port words"),

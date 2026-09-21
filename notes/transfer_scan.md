@@ -153,6 +153,8 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x66908, 0x66920)` | code — `E688:0088` compare through `RETF`; `CALLF` `DE5C:04E6` |
 | `[0x53A7C, 0x53A84)` | data — `D3A7` `OR AL,CS:[BX+000C]` 8 bit masks (`BX<=7`) |
 | `[0x53AAA, 0x53AC8)` | code — `D3A7:003A` `OUT 0xA4` pulse / `CALL FB00:0484` / `RET` |
+| `[0x53AC8, 0x53B20)` | code — `D3A7:0058` `0xC0xx` I/O through `RET`; `CALLN` from `00B0` |
+| `[0x53B20, 0x53B78)` | code — `D3A7:00B0` port poll / `CALL 0058` / `RET`; six `CALLN` sites |
 
 ---
 

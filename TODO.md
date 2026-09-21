@@ -101,11 +101,11 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 342238 owned / 165 gaps. `D3A7:003A` is a `CALLN`
-      dest (`OUT 0xA4` / `CALL FB00:0484` / `RET`). `D3A7:000C`
-      is an 8-byte bit mask (`BX<=7`). The `INT 40` stub at
-      `D3A7:0005` still has no caller. Unentered app ROM remains.
-      The 1-byte `CF` at `0x7ADA3` has no entry.
+      Progress: 342414 owned / 164 gaps. `D3A7:0058` and `00B0`
+      close the hole after `003A`. Six prefix `CALLN`s target
+      `00B0`; `00B0` calls `0058`. `0xC0xx` bit meaning is not
+      claimed. `D3A7:0005` still has no caller. Unentered app
+      ROM remains. The 1-byte `CF` at `0x7ADA3` has no entry.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.
