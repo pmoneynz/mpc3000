@@ -82,14 +82,16 @@ banner through `INT 43` AX=4 to ports `0xE2`/`0xE0`. First AMX select
 creates task 6 at `D9BD:0009`. The second PGR stays live through that
 task’s first wait and the select of task 7. AMX public far calls and
 TCB `[SI]` grammar are catalogued. Create-table tasks 0–7 have
-pinned entries and exits. Glass pixels and the later
+pinned entries and exits. Application calls are far cdecl.
+Glass pixels and the later
 empty-queue wake ISR stay open. See
 [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),
 [`notes/int43_ax4.md`](notes/int43_ax4.md),
 [`notes/amx_wait.md`](notes/amx_wait.md),
 [`notes/amx_first_dispatch.md`](notes/amx_first_dispatch.md),
-[`notes/amx_public_api.md`](notes/amx_public_api.md), and
-[`notes/amx_create_table.md`](notes/amx_create_table.md).
+[`notes/amx_public_api.md`](notes/amx_public_api.md),
+[`notes/amx_create_table.md`](notes/amx_create_table.md), and
+[`notes/calling_convention.md`](notes/calling_convention.md).
 
 ## Priority order
 

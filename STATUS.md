@@ -39,6 +39,9 @@ source for the AMX idle spin.
   `+0Ah`, stride `0x40`. Mailbox/pool objects at `ES:[BX]` stay D11.
 - Create-table tasks 0–7: entries and exits pinned. Task 6 never
   `RETF`s. Reset readies only 6 and 7. `E937:0004` is `DS=ES=8010`.
+- Dominant application convention is far cdecl: `[BP+6]`, caller
+  `ADD SP`, `RETF`. The `F800:1875` walker is BIOS-only (3 sites).
+  AMX public APIs take `DL` (or `CX` via `B060`). `INT 43` takes `AX`.
 - BIOS banner characters take `INT 43` AX=4, then `17CC`, then `LCD_put`
   AH=`0x0C` / AL=char on ports `0xE2`/`0xE0`. Cursor and a 320-cell
   shadow live at `0040:68AB` / `0040:662B`.

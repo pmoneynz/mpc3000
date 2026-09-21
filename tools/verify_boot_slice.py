@@ -224,6 +224,31 @@ def verify(image: bytes, facts: dict) -> list[str]:
         raise AssertionError("ROM IVT12 continue is not POP/IRET")
     checks.append("ROM IVT12 FAC0:024F IRET tail")
 
+    conv = facts["calling_convention"]
+    walker = conv["inline_walker"]
+    _expect_hex(image, int(walker["file"], 16), walker["bytes"], "inline walker 1875")
+    if image.count(bytes.fromhex(walker["pattern"])) != 1:
+        raise AssertionError("POP SI / ES=CS walker stub is not unique")
+    for caller_hex in walker["callers"]:
+        off = int(caller_hex, 16)
+        if image[off] != 0xE8:
+            raise AssertionError(f"walker caller 0x{off:05X} is not CALL near")
+        rel = image[off + 1] | (image[off + 2] << 8)
+        if rel >= 0x8000:
+            rel -= 0x10000
+        ip = off - 0x78000
+        if (ip + 3 + rel) & 0xFFFF != 0x1875:
+            raise AssertionError(f"0x{off:05X} does not CALL F800:1875")
+    cdecl = conv["far_cdecl_wait"]
+    _expect_hex(image, int(cdecl["file"], 16), cdecl["bytes"], "B060 far cdecl")
+    lds = conv["far_cdecl_lds"]
+    _expect_hex(image, int(lds["file"], 16), lds["bytes"], "D9B5 LDS [BP+6]")
+    three = conv["task6_three_arg_call"]
+    _expect_hex(image, int(three["file"], 16), three["bytes"], "task6 cdecl three-arg")
+    if image.count(bytes.fromhex("8b4604")) != conv["mov_ax_bp4_count"]:
+        raise AssertionError("MOV AX,[BP+4] count is not zero")
+    checks.append("calling convention: walker + far cdecl")
+
     return checks
 
 

@@ -90,6 +90,14 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x59C03:0x59C05], bytes.fromhex("ebd9"))
         self.assertEqual(self.image[0x301A6], 0xCB)
         self.assertEqual(self.image[0x69374:0x6937C], bytes.fromhex("b810808ec08ed8cb"))
+        conv = self.facts["calling_convention"]
+        self.assertEqual(self.image.count(bytes.fromhex("5e060e07")), 1)
+        self.assertEqual(self.image[0x79875:0x7987F], bytes.fromhex("5e060e07e803000756c3"))
+        self.assertEqual(self.image[0x30600:0x3060D], bytes.fromhex("558bec8b4e069a840400fb5dcb"))
+        self.assertEqual(self.image[0x59B95:0x59B9F], bytes.fromhex("558bec56571e06c57606"))
+        self.assertEqual(self.image[0x59BEF:0x59BFE], bytes.fromhex("68c3061e68737f9a4500b5d983c406"))
+        self.assertEqual(self.image.count(bytes.fromhex("8b4604")), 0)
+        self.assertEqual(len(conv["inline_walker"]["callers"]), 3)
 
     def test_copy_7c92_bounds(self) -> None:
         copy = self.facts["copy_7c92"]

@@ -234,6 +234,30 @@
     "walker_bytes": "50538ad9b80400cd435b58c3",
     "banner_put_ah": "0x0C"
   },
+  "calling_convention": {
+    "inline_walker": {
+      "cs_ip": "F800:1875",
+      "file": "0x79875",
+      "bytes": "5e060e07e803000756c3",
+      "pattern": "5e060e07",
+      "callers": ["0x78122", "0x799BE", "0x79A17"]
+    },
+    "far_cdecl_wait": {
+      "cs_ip": "B060:0000",
+      "file": "0x30600",
+      "bytes": "558bec8b4e069a840400fb5dcb"
+    },
+    "far_cdecl_lds": {
+      "cs_ip": "D9B5:0045",
+      "file": "0x59B95",
+      "bytes": "558bec56571e06c57606"
+    },
+    "task6_three_arg_call": {
+      "file": "0x59BEF",
+      "bytes": "68c3061e68737f9a4500b5d983c406"
+    },
+    "mov_ax_bp4_count": 0
+  },
   "ivt": {
     "fac0_slot10_file": "0x7AC61",
     "fac0_slot10_bytes": "b8a401bb40008907",

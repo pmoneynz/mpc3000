@@ -61,8 +61,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
 - [x] **D7.** Create-table 0–7 identified. Exits: 0/1/3/7 one `RETF`;
       2 and 5 two `RETF`s; 4 wait-loop or `RETF`; 6 no `RETF`.
       Reset readies only 6 and 7. Slots 0 and 2 first-ready open.
-- [ ] **D8.** Establish the dominant calling convention (near vs far,
-      register args, inline-string walker at `0x79875`).
+- [x] **D8.** Dominant app convention is far cdecl (`[BP+6]`, caller
+      `ADD SP`, `RETF`). Walker `F800:1875` is BIOS-only (3 sites).
+      AMX is far + `DL`. `INT` uses `AX`.
 - [ ] **D9.** Partition interrupt wrappers that adjust return addresses
       or switch XA (`FAC0:01A4`, AMX `02F8`/`02EF`).
 - [ ] **D10.** Finish `U-COPY-7C92`: grammar past the string front;

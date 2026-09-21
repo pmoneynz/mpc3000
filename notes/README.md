@@ -16,6 +16,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`ivt_inventory.md`](ivt_inventory.md) | Reset-path IVT plants and writers |
 | [`amx_public_api.md`](amx_public_api.md) | AMX far-call surface and TCB grammar |
 | [`amx_create_table.md`](amx_create_table.md) | Create-table tasks 0–7 entries and exits |
+| [`calling_convention.md`](calling_convention.md) | Far cdecl, BIOS walker, AMX registers |
 | [`named_unknowns.md`](named_unknowns.md) | Ranked open uncertainties |
 
 Do not duplicate the MPC2000XL note corpus here. Cite it when a V53
