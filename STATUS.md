@@ -28,6 +28,9 @@ source for the AMX idle spin.
   `B000:00DF`. Second PGR is live through that first select.
 - First `01EA` does not idle. `B03B:000A` readies TCB 6 and 7 via
   `0396`; scan from index 0 creates task 6 at `D9BD:0009`.
+- Reset-path IVT: 219 default `F800:1952` `IRET`s; `IVT[10h]=FAC0:01A4`;
+  AMX owns 0 and 4; `B03B` owns 8/`0Ch`/`0Dh`/`0Eh`. The old `IVT[2]`
+  plant claim is retracted.
 - Only three `MOV DX,0xFF00` sites exist; all are FAC0 `OUTSW`. Second
   PGR is live through task 6’s first wait (`01CF` AX=4) and task 7
   select (`B000:00DF`).

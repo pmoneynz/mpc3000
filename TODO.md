@@ -52,8 +52,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
 - [x] **D4.** Only three `MOV DX,0xFF00`/`OUTSW` sites (all FAC0).
       Second PGR stays live through task 6’s first wait and task 7
       *select*. Later page-picker `OUT`s remain `U-XA-LIVE`.
-- [ ] **D5.** Inventory IVT slots: ROM templates, BIOS plants, AMX
-      `IVT[0]`/`[4]`, `F800:1AD4` plants, later aliases and writers.
+- [x] **D5.** Reset-path IVT inventoried through `B03B:000A`.
+      `IVT[10h]` is `FAC0:01A4` (not `IVT[2]`). 219 slots are
+      `F800:1952` `IRET`. Later `0347` plants listed, not applied.
 - [ ] **D6.** Recover AMX public far-call surface and TCB word grammar
       (`[SI]` bits 0/1/2/3/15, `+4/+6` stack, stride `0x40`).
 - [ ] **D7.** Identify create-table tasks 0–6 (`FB76:0002` + `0x12*n`)

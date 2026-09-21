@@ -105,7 +105,8 @@ RAM is covered is a later lifetime question.
 Still at `FAC0` (high ROM stays mapped):
 
 ```
-IVT[2] = FAC0:01A4          ; 0000:0008, now in RAM
+IVT[10h] = FAC0:01A4        ; 0000:0040, now in RAM
+                             ; (earlier “IVT[2] at 0000:0008” is retracted)
 SS:SP  = 900C:0100          ; 24-bit 0x3901C0 under PGR[36]
 ES     = 8010               ; 24-bit 0x380100
 DS     = A000               ; 24-bit 0x0A0000 = ROM file 0x20000
@@ -298,7 +299,7 @@ unresolved.
 | `[0x7AC00, 0x7ACB4)` | code | FAC0 reset body through `BRKXA 0x14` |
 | `[0x7ACB4, 0x7AD34)` | data | second PGR image (consumed by `OUTSW`) |
 | `[0x7AD34, 0x7ADA3)` | code | table walk through `jmp B000:00DF` |
-| `[0x7ADA4, 0x7ADCF)` | code | IVT[2] handler through `BRKXA 0x12` |
+| `[0x7ADA4, 0x7ADCF)` | code | `IVT[10h]` handler through `BRKXA 0x12` |
 | `[0x7ADCF, 0x7AE4F)` | data | third PGR image |
 | `[0x7AE4F, 0x7AE56)` | code | ROM IVT[0x12] continue: pops + `IRET` |
 | `[0x7AE56, 0x7AED6)` | data | first PGR image |
@@ -335,5 +336,5 @@ kernel. Helpers past `0148` stay unresolved.
 - Any 24-bit access to NVRAM `0x500000`.
 - Later writers or aliases of the `0x7C92`-byte copy.
 
-Next useful uncertainty: task 7 body `B000:00DF` (first wait of task 6
-selects it) or IVT inventory (D5).
+Next useful uncertainty: AMX public API / TCB grammar (D6), or task 7
+body `B000:00DF`.

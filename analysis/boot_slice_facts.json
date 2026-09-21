@@ -177,5 +177,20 @@
     "walker_file": "0x798CA",
     "walker_bytes": "50538ad9b80400cd435b58c3",
     "banner_put_ah": "0x0C"
+  },
+  "ivt": {
+    "fac0_slot10_file": "0x7AC61",
+    "fac0_slot10_bytes": "b8a401bb40008907",
+    "fac0_slot10_cs_ip": "FAC0:01A4",
+    "default_iret_file": "0x79952",
+    "default_iret_bytes": "cf",
+    "bios_skip_di40_file": "0x7808C",
+    "bios_skip_di40_bytes": "83ff407405",
+    "amx_slot0_file": "0x7B05E",
+    "amx_slot0_bytes": "c705f802",
+    "second_init_slot0b_file": "0x79ADC",
+    "second_init_slot0b_bytes": "b84720a32c00",
+    "b03b_slot8_file": "0x552A8",
+    "b03b_slot8_bytes": "9a570100fb"
   }
 }
