@@ -134,7 +134,11 @@ which `CALLN`s the named
 `00A5` `B354:03B1`
 `Center pad:` / `[E613]`
 then `CALLN 022B` with
-`[81B3]`).
+`[81B3]`; `0002` `0029`
+`Note:` `B354:03B1` of
+`[D6AD]`; `005E` `Param:`
+`B354:01C6` of `[81B3]`;
+`0070` `CALLN 0203`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

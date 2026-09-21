@@ -320,13 +320,22 @@ Sole `9A` consumer is `C425:01F6` (file `0x44446`
 via `B509:2289`. **PROVEN.**
 
 `0015` (file `0x3E1B5`): `MOV AL,[D6AD]`; copy to
-`[BP-1]`; `B354:03B1` with bounds `0x23` / `0x62` and
-label `Note:`. **PROVEN** this screen shows the selected
-note already held in `[D6AD]`, not a pad-hit.
+`[BP-1]`; bounds `0x23` / `0x62` (file `0x3E1BB`
+`6A 18 6A 62 6A 23`); `PUSH +3EAA` (file `0x3E1C9`);
+`CALLF B354:03B1` (file `0x3E1CC`). **PROVEN** this
+screen shows the selected note already held in
+`[D6AD]`, not a pad-hit.
 
-`0056` calls `B354:01C6` with table `DS:3E22` and index
-`[81B3]`. Directory `+3E22` / `+3E26` is `VELOCITY` /
-`NOTE VAR` plus a NULL. **PROVEN** as the `Param:` names.
+`0056` (file `0x3E1F6`): `PUSH +3E22`; `PUSH 0x81B3`
+(file `0x3E1FA`); `PUSH +3EB0` (file `0x3E1FE`);
+`CALLF B354:01C6` (file `0x3E201`). Directory
+`+3E22` / `+3E26` is `VELOCITY` / `NOTE VAR` plus
+a NULL. **PROVEN** as the `Param:` names. Then
+`PUSH [BP-1]`; `CS: CALLN 0203` (file `0x3E20E`
+`90 0E E8 90 01`). **PROVEN** as the main-screen
+caller of the named `0203` FD0D helper with that
+`[D6AD]` note. Not a pad-hit. Do not invent a
+16-level algorithm.
 `[81B3]` is RAM (linear `0x281B3` is `0xFF` padding).
 The owned store is `B21A:01E2` (file `0x32382`, same
 init as `01DD` `MOV [8375],0`): `MOV [81B3],0`.
@@ -392,8 +401,9 @@ at `0x59EEE` stay unseeded.
 
 `BE1A:0203` (file `0x3E3A3`, already owned): if
 `[81B3]==0`, `DX=4`. Else `AX=[BP+6]*0x18`;
-`LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`. `0002` passes the
-`[D6AD]` note. **PROVEN:** `NOTE VAR` reuses the same
+`LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`. `0002` `0070`
+(file `0x3E20E`) passes the `[D6AD]` note.
+**PROVEN:** `NOTE VAR` reuses the same
 Param byte as `026C`; `VELOCITY` is the other arm
 (return 4 indexes the empty `+3E2E` slot). Do not name
 a 16-level algorithm from this. Do not BFS

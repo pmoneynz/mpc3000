@@ -220,11 +220,15 @@ Validator: `python3 tools/verify_boot_slice.py`.
   picker record; `BDF1:0014`
   / `0022` `CALLF B21A:000F`,
   which `CALLN`s the named
-  `+0859` copy; `BE1A:0002`
+  `+0859` copy;   `BE1A:0002`
   `00A5` `B354:03B1`
   `Center pad:` / `[E613]`
   then `CALLN 022B` with
-  `[81B3]`).
+  `[81B3]`; `0002` `0029`
+  `Note:` `B354:03B1` of
+  `[D6AD]`; `005E` `Param:`
+  `B354:01C6` of `[81B3]`;
+  `0070` `CALLN 0203`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).
