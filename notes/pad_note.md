@@ -556,6 +556,23 @@ end is the named dword base. Not a
 pad-hit. Sibling leftover `0874`
 (file `0x42964`) is the same
 `SI*0x18` / `[BX+3E],0xFF` walk.
+`085E` (file `0x4294E`)
+`MOV [BP-8],0` then
+`CALLF C887:1BE8` (file
+`0x42958`) is the named
+`CA45:0008` alias with
+`[BP-8]`. After `CMP SI,0x40`,
+`INC [BP-8]`; `CMP [BP-8],0x18`
+(file `0x429B5`); `JL` back to
+that `CA45`. Then `PUSH 0` /
+`CALLF CA45` (file `0x429BD`).
+**PROVEN** as a 24-program
+`CA45` select wrapping the
+named `0874` walk, then
+restore to index 0. Not a
+pad-hit. Do not name the
+`+3E` byte. Do not name
+`D0C0`.
 Already-owned `C20F:0BBF` (file
 `0x42CAF`) loads `ES:[BX+3E]`
 (file `0x42CDB`) and bounds

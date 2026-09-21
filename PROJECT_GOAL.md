@@ -59,7 +59,10 @@ slot / `+063E` / `[E639]`;
 `[81B3]==0`. `C20F:0478` leftover
 walks `[E5F9]+SI*0x18+3E` for
 `SI` `0..0x3F` to exclusive
-`+063E`; sibling `0874`;
+`+063E`; sibling `0874`
+wrapped by `CA45` on
+`[BP-8]` `0..0x17` then
+restore;
 `0BBF` skips `[E60E]`, compares
 `+3E` to `[BP+6]`, stores
 `[BP+8]`, restores `CA45`;
