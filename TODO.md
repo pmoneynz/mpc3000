@@ -356,7 +356,10 @@ bounds, evidence, unknowns).
       of `[996B]` via `+0224`
       `TUNING`..`FILTER`;
       `BE1A:037B` `MOV [996B],0`
-      before the `0380` load).
+      before the `0380` load;
+      `BE1A:0344` `B354:03B1`
+      of the named `+11`
+      `Note:` byte).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

@@ -251,11 +251,19 @@ Do not name the other `0637`
 dests.
 
 At `0329` (file `0x3E4C9`): `LES BX,[E5F9]`;
-`AL=ES:[BX+11]`; `MOV [996C],AL`; then `B354:03B1` with
-bounds `0x22` / `0x62`. Field `+11` is the `Note:` value
-(**HYPOTHESIS** a note number: same clamp as `D9F2:0072`).
-`0523` (file `0x3E6C3`) writes `[996C]` back to
-`ES:[BX+11]`. **PROVEN** as that store.
+`AL=ES:[BX+11]`; then `PUSH` bounds `0x18` /
+`0x62` / `0x22` (file `0x3E4D4`); `PUSH +3E62`
+(file `0x3E4E1`); `CALLF B354:03B1` (file
+`0x3E4E4`). **PROVEN** as the Slider printer of
+the named `+11` `Note:` byte. Title `+3E62` is
+the NUL after `VELOCITY` (same as `0315` /
+`03AC`). Bounds match the named `D9F2:0072`
+clamp `0x22`..`0x62`. Not a pad-hit. That `+11`
+is a MIDI note remains **HYPOTHESIS**. `0523`
+(file `0x3E6C3`) writes that temp back to
+`ES:[BX+11]`. **PROVEN** as that store. Do not
+newly name the temp. Do not name `0637` dest
+`051C`.
 
 At `037B` (file `0x3E51B`): `MOV [996B],0` before
 the `0380` load. **PROVEN** as the default of the

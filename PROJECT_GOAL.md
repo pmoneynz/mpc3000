@@ -157,7 +157,10 @@ of the `000C` return as
 of `[996B]` via `+0224`
 `TUNING`..`FILTER`;
 `BE1A:037B` `MOV [996B],0`
-before the `0380` load).
+before the `0380` load;
+`BE1A:0344` `B354:03B1`
+of the named `+11`
+`Note:` byte).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`
