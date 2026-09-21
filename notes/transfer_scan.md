@@ -81,7 +81,9 @@ BFS. 135 of 187 table dests are bounded; 52 stay prefix-only.
 `C44E:00B8` is a 5-IP table owned as data; it is not a BFS seed
 because the dests `CALLN` mid-hole IPs. `CEBF:026A` and
 `BE1A:01FB` are 4-IP tables owned the same way (`BX<=3` then
-`SHL 1`).
+`SHL 1`). `BE1A:026C` adds three packed tables at `062F` /
+`0637` / `0641`; dests fill the two walk holes and are not
+BFS seeds.
 `D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
@@ -183,6 +185,10 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x3E39B, 0x3E3A3)` | data — `BE1A` `JMP CS:[BX+01FB]` 4 near IPs (`BX<=3` then `SHL 1`) |
 | `[0x3E3A3, 0x3E3CB)` | code — `BE1A:0203` cdecl through `RETF`; `CALLN` `0070`/`010C`/`0160` |
 | `[0x3E3CB, 0x3E40C)` | code — `BE1A:022B` cdecl through `RETF`; `CALLN` `0129`/`017D`/`018F` |
+| `[0x3E40C, 0x3E7CF)` | code — `BE1A:026C` through three `JMP CS:[BX]`; `CALLF` `C425:0200` |
+| `[0x3E7CF, 0x3E7D7)` | data — `BE1A` `JMP CS:[BX+062F]` 4 near IPs (`BX<=3` then `SHL 1`) |
+| `[0x3E7D7, 0x3E7E1)` | data — `BE1A` `JMP CS:[BX+0637]` 5 near IPs (`BX<=4` then `SHL 1`) |
+| `[0x3E7E1, 0x3E7E9)` | data — `BE1A` `JMP CS:[BX+0641]` 4 near IPs (`BX<=3` then `SHL 1`) |
 
 ---
 
