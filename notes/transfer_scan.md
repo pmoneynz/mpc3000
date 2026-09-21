@@ -136,8 +136,9 @@ hole prefixes stay unowned. Packed `CALLN`
 leftovers from owned bodies: `C303:0CEE`
 closes `[0x43D1E, 0x43D77)`; `C303:0D76`..`11C4`
 closes `[0x43DA6, 0x44259)`; `B060:0044`..`02D6`
-fills `[0x30644, 0x3095D)` (20-byte prefix
-`0030` stays unowned); `B3FD:0A96` is the
+fills `[0x30644, 0x3095D)`; leftover `B060:0030`
+closes the 20-byte prefix (`CALLN` from
+`B060:0064`); `B3FD:0A96` is the
 hole-start after `0A2F`. Named `C44E` `00B8`
 `CALLN` dests `0119` / `0485` / `070F` plus
 leftovers `00C2` / `06B6` fill
@@ -202,6 +203,7 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x31258, 0x3126C)` | data — `B060` `JMP CS:[BX+0C58]` 10 near IPs |
 | `[0x3126C, 0x312BF)` | code — `B060:0C6C` cdecl through `RETF`; `CALLF` `C303:04A9` |
 | `[0x312BF, 0x31304)` | code — `B060:0CBF` cdecl through `RETF`; `CALLF` `BE1A:04D1`/`04E1` |
+| `[0x30630, 0x30644)` | code — `B060:0030` DEC/LES thunk through `RETF`; `CALLN` from `B060:0064` |
 | `[0x30644, 0x3095D)` | code — `B060:0044` through `02D6` packed `CALLN` leftovers through `RETF` |
 | `[0x31304, 0x31370)` | code — `B060:0D04` through `RETF`; `CALLF` `EBC8:00B0` |
 | `[0x320A4, 0x321AF)` | code — `B20A:0004` cdecl through `RETF`; `CALLF` `EB1A:0155`/`025F`/`030D` |

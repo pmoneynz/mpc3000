@@ -18,9 +18,9 @@ Reproduction: `python3 tools/owner_ledger.py --write` then
 | Field | Value |
 |-------|-------|
 | Purpose | Machine-readable owner map for proven file ranges |
-| Observable | `analysis/owner_ledger.json`; 864 ranges; 365850 owned bytes |
+| Observable | `analysis/owner_ledger.json`; 865 ranges; 365870 owned bytes |
 | Inputs | Byte-ownership tables in the notes; D16 walks; bounded CALL dests to fixpoint from D15 and switch-table IPs |
-| Outputs | Owner `code` or `data` only. 117 gaps left as debt |
+| Outputs | Owner `code` or `data` only. 116 gaps left as debt |
 | Confidence | Seed spans **PROVEN** as the union of those tables. Gaps are **UNDETERMINED**, not owners |
 | Hardware deferred | None |
 
@@ -76,6 +76,7 @@ Closed earlier this pass:
 | `[0x66616, 0x666FC)` | 230 | code — `E661:0006`/`0095` |
 | `[0x66D11, 0x66D8B)` | 122 | code — `E6D1:0001` |
 | `[0x6769C, 0x67725)` | 137 | code — `E739:030C` |
+| `[0x30630, 0x30644)` | 20 | code — `B060:0030` |
 | `[0x30644, 0x3095D)` | 793 | code — `B060:0044`..`02D6` |
 | `[0x34A66, 0x34A9C)` | 54 | code — `B3FD:0A96` |
 | `[0x43D1E, 0x43D77)` | 89 | code — `C303:0CEE` |

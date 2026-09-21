@@ -49,6 +49,7 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x300DF, 0x301A7, "code", "code", "notes/amx_create_table.md", "create-table task 7 through RETF"),
     (0x303BA, 0x3058A, "code", "code", "notes/amx_first_dispatch.md", "B03B:000A through RETF"),
     (0x30600, 0x3060D, "code", "code", "notes/amx_create_table.md", "B060:0000 timed wait"),
+    (0x30630, 0x30644, "code", "code", "notes/transfer_scan.md", "B060:0030 DEC/LES thunk through RETF; CALLN from B060:0064"),
     (0x30644, 0x3095D, "code", "code", "notes/transfer_scan.md", "B060:0044 through 02D6 packed CALLN leftovers through RETF"),
     (0x30D01, 0x30D15, "data", "jump_table", "notes/transfer_scan.md", "B060 JMP CS:[BX+0701] 10 near IPs"),
     (0x30D15, 0x30E6E, "code", "code", "notes/transfer_scan.md", "B060:0715 cdecl through RETF; CALLN B060:05E8/0601/0611"),

@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 365850,
+  "owned_bytes": 365870,
   "ranges": [
     {
       "start": "0x00000",
@@ -135,6 +135,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x30630",
+      "end": "0x30644",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:0030 DEC/LES thunk through RETF; CALLN from B060:0064"
     },
     {
       "start": "0x30644",
