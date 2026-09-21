@@ -359,7 +359,11 @@ bounds, evidence, unknowns).
       before the `0380` load;
       `BE1A:0344` `B354:03B1`
       of the named `+11`
-      `Note:` byte).
+      `Note:` byte;
+      `BE1A:028D`/`02A5`/`02BD`/
+      `02D5` `B1B1:005B` labels
+      `Note:`/`Param:`/`Low
+      range:`/`High range:`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

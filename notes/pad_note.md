@@ -225,8 +225,13 @@ note table is field `+073E` of the selected record.
 (file `0x44450` `9A 6C 02 1A BE`). `BE40:000C` is the
 same linear bytes under a different CS; that `9A` does
 not exist. **PROVEN.** Labels `Note:` / `Param:` /
-`Low range:` / `High range:` (`+3EAA` / `+3EB0` /
-`+3F03` / `+3F0E`).
+`Low range:` / `High range:` via `B1B1:005B`:
+`028D` `PUSH +3EAA` (file `0x3E42D`);
+`02A5` `PUSH +3EB0` (file `0x3E445`);
+`02BD` `PUSH +3F03` (file `0x3E45D`);
+`02D5` `PUSH +3F0E` (file `0x3E475`).
+**PROVEN** as those four put-strings. Not a
+pad-hit. Do not BFS `B77C:20C5` after `02D8`.
 
 At `02FC` (file `0x3E49C`): `MOV AL,[E60E]`; `INC AL`;
 `MOV [BP-9],AL` (file `0x3E4A1`); `LEA [BP-9]`

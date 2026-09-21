@@ -160,7 +160,11 @@ of `[996B]` via `+0224`
 before the `0380` load;
 `BE1A:0344` `B354:03B1`
 of the named `+11`
-`Note:` byte).
+`Note:` byte;
+`BE1A:028D`/`02A5`/`02BD`/
+`02D5` `B1B1:005B` labels
+`Note:`/`Param:`/`Low
+range:`/`High range:`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`
