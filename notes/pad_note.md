@@ -134,6 +134,20 @@ note. Not a pad-hit. Do not name
 `SNR1`). Do not invent a GM map or
 MIDI protocol from the ROM title.
 
+Already-owned `C44E:0235` (file `0x44715`)
+`PUSH 0x40` / `CALLF B060:035D` (file
+`0x44717`). `AX==0` loops to `01D5`.
+`CMP AX,0x44` / `JE 0251` (file
+`0x44725`) takes the named second
+`[D6AC]` clamp. `CMP AX,0x4E` /
+`JE 02B2` (file `0x4472A`) exits.
+**PROVEN** as the assign-screen
+consumer of the named `B060:035D`
+dispatcher that reaches the named
+`0251` clamp. Not a pad-hit. Do not
+invent a key name from `0x44` /
+`0x4E`. Do not name `[7D79]`.
+
 ---
 
 ## 2. Table accessors — `D9F2`

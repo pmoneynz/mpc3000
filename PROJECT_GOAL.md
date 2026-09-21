@@ -171,7 +171,9 @@ load;
 `C44E:0005` dest 0
 `CALLN` `0119`;
 `C44E:00C2` `(Gen MIDI:`
-of the named `000C` note).
+of the named `000C` note;
+`C44E:0235` `CALLF B060:035D`
+/ `AX==0x44` takes `0251`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

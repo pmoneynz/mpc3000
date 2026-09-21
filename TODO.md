@@ -370,7 +370,9 @@ bounds, evidence, unknowns).
       `C44E:0005` dest 0
       `CALLN` `0119`;
       `C44E:00C2` `(Gen MIDI:`
-      of the named `000C` note).
+      of the named `000C` note;
+      `C44E:0235` `CALLF B060:035D`
+      / `AX==0x44` takes `0251`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
