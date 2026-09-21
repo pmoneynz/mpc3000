@@ -58,8 +58,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
 - [x] **D6.** 76 far `CALL FB00` sites, 19 IPs. `[SI]` bits
       0/1/2/3/14/15, `+4/+6` stack, `+0Ah` timed wait, stride `0x40`.
       Mailbox/pool objects stay D11.
-- [ ] **D7.** Identify create-table tasks 0–6 (`FB76:0002` + `0x12*n`)
-      the same way record 7 is `B000:00DF`. Follow each entry; pin exits.
+- [x] **D7.** Create-table 0–7 identified. Exits: 0/1/3/7 one `RETF`;
+      2 and 5 two `RETF`s; 4 wait-loop or `RETF`; 6 no `RETF`.
+      Reset readies only 6 and 7. Slots 0 and 2 first-ready open.
 - [ ] **D8.** Establish the dominant calling convention (near vs far,
       register args, inline-string walker at `0x79875`).
 - [ ] **D9.** Partition interrupt wrappers that adjust return addresses

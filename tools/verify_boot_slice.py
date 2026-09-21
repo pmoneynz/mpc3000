@@ -136,6 +136,13 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, create_file + 7 * rec_size, create["record7_bytes"], "AMX create[7]")
     if image[create_file + 8 * rec_size : create_file + 8 * rec_size + 4] != bytes.fromhex("ffffffff"):
         raise AssertionError("create table is not terminated by FFFF:FFFF")
+    for rec in create["records"]:
+        _expect_hex(image, int(rec["file"], 16), rec["entry_bytes"], f"create[{rec['n']}] entry")
+        _expect_hex(image, int(rec["exit_file"], 16), rec["exit_bytes"], f"create[{rec['n']}] exit")
+        if "exit2_file" in rec and image[int(rec["exit2_file"], 16)] != 0xCB:
+            raise AssertionError(f"create[{rec['n']}] second exit is not RETF")
+    dsset = create["ds8010_set"]
+    _expect_hex(image, int(dsset["file"], 16), dsset["bytes"], "E937:0004 DS=8010")
     ready = amx["ready_api"]
     _expect_hex(image, int(ready["file"], 16), ready["bytes"], "AMX 0396")
     path = amx["create_path"]
@@ -149,6 +156,7 @@ def verify(image: bytes, facts: dict) -> list[str]:
     if task["index"] != 6:
         raise AssertionError("first task index must be 6")
     checks.append("AMX 01EA / 0537 / idle / create[6]=D9BD:0009")
+    checks.append("AMX create-table tasks 0–7 entries and exits")
 
     public = amx["public_api"]
     far_ips = {int(x, 16) for x in public["far_call_ips"]}

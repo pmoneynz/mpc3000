@@ -75,6 +75,21 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x7B21C:0x7B220], bytes.fromhex("c7040040"))
         self.assertEqual(self.image[0x7B4B9:0x7B4C3], bytes.fromhex("f70404007416c7040200"))
         self.assertEqual(self.image[0x7B157:0x7B160], bytes.fromhex("505152535657558bec"))
+        records = amx["create_table"]["records"]
+        self.assertEqual(len(records), 8)
+        self.assertEqual(self.image[0x7B5B2:0x7B5B7], bytes.fromhex("2ec53e4200"))
+        self.assertEqual(self.image[0x7B5E8], 0xCB)
+        self.assertEqual(self.image[0x32596:0x3259B], bytes.fromhex("b810808ed8"))
+        self.assertEqual(self.image[0x325FF], 0xCB)
+        self.assertEqual(self.image[0x6C070], 0xCB)
+        self.assertEqual(self.image[0x6C092], 0xCB)
+        self.assertEqual(self.image[0x6AD6D], 0xCB)
+        self.assertEqual(self.image[0x5DF41], 0xCB)
+        self.assertEqual(self.image[0x3154E], 0xCB)
+        self.assertEqual(self.image[0x3156D], 0xCB)
+        self.assertEqual(self.image[0x59C03:0x59C05], bytes.fromhex("ebd9"))
+        self.assertEqual(self.image[0x301A6], 0xCB)
+        self.assertEqual(self.image[0x69374:0x6937C], bytes.fromhex("b810808ec08ed8cb"))
 
     def test_copy_7c92_bounds(self) -> None:
         copy = self.facts["copy_7c92"]

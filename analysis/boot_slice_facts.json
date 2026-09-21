@@ -118,7 +118,23 @@
       "file": "0x7B762",
       "record_size": 18,
       "record6_bytes": "0900bdd9f0034893",
-      "record7_bytes": "df0000b0803e8793"
+      "record7_bytes": "df0000b0803e8793",
+      "terminator_file": "0x7B7F2",
+      "records": [
+        {"n": 0, "cs_ip": "FB00:05B2", "file": "0x7B5B2", "entry_bytes": "2ec53e4200", "exit_file": "0x7B5E8", "exit_bytes": "cb"},
+        {"n": 1, "cs_ip": "B259:0006", "file": "0x32596", "entry_bytes": "b810808ed8", "exit_file": "0x325FF", "exit_bytes": "cb"},
+        {"n": 2, "cs_ip": "EC05:0000", "file": "0x6C050", "entry_bytes": "558bec568b7606", "exit_file": "0x6C070", "exit_bytes": "cb", "exit2_file": "0x6C092"},
+        {"n": 3, "cs_ip": "EAD0:000B", "file": "0x6AD0B", "entry_bytes": "558bec83ec06", "exit_file": "0x6AD6D", "exit_bytes": "cb"},
+        {"n": 4, "cs_ip": "DDF1:000A", "file": "0x5DF1A", "entry_bytes": "b810808ed8", "exit_file": "0x5DF41", "exit_bytes": "cb"},
+        {"n": 5, "cs_ip": "B14B:0002", "file": "0x314B2", "entry_bytes": "9a040037e9", "exit_file": "0x3154E", "exit_bytes": "cb", "exit2_file": "0x3156D"},
+        {"n": 6, "cs_ip": "D9BD:0009", "file": "0x59BD9", "entry_bytes": "9a040037e9", "exit_file": "0x59C03", "exit_bytes": "ebd9"},
+        {"n": 7, "cs_ip": "B000:00DF", "file": "0x300DF", "entry_bytes": "5633f69a040037e9", "exit_file": "0x301A6", "exit_bytes": "cb"}
+      ],
+      "ds8010_set": {
+        "cs_ip": "E937:0004",
+        "file": "0x69374",
+        "bytes": "b810808ec08ed8cb"
+      }
     },
     "ready_api": {
       "cs_ip": "FB00:0396",

@@ -184,7 +184,8 @@ D7, not D1.
 | 6 | `D9BD:0009` | `0x59BD9` | `9348:03F0` |
 | 7 | `B000:00DF` | `0x300DF` | `9387:3E80` |
 
-Only 6 and 7 are readied before first `01EA`. Records 0–5 stay D7.
+Only 6 and 7 are readied before first `01EA`. Records 0–5 entries and
+exits are in [`amx_create_table.md`](amx_create_table.md).
 
 ---
 
