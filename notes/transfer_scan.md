@@ -79,8 +79,9 @@ bounded switch-table dest is owned as *code* (D17). 25 hole- or
 edge-bounded near-IP tables (JMP/CALL CS:[BX+disp], INT 40) seed that
 BFS. 135 of 187 table dests are bounded; 52 stay prefix-only.
 `C44E:00B8` is a 5-IP table owned as data; it is not a BFS seed
-because the dests `CALLN` mid-hole IPs. `CEBF:026A` is a 4-IP
-table owned the same way (`BX<=3` then `SHL 1`).
+because the dests `CALLN` mid-hole IPs. `CEBF:026A` and
+`BE1A:01FB` are 4-IP tables owned the same way (`BX<=3` then
+`SHL 1`).
 `D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
@@ -176,6 +177,10 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x4ED2E, 0x4EDA2)` | code — `CEBF` `026A` dests `013E`/`0175`/`0189` |
 | `[0x4EDA2, 0x4EE5A)` | code — `CEBF` shared `01B2` through `RETF` |
 | `[0x4EE5A, 0x4EE62)` | data — `CEBF` `JMP CS:[BX+026A]` 4 near IPs (`BX<=3` then `SHL 1`) |
+| `[0x3E1A2, 0x3E292)` | code — `BE1A:0002` through `JMP CS:[BX+01FB]`; `CALLF` `C425:01F6` |
+| `[0x3E292, 0x3E335)` | code — `BE1A` `01FB` dests `00F2`/`0105`/`0131`/`0185` |
+| `[0x3E335, 0x3E39B)` | code — `BE1A` shared `0195` through `RETF` |
+| `[0x3E39B, 0x3E3A3)` | data — `BE1A` `JMP CS:[BX+01FB]` 4 near IPs (`BX<=3` then `SHL 1`) |
 
 ---
 

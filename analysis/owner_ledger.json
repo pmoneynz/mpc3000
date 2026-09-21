@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 344767,
+  "owned_bytes": 345280,
   "ranges": [
     {
       "start": "0x00000",
@@ -559,6 +559,38 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x3E1A2",
+      "end": "0x3E292",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "BE1A:0002 through JMP CS:[BX+01FB]; CALLF C425:01F6"
+    },
+    {
+      "start": "0x3E292",
+      "end": "0x3E335",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "BE1A 01FB dests 00F2/0105/0131/0185"
+    },
+    {
+      "start": "0x3E335",
+      "end": "0x3E39B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "BE1A shared 0195 through RETF"
+    },
+    {
+      "start": "0x3E39B",
+      "end": "0x3E3A3",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "BE1A JMP CS:[BX+01FB] 4 near IPs BX<=3 then SHL 1"
     },
     {
       "start": "0x420F3",
