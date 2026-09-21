@@ -36,6 +36,7 @@ File `0x445F9`. Already owned (`[0x445F9, 0x4479F)`). Sole exit
 | IP | File | Bytes | Use |
 |----|------|-------|-----|
 | `0119` | `0x445F9` | `55 8B EC 83 EC 02 1E 68 32 50 9A 89 22 09 B5` | Title `+5032` `Assign Pads to Note Numbers` via `B509:2289` |
+| `0133` | `0x44613` | `68 0C 4F` / `68 75 83` / `68 4E 50` | `Mode:` via `B354:01C6`; index `[8375]`; dir `+4F0C` |
 | `0152` | `0x44632` | `80 3E AC D6 00` / `80 3E AC D6 3F` | Clamp `[D6AC]` to 0..0x3F |
 | `0177` | `0x44657` | `68 54 50` | `Pad:` then `B354:01C6` |
 | `0165` | `0x44645` | `A0 AC D6 88 46 FF` | `[D6AC]` copied to `[BP-1]` |
@@ -50,6 +51,18 @@ File `0x445F9`. Already owned (`[0x445F9, 0x4479F)`). Sole exit
 
 `C887:09AC` is called with the note byte and stays unowned
 (mid-hole). Do not BFS it.
+
+`0133` (file `0x44613`): `PUSH +4F0C`; `PUSH 0x8375`
+(file `0x44617`); `PUSH +504E` (file `0x4461B`);
+`CALLF B354:01C6` (file `0x4461E`). Label `+504E` is
+`Mode:`. Directory `+4F0C` / `+4F10` is `PROGRAM` /
+`MASTER` plus a NULL (files `0x24F0C` / `0x24F4A` /
+`0x24F52`). **PROVEN** as the assign-screen consumer
+of the named `[8375]` overlay flag, same `01C6`
+shape as `BE1A:0002` `Param:` / `[81B3]`. Not a
+pad-hit. Do not invent a third mode. Do not name
+the `+4F18` `IGNORE` / `RECEIVE` table. The owned
+store of `[8375]` remains the zero init.
 
 `[D6AC]` is the slot shown after `Pad:` and passed to `D9F2`.
 **PROVEN** as that dataflow. The clamp stores

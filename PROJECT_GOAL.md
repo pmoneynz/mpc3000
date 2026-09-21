@@ -138,7 +138,11 @@ then `CALLN 022B` with
 `Note:` `B354:03B1` of
 `[D6AD]`; `005E` `Param:`
 `B354:01C6` of `[81B3]`;
-`0070` `CALLN 0203`).
+`0070` `CALLN 0203`;
+`C44E:013E` `Mode:`
+`B354:01C6` of `[8375]`
+via `+4F0C` `PROGRAM` /
+`MASTER`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

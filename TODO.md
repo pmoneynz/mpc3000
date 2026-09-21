@@ -337,7 +337,11 @@ bounds, evidence, unknowns).
       `Note:` `B354:03B1` of
       `[D6AD]`; `005E` `Param:`
       `B354:01C6` of `[81B3]`;
-      `0070` `CALLN 0203`).
+      `0070` `CALLN 0203`;
+      `C44E:013E` `Mode:`
+      `B354:01C6` of `[8375]`
+      via `+4F0C` `PROGRAM` /
+      `MASTER`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
