@@ -349,6 +349,23 @@ Do not name `+0` / `+6`. Task 3's first packet byte is
 `& 0xF8` is `0x90` and that arm is taken
 (**HYPOTHESIS** live Param stays `0..3`).
 
+Already-owned `DCE4:000C` (file
+`0x5CE4C`). `AND AL,0xF8` (file
+`0x5CE8A`); `CMP 0x98` / `0xF8` /
+`0xF0`. The `0xF0` arm (file
+`0x5CEA4`) requires `ES:[SI+2]==0x47`
+and `ES:[SI+5]` in `{0x45,0x46}`
+(files `0x5CEA8` / `0x5CEAF` /
+`0x5CEB6`), then `CMP [E60F],1`
+or `CMP [E610],1` (files
+`0x5CEC9` / `0x5CED7`). **PROVEN**
+as the same `0xF0` gate as
+`CFB3` plus the named overlay
+flags. Not a pad-hit. Do not
+name the `0x98` / `0xF8` arms.
+Owned caller `DC85` (file
+`0x5C94E` `9A 0C 00 E4 DC`).
+
 `CFC6:0007` (file `0x4FC67`, same owned span).
 `ES:[BX+2]` must be `0x23`..`0x62` else
 `02D2` `POP`/`LEAVE`/`RETF`. Else
