@@ -178,6 +178,7 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(pad["be1a_03a5_996b_file"], 16), pad["be1a_03a5_996b_bytes"], "BE1A:03A5 PUSH 0x996B")
     _expect_hex(image, int(pad["be1a_03a9_str_file"], 16), pad["be1a_03a9_str_bytes"], "BE1A:03A9 PUSH +3E62")
     _expect_hex(image, int(pad["be1a_03ac_01c6_file"], 16), pad["be1a_03ac_01c6_bytes"], "BE1A:03AC CALLF B354:01C6")
+    _expect_hex(image, int(pad["be1a_037b_file"], 16), pad["be1a_037b_bytes"], "BE1A:037B MOV [996B],0")
     _expect_hex(image, int(pad["d9f2_000c_file"], 16), pad["d9f2_000c_bytes"], "D9F2:000C")
     _expect_hex(image, int(pad["d9f2_000c_8375_file"], 16), pad["d9f2_000c_8375_bytes"], "D9F2:000C CMP [8375],0")
     _expect_hex(image, int(pad["d9f2_000c_ovl_file"], 16), pad["d9f2_000c_ovl_bytes"], "D9F2:000C MOV AL,[SI+8376]")

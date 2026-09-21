@@ -857,6 +857,7 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x3E545:0x3E548], bytes.fromhex("686b99"))
         self.assertEqual(self.image[0x3E549:0x3E54C], bytes.fromhex("68623e"))
         self.assertEqual(self.image[0x3E54C:0x3E551], bytes.fromhex("9ac60154b3"))
+        self.assertEqual(self.image[0x3E51B:0x3E520], bytes.fromhex("c6066b9900"))
         self.assertEqual(self.image[0x5CE4C:0x5CE52], bytes.fromhex("558bec065657"))
         self.assertEqual(self.image[0x5CE8A:0x5CE8C], bytes.fromhex("24f8"))
         self.assertEqual(self.image[0x5CE8C:0x5CE8E], bytes.fromhex("3c98"))

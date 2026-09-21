@@ -257,8 +257,14 @@ bounds `0x22` / `0x62`. Field `+11` is the `Note:` value
 `0523` (file `0x3E6C3`) writes `[996C]` back to
 `ES:[BX+11]`. **PROVEN** as that store.
 
-At `0380` (file `0x3E520`): if `[996C]>=0x23`,
-`AX=[996C]*0x18`; `LES BX,[E5F9]`; `ADD BX,AX`;
+At `037B` (file `0x3E51B`): `MOV [996B],0` before
+the `0380` load. **PROVEN** as the default of the
+named Param byte so `03AC` prints 0 when the named
+`+11` byte is `<0x23`. Not a pad-hit.
+
+At `0380` (file `0x3E520`): if the named `+11` byte
+is `>=0x23`, `AX` is that byte `*0x18`; `LES BX,[E5F9]`;
+`ADD BX,AX`;
 `AL=ES:[BX+FD0D]`; `MOV [996B],AL`. **PROVEN** as
 the `Param:` index. `+FD0D` is a 16-bit disp
 (effective `(BX+AX+FD0D)&0xFFFF`). `055D` (file

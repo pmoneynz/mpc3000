@@ -354,7 +354,9 @@ bounds, evidence, unknowns).
       ` = Note:`;
       `BE1A:03AC` `B354:01C6`
       of `[996B]` via `+0224`
-      `TUNING`..`FILTER`).
+      `TUNING`..`FILTER`;
+      `BE1A:037B` `MOV [996B],0`
+      before the `0380` load).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

@@ -245,7 +245,9 @@ Validator: `python3 tools/verify_boot_slice.py`.
   ` = Note:`;
   `BE1A:03AC` `B354:01C6`
   of `[996B]` via `+0224`
-  `TUNING`..`FILTER`).
+  `TUNING`..`FILTER`;
+  `BE1A:037B` `MOV [996B],0`
+  before the `0380` load).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).
