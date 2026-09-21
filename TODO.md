@@ -317,7 +317,9 @@ bounds, evidence, unknowns).
       `BE1A:0592` `JMP
       CS:[BX+062F]` stores
       `Low`/`High` temps to
-      `+12`..`+19`).
+      `+12`..`+19`; `C44E:0251`
+      second clamp / `0268`
+      copy).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

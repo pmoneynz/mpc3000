@@ -43,6 +43,9 @@ File `0x445F9`. Already owned (`[0x445F9, 0x4479F)`). Sole exit
 | `01A0` | `0x44680` | `68 59 50` | ` = Note:` then `B354:03B1` |
 | `01EE` | `0x446CE` | `9A 0C 00 F2 D9` | `000C`(`[BP-1]`) on the edit arm |
 | `020D` | `0x446ED` | `9A 72 00 F2 D9` | `D9F2:0072` store |
+| `0251` | `0x44731` | `80 3E AC D6 00` / `80 3E AC D6 3F` | Second clamp `[D6AC]` to 0..0x3F |
+| `025F` | `0x4473F` | `C6 06 AC D6 00` | Force 0 when out of range |
+| `0268` | `0x44748` | `A0 AC D6 88 46 FF` | `[D6AC]` copied to `[BP-1]` |
 | `027D` | `0x4475D` | `9A 0C 00 F2 D9` | `000C`(`[BP-1]`) after `0AD9` |
 
 `C887:09AC` is called with the note byte and stays unowned
@@ -50,7 +53,7 @@ File `0x445F9`. Already owned (`[0x445F9, 0x4479F)`). Sole exit
 
 `[D6AC]` is the slot shown after `Pad:` and passed to `D9F2`.
 **PROVEN** as that dataflow. The clamp stores
-(`C6 06 AC D6 00` at `0x44642` / `0x44741`) force 0 when the
+(`C6 06 AC D6 00` at `0x44640` / `0x4473F`) force 0 when the
 byte is outside 0..0x3F. That is UI, not a pad-hit.
 
 ---
@@ -710,7 +713,8 @@ not seed it.
 
 `BDF1:00E1` (file `0x3DFEF`,
 already owned): `PUSH 0`; `CALLF
-D9F2:000C`; `MOV [D6AD],AL` (file
+D9F2:000C` (file `0x3DFF1`);
+`MOV [D6AD],AL` (file
 `0x3DFF9`). **PROVEN** as slot 0
 to `[D6AD]`.
 
@@ -722,7 +726,7 @@ Whole-image `AC D6` has 18 hits. Owned stores:
 
 | CS:IP | File | Encoding | Source of `AL` |
 |-------|------|----------|----------------|
-| `C44E` clamp | `0x44642` / `0x44741` | `C6 06 AC D6 00` | Immediate 0 |
+| `C44E` clamp | `0x44640` / `0x4473F` | `C6 06 AC D6 00` | Immediate 0 |
 | `B060:0504` | `0x30B04` | `A2 AC D6` | `D9F2:003D`(`[D6AD]`) |
 | `5A50:00C5` | `0x5A5C5` | `A2 AC D6` | `D9F2:003D`(event note) |
 
