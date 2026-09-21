@@ -20,10 +20,10 @@ Reproduction: `python3 tools/verify_boot_slice.py`.
 | Field | Value |
 |-------|-------|
 | Purpose | Name the software assign path from slot index to note |
-| Observable | `C44E:0119` title `Assign Pads to Note Numbers`; `D9F2:000C` / `003D` / `0072`; `[E5F9]` via `CA45:0008` / `DA04:002B` |
+| Observable | `C44E:0119` title `Assign Pads to Note Numbers`; `D9F2:000C` / `003D` / `0072`; `[E5F9]` via `CA45:0008` / `DA04:002B`; `BE1A:026C` `Pgm` / Param |
 | Inputs | `[D6AC]` 0..0x3F; `D9F2` `[BP+6]` index or note; `0072` `[BP+8]` note |
 | Outputs | `000C` returns a byte; `003D` returns a slot or `-1`; `0072` stores a byte clamped `0x22`..`0x62` |
-| Confidence | Screen strings, `[D6AC]` 0..0x3F, `D9F2` encodings, remap stores, and `+0859` `0x23`..`0x62` **PROVEN**. That the table byte is a MIDI note **HYPOTHESIS** (range + ` = Note:`). Pad-hit writer of `[D6AC]` **UNDETERMINED** |
+| Confidence | Screen strings, `[D6AC]` 0..0x3F, `D9F2` encodings, remap stores, `+0859` `0x23`..`0x62`, and `BE1A` Param `TUNING`..`FILTER` **PROVEN**. That `+11` is a MIDI note **HYPOTHESIS** (range + `Note:`). Pad-hit writer of `[D6AC]` **UNDETERMINED** |
 | Hardware deferred | Pad scan on the wire (D19 / P1 / P4) |
 
 ---
@@ -132,18 +132,63 @@ record size, word `+2` is count, records start at `+4`.
 note table is field `+073E` of the selected record.
 **PROVEN** as that dataflow.
 
-`BE40:000C` (file `0x3E40C`, already owned) is the
+`BE1A:026C` (file `0x3E40C`, already owned) is the
 `Assign Note Var Slider (Pgm:  )` screen (`+3EE3` via
-`B509:2289`). Labels `Note:` / `Param:` / `Low range:` /
-`High range:` (`+3EAA` / `+3EB0` / `+3F03` / `+3F0E`).
-At `00C9` (file `0x3E4C9`): `LES BX,[E5F9]`;
+`B509:2289`). The sole `9A` consumer is `C425:0200`
+(file `0x44450` `9A 6C 02 1A BE`). `BE40:000C` is the
+same linear bytes under a different CS; that `9A` does
+not exist. **PROVEN.** Labels `Note:` / `Param:` /
+`Low range:` / `High range:` (`+3EAA` / `+3EB0` /
+`+3F03` / `+3F0E`).
+
+At `02FC` (file `0x3E49C`): `MOV AL,[E60E]`; `INC AL`;
+printed via `B354:03B1`. **PROVEN** the title `Pgm:`
+slot is the 1-based form of `CA45`'s `0..0x17` index.
+
+At `0329` (file `0x3E4C9`): `LES BX,[E5F9]`;
 `AL=ES:[BX+11]`; `MOV [996C],AL`; then `B354:03B1` with
-bounds `0x22` / `0x62`. **PROVEN** this screen consumes
-the `[E5F9]` record and names it `Pgm` in its title.
-Field `+11` is the `Note:` value on that screen
-(**HYPOTHESIS** a note number: same `0x22`..`0x62`
-clamp as `D9F2:0072`). Do not BFS `B77C:20C5` or
-`C887:09AC`.
+bounds `0x22` / `0x62`. Field `+11` is the `Note:` value
+(**HYPOTHESIS** a note number: same clamp as `D9F2:0072`).
+`0523` (file `0x3E6C3`) writes `[996C]` back to
+`ES:[BX+11]`. **PROVEN** as that store.
+
+At `0380` (file `0x3E520`): if `[996C]>=0x23`,
+`AX=[996C]*0x18`; `LES BX,[E5F9]`; `ADD BX,AX`;
+`AL=ES:[BX+FD0D]`; `MOV [996B],AL`. **PROVEN** as
+the `Param:` index. `+FD0D` is a 16-bit disp
+(effective `(BX+AX+FD0D)&0xFFFF`). `055D` (file
+`0x3E6FD`) writes `[996B]` back to `ES:[BX+FD0D]`.
+**PROVEN** as that store.
+
+`B354:01C6` is called with table `DS:0224` and index
+`[996B]`. Directory `+0224`..`+0230` is four
+`xxxx:8010` ptrs `TUNING` / `DECAY` / `ATTACK` /
+`FILTER` plus a NULL (`+0234`). **PROVEN** as the
+`Param:` names. DGROUP `+0204` is SMPTE
+`24`/`25`/`30`/`29.97 DROP`, not this table. The
+`PUSH 0x3E62` title is the NUL after `VELOCITY`,
+not a name table. Nearby `(TUNING)` / `(DECAY)`
+pool strings are not this consumer.
+
+`03BA` (file `0x3E55A`): `MOV BX,[996B]`; `CMP BX,3`;
+`JBE` then `SHL BX,1`; `JMP CS:[BX+0641]`. The
+owned table at `BE1A:0641` (file `0x3E7E1`, already
+`jump_table`) is `03C9` / `03F1` / `0418` / `043F`.
+Those IPs load signed pairs into `Low range:` /
+`High range:` temps (`[BP-4]` / `[BP-6]`, then
+`B354:02BB`):
+
+| `[996B]` | Name | Fields | IP | File |
+|----------|------|--------|----|------|
+| 0 | `TUNING` | `+12`/`+13` | `03C9` | `0x3E569` |
+| 1 | `DECAY` | `+14`/`+15` | `03F1` | `0x3E591` |
+| 2 | `ATTACK` | `+16`/`+17` | `0418` | `0x3E5B8` |
+| 3 | `FILTER` | `+18`/`+19` | `043F` | `0x3E5DF` |
+
+**PROVEN** as that map. `0x3EA41` is `BE40:0641`
+(wrong CS) and sits in a gap. Do not seed it.
+
+Do not BFS `B77C:20C5`, `B77C:202D`, or `C887:09AC`.
 
 `CF37:04AD` also `CALLF DA04:002B` (file `0x4F828`)
 before the overlay-to-`+073E` copy.
@@ -209,6 +254,7 @@ read it as MIDI.
 - Third `CALLF D9F2:003D` at file `0x397B3` is in a gap. Do
   not seed it.
 - Writer that sets `[8375]` nonzero (overlay select).
-- Full `9770:` / `Pgm` record grammar past `+11` / `+073E`.
+- Full `9770:` / `Pgm` record grammar past `+11` /
+  `+12`..`+19` / `+073E` / `+FD0D`.
 - `C887:09AC` body (mid-hole).
 - TE7774 / panel scan (D19).

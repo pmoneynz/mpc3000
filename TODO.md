@@ -215,11 +215,14 @@ bounds, evidence, unknowns).
       (`B21A:0033` copies to `[8376]`; `CF37:04AD` copies
       overlay to far `+073E`). `[E5F9]` is the selected
       `9770:` record (`CA45:0008` / `DA04:002B`, index
-      `0..0x17`). `BE40:000C` is `Assign Note Var Slider
-      (Pgm:  )`. Owned `[D6AC]` stores are remaps, not
-      pad-hit. See
+      `0..0x17`). `BE1A:026C` (`C425:0200`) is
+      `Assign Note Var Slider (Pgm:  )`. Param
+      `0..3` is `TUNING`/`DECAY`/`ATTACK`/`FILTER`
+      (`+0224`, `JMP CS:[BX+0641]`). Owned `[D6AC]`
+      stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
       pan ([`notes/pan_table.md`](notes/pan_table.md)).
+      `BE40:000C` is a retracted CS alias.
 - [ ] **D21.** Sequencer transport (play/stop/position).
 - [ ] **D22.** Sampling / DSP register path (`0x0060`, DMA3).
 - [ ] **D23.** Load / save (FDC `0xE8`, SCSI `0xA0`, IRQ3 demux).

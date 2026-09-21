@@ -107,10 +107,12 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `0x23`..`0x62` (`B21A:0033` / `CF37:04AD` overlay).
   `[E5F9]` is a far pointer into the `9770:` record array
   (`CA45:0008` / `DA04:002B`, index `0..0x17`).
-  `BE40:000C` titles that record `Pgm` (`Assign Note
-  Var Slider (Pgm:  )`). Owned `[D6AC]` stores are remaps.
-  Pad-hit writer is unnamed
-  ([`notes/pad_note.md`](notes/pad_note.md)).
+  `BE1A:026C` (`C425:0200`) titles that record `Pgm`
+  (`Assign Note Var Slider (Pgm:  )`). Param `0..3`
+  is `TUNING`/`DECAY`/`ATTACK`/`FILTER` (`+0224` /
+  `BE1A:0641`). `BE40:000C` is a retracted CS alias.
+  Owned `[D6AC]` stores are remaps. Pad-hit writer
+  is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).
 - PGR page 61 word `0x0140` maps to 24-bit `0x500000`
   (full-word `v33_translate`). Consumer is `D9B5`
   `ES=0xF400`; `ES:[03FE]` is `0x5003FE` inside the
