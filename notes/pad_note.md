@@ -38,7 +38,7 @@ File `0x445F9`. Already owned (`[0x445F9, 0x4479F)`). Sole exit
 | `0119` | `0x445F9` | `55 8B EC 83 EC 02 1E 68 32 50 9A 89 22 09 B5` | Title `+5032` `Assign Pads to Note Numbers` via `B509:2289` |
 | `0133` | `0x44613` | `68 0C 4F` / `68 75 83` / `68 4E 50` | `Mode:` via `B354:01C6`; index `[8375]`; dir `+4F0C` |
 | `0152` | `0x44632` | `80 3E AC D6 00` / `80 3E AC D6 3F` | Clamp `[D6AC]` to 0..0x3F |
-| `0177` | `0x44657` | `68 54 50` | `Pad:` then `B354:01C6` |
+| `0177` | `0x44657` | `68 54 50` | `Pad:` then `B354:01C6`; dir `+0264`; index `[BP-1]` |
 | `0165` | `0x44645` | `A0 AC D6 88 46 FF` | `[D6AC]` copied to `[BP-1]` |
 | `0187` | `0x44667` | `9A 0C 00 F2 D9` | `D9F2:000C`(`[D6AC]`) displayed note |
 | `01A0` | `0x44680` | `68 59 50` | ` = Note:` then `B354:03B1` |
@@ -63,6 +63,17 @@ shape as `BE1A:0002` `Param:` / `[81B3]`. Not a
 pad-hit. Do not invent a third mode. Do not name
 the `+4F18` `IGNORE` / `RECEIVE` table. The owned
 store of `[8375]` remains the zero init.
+
+`016E` (file `0x4464E`): `PUSH +0264`; `LEA [BP-1]`
+(file `0x44652`); `PUSH +5054` (file `0x44657`);
+`CALLF B354:01C6` (file `0x4465A`). `[BP-1]` is the
+named `[D6AC]` copy. Directory `+0264` is 64
+`xxxx:8010` ptrs `A01`..`D16` then NULL (files
+`0x20264` / `0x20360` / `0x20908` / `0x20A04`).
+**PROVEN** as the assign-screen `Pad:` names for
+slots `0..0x3F`. Same `01C6` shape as `Mode:` /
+`[8375]`. Not a pad-hit. Do not name the strings
+after that NULL.
 
 `[D6AC]` is the slot shown after `Pad:` and passed to `D9F2`.
 **PROVEN** as that dataflow. The clamp stores

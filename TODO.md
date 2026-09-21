@@ -341,7 +341,10 @@ bounds, evidence, unknowns).
       `C44E:013E` `Mode:`
       `B354:01C6` of `[8375]`
       via `+4F0C` `PROGRAM` /
-      `MASTER`).
+      `MASTER`; `C44E:017A`
+      `Pad:` `B354:01C6` of
+      `[D6AC]` via `+0264`
+      `A01`..`D16`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

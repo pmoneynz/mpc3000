@@ -232,7 +232,10 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `C44E:013E` `Mode:`
   `B354:01C6` of `[8375]`
   via `+4F0C` `PROGRAM` /
-  `MASTER`).
+  `MASTER`; `C44E:017A`
+  `Pad:` `B354:01C6` of
+  `[D6AC]` via `+0264`
+  `A01`..`D16`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).

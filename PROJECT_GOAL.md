@@ -142,7 +142,10 @@ then `CALLN 022B` with
 `C44E:013E` `Mode:`
 `B354:01C6` of `[8375]`
 via `+4F0C` `PROGRAM` /
-`MASTER`).
+`MASTER`; `C44E:017A`
+`Pad:` `B354:01C6` of
+`[D6AC]` via `+0264`
+`A01`..`D16`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`
