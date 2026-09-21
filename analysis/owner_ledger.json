@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 362334,
+  "owned_bytes": 364473,
   "ranges": [
     {
       "start": "0x00000",
@@ -135,6 +135,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x30644",
+      "end": "0x3095D",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:0044 through 02D6 packed CALLN leftovers through RETF"
     },
     {
       "start": "0x3095D",
@@ -761,6 +769,14 @@
       "why": "B3FD:0A2F cdecl through RETF; CALLN B3FD:052B/05BB"
     },
     {
+      "start": "0x34A66",
+      "end": "0x34A9C",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B3FD:0A96 through RETF; CALLN from B3FD:0500"
+    },
+    {
       "start": "0x370F1",
       "end": "0x37319",
       "owner": "code",
@@ -945,12 +961,28 @@
       "why": "C303:0C64 cdecl through RETF; CALLN C303:067B/09CF/09F9"
     },
     {
+      "start": "0x43D1E",
+      "end": "0x43D77",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "C303:0CEE through RETF; CALLN from C303:04DB"
+    },
+    {
       "start": "0x43D77",
       "end": "0x43DA6",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "C303:0D47 PUSH 0/6 put-string through RETF; CALLF B1B1/EA97"
+    },
+    {
+      "start": "0x43DA6",
+      "end": "0x44259",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "C303:0D76 through 11C4 packed CALLN leftovers through RETF"
     },
     {
       "start": "0x44259",

@@ -132,7 +132,13 @@ no owned caller. Further mid-gap owned `CALLF`
 dests `E12D:0009`, `E07A:0004`, `E6D1:0001`,
 `E739:030C`, and `E661:0006`/`0095` walk through
 `RETF` (callers `E398` / `B3FD` / `E7E0`). Their
-hole prefixes stay unowned. Do not BFS those
+hole prefixes stay unowned. Packed `CALLN`
+leftovers from owned bodies: `C303:0CEE`
+closes `[0x43D1E, 0x43D77)`; `C303:0D76`..`11C4`
+closes `[0x43DA6, 0x44259)`; `B060:0044`..`02D6`
+fills `[0x30644, 0x3095D)` (20-byte prefix
+`0030` stays unowned); `B3FD:0A96` is the
+hole-start after `0A2F`. Do not BFS those
 dests. A `55 8B EC` prologue still does not
 accept a dest as an entry.
 
@@ -187,6 +193,7 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x31258, 0x3126C)` | data — `B060` `JMP CS:[BX+0C58]` 10 near IPs |
 | `[0x3126C, 0x312BF)` | code — `B060:0C6C` cdecl through `RETF`; `CALLF` `C303:04A9` |
 | `[0x312BF, 0x31304)` | code — `B060:0CBF` cdecl through `RETF`; `CALLF` `BE1A:04D1`/`04E1` |
+| `[0x30644, 0x3095D)` | code — `B060:0044` through `02D6` packed `CALLN` leftovers through `RETF` |
 | `[0x31304, 0x31370)` | code — `B060:0D04` through `RETF`; `CALLF` `EBC8:00B0` |
 | `[0x320A4, 0x321AF)` | code — `B20A:0004` cdecl through `RETF`; `CALLF` `EB1A:0155`/`025F`/`030D` |
 | `[0x56E8B, 0x56EB5)` | code — `D6E0:008B` `ES=DS` / AMX `0725`/`06B9` through `RETF`; `CALLF` `C303:029C` |
@@ -281,6 +288,7 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x3497C, 0x349B2)` | code — `B3FD:09AC` cdecl through `RETF`; `CALLN` `B3FD:011D`/`0345` |
 | `[0x349B2, 0x349FF)` | code — `B3FD:09E2` cdecl through `RETF`; `CALLN` `B3FD:05FD`/`06A2` |
 | `[0x349FF, 0x34A66)` | code — `B3FD:0A2F` cdecl through `RETF`; `CALLN` `B3FD:052B`/`05BB` |
+| `[0x34A66, 0x34A9C)` | code — `B3FD:0A96` through `RETF`; `CALLN` from `B3FD:0500` |
 | `[0x42D0C, 0x42E67)` | code — `C2D0:000C` cdecl through `RETF`; `CALLF` `C425:012F` |
 | `[0x42E67, 0x43034)` | code — `C2E6:0007` cdecl through `RETF`; `CALLF` `C425:019B` |
 | `[0x43034, 0x43BFC)` | code — `C303:0004` through two `JMP CS:[BX]`; `CALLF` `C425:0106` |
@@ -288,7 +296,9 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x43C18, 0x43C3E)` | data — `C303` `JMP CS:[BX+0BE8]` 19 near IPs (`BX<=0x12` then `SHL 1`) |
 | `[0x43C3E, 0x43C94)` | code — `C303:0C0E` cdecl through `RETF`; `CALLN` `C303:0465`/`04D3` |
 | `[0x43C94, 0x43D1E)` | code — `C303:0C64` cdecl through `RETF`; `CALLN` `C303:067B`/`09CF`/`09F9` |
+| `[0x43D1E, 0x43D77)` | code — `C303:0CEE` through `RETF`; `CALLN` from `C303:04DB` |
 | `[0x43D77, 0x43DA6)` | code — `C303:0D47` through `RETF`; `CALLF` `B1B1:0026`/`005B`/`EA97:000E` |
+| `[0x43DA6, 0x44259)` | code — `C303:0D76` through `11C4` packed `CALLN` leftovers through `RETF` |
 | `[0x444E5, 0x44535)` | code — `C44E:0005` through `JMP CS:[BX+00B8]`; `CALLF` `C425:01BF` |
 | `[0x44535, 0x44598)` | code — `C44E` `00B8` dests `0055`..`0079` plus shared `RETF` `00B3` |
 | `[0x44598, 0x445A2)` | data — `C44E` `JMP CS:[BX+00B8]` 5 near IPs (`BX<=4` then `SHL 1`) |
