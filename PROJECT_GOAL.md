@@ -108,7 +108,13 @@ taken arms `CALLF`
 the `0380` store.
 `BE1A:0508` `CALLF`s
 `CA45:0008` with
-`[E60E]+1` minus 1).
+`[E60E]+1` minus 1.
+`D9F2:000C`/`0072`
+`[8375]==0` arms are
+`[E5F9]+073E`. `C44E`
+copies `[D6AC]` to
+`[BP-1]` then extra
+`000C`/`0072`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

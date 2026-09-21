@@ -38,9 +38,12 @@ File `0x445F9`. Already owned (`[0x445F9, 0x4479F)`). Sole exit
 | `0119` | `0x445F9` | `55 8B EC 83 EC 02 1E 68 32 50 9A 89 22 09 B5` | Title `+5032` `Assign Pads to Note Numbers` via `B509:2289` |
 | `0152` | `0x44632` | `80 3E AC D6 00` / `80 3E AC D6 3F` | Clamp `[D6AC]` to 0..0x3F |
 | `0177` | `0x44657` | `68 54 50` | `Pad:` then `B354:01C6` |
+| `0165` | `0x44645` | `A0 AC D6 88 46 FF` | `[D6AC]` copied to `[BP-1]` |
 | `0187` | `0x44667` | `9A 0C 00 F2 D9` | `D9F2:000C`(`[D6AC]`) displayed note |
 | `01A0` | `0x44680` | `68 59 50` | ` = Note:` then `B354:03B1` |
+| `01EE` | `0x446CE` | `9A 0C 00 F2 D9` | `000C`(`[BP-1]`) on the edit arm |
 | `020D` | `0x446ED` | `9A 72 00 F2 D9` | `D9F2:0072` store |
+| `027D` | `0x4475D` | `9A 0C 00 F2 D9` | `000C`(`[BP-1]`) after `0AD9` |
 
 `C887:09AC` is called with the note byte and stays unowned
 (mid-hole). Do not BFS it.
@@ -58,8 +61,10 @@ All three already owned in `[0x59F2C, 0x59F92)` and
 `[0x59F92, 0x59FCD)`.
 
 `000C` (file `0x59F2C`): `SI=[BP+6]`. If `SI>=0x40`, `AX=0x23`.
-If `[8375]!=0`, `AL=[SI+8376]`. Else `LES BX,[E5F9]`;
-`AL=ES:[BX+SI+073E]`. Slot to byte. **PROVEN.**
+If `[8375]!=0` (file `0x59F38`), `AL=[SI+8376]`
+(file `0x59F3F`). Else `LES BX,[E5F9]` (file
+`0x59F47`); `AL=ES:[BX+SI+073E]` (file
+`0x59F4D`). Slot to byte. **PROVEN.**
 
 `003D` (file `0x59F5D`): leftover cdecl after `000C`'s `003C
 RETF`. `DI=[BP+6]`. If `DI<0x23`, `AX=0xFFFF` and `RETF`.
@@ -68,8 +73,11 @@ Else `SI=0`; loop `AX=000C(SI)`; if `AX==DI` return `SI`;
 **PROVEN.**
 
 `0072` (file `0x59F92`): `SI=[BP+6]`, `DX=[BP+8]`. Clamp `DX` to
-`0x22`..`0x62`. If `SI>=0x40`, return. Same two stores as `000C`.
-**PROVEN.**
+`0x22`..`0x62`. If `SI>=0x40`, return. If `[8375]!=0`
+(file `0x59FB1`), `MOV [SI+8376],DL` (file
+`0x59FB8`). Else `LES BX,[E5F9]` (file
+`0x59FBF`); `MOV ES:[BX+SI+073E],DL` (file
+`0x59FC5`). **PROVEN.**
 
 `8010:8375` / `8376` and `[E5F9]+073E` are RAM. The linear file
 at `0x28375` is `0xFF` padding, not the live table.

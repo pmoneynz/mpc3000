@@ -307,7 +307,13 @@ bounds, evidence, unknowns).
       the `0380` store;
       `BE1A:0508` `CALLF`s
       `CA45:0008` with
-      `[E60E]+1` minus 1).
+      `[E60E]+1` minus 1;
+      `D9F2:000C`/`0072`
+      `[8375]==0` arms are
+      `[E5F9]+073E`; `C44E`
+      copies `[D6AC]` to
+      `[BP-1]` then extra
+      `000C`/`0072`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
