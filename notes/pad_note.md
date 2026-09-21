@@ -20,7 +20,7 @@ Reproduction: `python3 tools/verify_boot_slice.py`.
 | Field | Value |
 |-------|-------|
 | Purpose | Name the software assign path from slot index to note |
-| Observable | `C44E:0005` `MIDI` menu dest 0 `CALLN` `0119`; `C44E:0119` title `Assign Pads to Note Numbers`; `D9F2:000C` / `003D` / `0072`; `[E5F9]` via `CA45:0008` / `DA04:002B`; `BE1A:026C` `Pgm`; `BE1A:0002` `16 Levels` |
+| Observable | `C44E:0005` `MIDI` menu dest 0 `CALLN` `0119`; `C44E:0119` title `Assign Pads to Note Numbers`; `C44E:00C2` `(Gen MIDI:` of the `000C` note; `D9F2:000C` / `003D` / `0072`; `[E5F9]` via `CA45:0008` / `DA04:002B`; `BE1A:026C` `Pgm`; `BE1A:0002` `16 Levels` |
 | Inputs | `[D6AC]` 0..0x3F; `D9F2` `[BP+6]` index or note; `0072` `[BP+8]` note |
 | Outputs | `000C` returns a byte; `003D` returns a slot or `-1`; `0072` stores a byte clamped `0x22`..`0x62` |
 | Confidence | Screen strings, `[D6AC]` 0..0x3F, `D9F2` encodings, remap stores, `+0859` `0x23`..`0x62`, and `BE1A` Param `TUNING`..`FILTER` **PROVEN**. That `+11` is a MIDI note **HYPOTHESIS** (range + `Note:`). Pad-hit writer of `[D6AC]` **UNDETERMINED** |
@@ -107,6 +107,32 @@ is ` = Note:`. **PROVEN** as the assign-screen
 printer of the named `000C` byte. Same `03B1`
 shape as `BE1A:0315`. Not a pad-hit.
 `C887:09AC` after this printer stays unowned.
+
+Already-owned `C44E:00C2` (file `0x445A2`,
+`[0x445A2, 0x445F9)`). `SI=[BP+6]`;
+`CMP SI,0x22` / `JLE 010A` (file
+`0x445B7`). The assign screen `CALLN`s
+it at `01C5` / `022F` / `02AC` with
+`[BP-2]` (the named `000C` return).
+`01C5` (file `0x4469B`) is
+`PUSH 0x12` / `PUSH 2` / `MOV AL,[BP-2]`
+/ `CBW` / `PUSH AX` / `PUSH CS` /
+`E8 FA FE`. When `SI>0x22`: `PUSH +5010`
+`(Gen MIDI:` (file `0x445BD` /
+`0x25010`); `SHL BX,2`; `PUSH
+[BX+03EE]` / `[BX+03EC]` (file
+`0x445C8`); `CALLF B1B1:005B`;
+`PUSH 0x29` `)`. Slot `0x23` is
+`ACOUS BASS ` (files `0x20478` /
+`0x20BFC`); slot `0x62` is
+`NO GEN MIDI` (files `0x20574` /
+`0x20E30`). `010A` (file `0x445EA`)
+pushes `+501B` spaces. **PROVEN** as
+that assign-screen printer of the named
+note. Not a pad-hit. Do not name
+`+03EC` indices `0..0x22` (`HIHT` /
+`SNR1`). Do not invent a GM map or
+MIDI protocol from the ROM title.
 
 ---
 

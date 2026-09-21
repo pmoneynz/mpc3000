@@ -368,7 +368,9 @@ bounds, evidence, unknowns).
       into the named `FD0D`
       load;
       `C44E:0005` dest 0
-      `CALLN` `0119`).
+      `CALLN` `0119`;
+      `C44E:00C2` `(Gen MIDI:`
+      of the named `000C` note).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
