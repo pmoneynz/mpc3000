@@ -212,10 +212,8 @@ bytes until `0x00`. Each character is handed to `0x798CA`, which issues
 `INT 43` with `AX=4`.
 
 **PROVEN:** the BIOS banner bytes are the inline argument of that walker.
-**HYPOTHESIS:** ordinary ASCII reaches the LC7981 pixel memory. `INT 43`
-AX=4 is a character-class dispatcher (`0x79752`) whose default path is not
-yet fully traced to `LCD_put`. Do not claim the letters are on the glass
-until that path is closed.
+Ordinary characters take `INT 43` AX=4 ? `17CC` ? `LCD_put` AH=`0x0C`.
+See [`int43_ax4.md`](int43_ax4.md). Glass pixels stay `D3-glass`.
 
 ## 10. Second init — `F800:1AD4`, file `0x79AD4`
 
@@ -316,7 +314,10 @@ unresolved.
 | `[0x796AA, 0x796D4)` | code | `INT 43` dispatcher |
 | `[0x796D4, 0x796E4)` | data | eight near targets |
 | `[0x796E4, 0x7971D)` | code | `INT 43` AX=0 LCD init |
-| `[0x7985A, 0x79875)` | code | LCD put |
+| `[0x79752, 0x79808)` | code + class table | `INT 43` AX=4 through default |
+| `[0x79843, 0x79875)` | code | cursor `1843` + LCD put |
+| `[0x79875, 0x79896)` | code | inline-string walker |
+| `[0x798CA, 0x798D6)` | code | `18CA` issues `INT 43` AX=4 |
 
 `[0x7B04E, 0x7B148)` is the start-to-dispatcher span, not the whole AMX
 kernel. Helpers past `0148` stay unresolved.
@@ -330,9 +331,9 @@ kernel. Helpers past `0148` stay unresolved.
 - That `B000:00DF` runs after reset. The instruction exists; AMX start
   does not return on the traced path.
 - Panel, MIDI, SCSI, FDC, or DSP behavior.
-- That `INT 46` or `INT 43` AX=4 paints glyphs.
+- That `INT 46` or the AX=4 port writes paint glyphs.
 - Any 24-bit access to NVRAM `0x500000`.
 - Later writers or aliases of the `0x7C92`-byte copy.
 
-Next useful uncertainty: the first-task observable at `D9BD:0009`
-(`E937:0004` / `B060:0000` / `[D6A1]`) or `INT 43` AX=4 to pixels.
+Next useful uncertainty: PGR writers after task 6 runs (`U-XA-LIVE`),
+or the first-task body at `D9BD:0009`.

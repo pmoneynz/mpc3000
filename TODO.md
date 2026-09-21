@@ -37,10 +37,10 @@ mark `[PARTIAL]`, name the missing observation, and continue.
 - [x] **D1.** First `01EA` creates task 6 (`D9BD:0009`) after
       `B03B:000A` readies slots 6 and 7. Idle is not taken. Wake ISR
       for a later empty queue remains `U-AMX-WAIT`.
-- [ ] **D2.** Trace `INT 43` AX=4 from a banner character to LC7981
-      memory or a justified non-display sink (`U-INT43-AX4`).
-- [ ] **D3.** Connect one observable end to end (banner glyphs **or**
-      first AMX task effect) with code, data, RAM, and ports.
+- [x] **D2.** `INT 43` AX=4 default path is `LCD_put` AH=`0x0C` /
+      AL=character (`U-INT43-AX4` closed). Not a non-display sink.
+- [x] **D3.** Banner path connected: walker, `0040:68AB`/`662B`,
+      ports `0xE2`/`0xE0`. Glass stays D3-glass.
 - [PARTIAL] **D3-glass.** Pixels on the LC7981 glass (`U-PHYS`, `U-LC7981`).
 
 G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).

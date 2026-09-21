@@ -28,6 +28,9 @@ source for the AMX idle spin.
   `B000:00DF`. Second PGR is live through that first select.
 - First `01EA` does not idle. `B03B:000A` readies TCB 6 and 7 via
   `0396`; scan from index 0 creates task 6 at `D9BD:0009`.
+- BIOS banner characters take `INT 43` AX=4, then `17CC`, then `LCD_put`
+  AH=`0x0C` / AL=char on ports `0xE2`/`0xE0`. Cursor and a 320-cell
+  shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
 
@@ -38,7 +41,7 @@ Validator: `python3 tools/verify_boot_slice.py`.
 
 - Which IRQ leaves a later AMX idle spin (`U-AMX-WAIT` remainder). First
   select is closed; see [`notes/amx_first_dispatch.md`](notes/amx_first_dispatch.md).
-- Banner glyphs on the LCD (`U-INT43-AX4`).
+- LC7981 glass pixels (`D3-glass`). Software banner path is closed.
 - PGR after the first AMX task `RETF` (`U-XA-LIVE`). Second table is live
   through first `01EA`.
 - Full grammar and later writers of the `0x7C92` copy.

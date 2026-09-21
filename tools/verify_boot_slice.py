@@ -135,6 +135,16 @@ def verify(image: bytes, facts: dict) -> list[str]:
         raise AssertionError("first task index must be 6")
     checks.append("AMX 01EA / 0537 / idle / create[6]=D9BD:0009")
 
+    ax4 = facts["int43_ax4"]
+    _expect_hex(image, int(ax4["ax4_file"], 16), ax4["ax4_bytes"], "INT43 AX=4 class walk")
+    _expect_hex(image, int(ax4["class_table_file"], 16), ax4["class_table_bytes"], "INT43 AX=4 class table")
+    _expect_hex(image, int(ax4["default_file"], 16), ax4["default_bytes"], "INT43 AX=4 default")
+    _expect_hex(image, int(ax4["cursor_set_file"], 16), ax4["cursor_set_bytes"], "INT43 cursor 1843")
+    _expect_hex(image, int(ax4["walker_file"], 16), ax4["walker_bytes"], "INT43 AX=4 from walker")
+    if image[0x797F2:0x797F6] != bytes.fromhex("b40ce863"):
+        raise AssertionError("AX=4 default does not MOV AH,0x0C / CALL 185A")
+    checks.append("INT43 AX=4 default -> LCD_put AH=0x0C")
+
     copy = facts["copy_7c92"]
     _expect_hex(image, int(copy["source_file"], 16), copy["signature_bytes"], "copy signature")
     if image[0x7AC84:0x7AC87] != bytes.fromhex("b9927c"):

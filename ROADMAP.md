@@ -17,9 +17,9 @@ Reset to a named loop plus one observable, end to end.
 - Done: reset through AMX start; `01EA`/`0537` TCB select; empty-queue
   idle condition; first `01EA` creates task 6 (`D9BD:0009`); create
   records 0–7 pinned as bytes; second PGR live through that transfer;
-  `0x7C92` copy bounded; LC7981 init writes.
-- Open: later AMX wake ISR; banner glyph path; first-task observable
-  (`E937:0004` / `B060:0000` / `[D6A1]`); PGR after first task.
+  `0x7C92` copy bounded; LC7981 init writes; banner AX=4 to `LCD_put`.
+- Open: later AMX wake ISR; first-task body (`E937:0004` /
+  `B060:0000` / `[D6A1]`); PGR after first task; glass pixels.
 
 ## Gate 2 — Shared machinery
 

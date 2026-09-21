@@ -77,11 +77,12 @@ interaction**, with the relevant code, data, RAM state, and hardware
 interface connected end to end.
 
 Current slice (2026-09-21): reset through the FAC0 boot stub, the first PGR
-map, the `F07A` init table (BIOS `F800:000A`, `F800:1AD4`, AMX
-`FB00:000C`), and LC7981 initialization via `INT 43` AX=0. First AMX
-select creates task 6 at `D9BD:0009`. The later empty-queue wake ISR is
-still open. See
+map, the `F07A` init table, LC7981 init via `INT 43` AX=0, and the BIOS
+banner through `INT 43` AX=4 to ports `0xE2`/`0xE0`. First AMX select
+creates task 6 at `D9BD:0009`. Glass pixels and the later empty-queue
+wake ISR stay open. See
 [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),
+[`notes/int43_ax4.md`](notes/int43_ax4.md),
 [`notes/amx_wait.md`](notes/amx_wait.md), and
 [`notes/amx_first_dispatch.md`](notes/amx_first_dispatch.md).
 

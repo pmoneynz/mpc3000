@@ -145,5 +145,22 @@
     "file": "0x7985A",
     "ports": {"status_control": "0x00E2", "data": "0x00E0"},
     "busy_mask": "0x80"
+  },
+  "int43_ax4": {
+    "dispatcher_file": "0x796AA",
+    "table_file": "0x796D4",
+    "ax4_cs_ip": "F800:1752",
+    "ax4_file": "0x79752",
+    "ax4_bytes": "be6e172e8a040ac0",
+    "class_table_file": "0x7976E",
+    "class_table_bytes": "0d7e170a8b17089e177faa170cc81700",
+    "default_cs_ip": "F800:17CC",
+    "default_file": "0x797CC",
+    "default_bytes": "8ac38b1eab68",
+    "cursor_set_file": "0x79843",
+    "cursor_set_bytes": "a3ab6850b40a",
+    "walker_file": "0x798CA",
+    "walker_bytes": "50538ad9b80400cd435b58c3",
+    "banner_put_ah": "0x0C"
   }
 }
