@@ -174,6 +174,14 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(pad["param_tuning_file"], 16), pad["param_tuning_bytes"], "TUNING")
     _expect_hex(image, int(pad["be1a_wr11_file"], 16), pad["be1a_wr11_bytes"], "BE1A MOV ES:[BX+11]")
     _expect_hex(image, int(pad["be1a_wrfd_file"], 16), pad["be1a_wrfd_bytes"], "BE1A MOV ES:[BX+FD0D]")
+    _expect_hex(image, int(pad["be1a_16_file"], 16), pad["be1a_16_bytes"], "BE1A:0002")
+    _expect_hex(image, int(pad["be1a_16_title_file"], 16), pad["be1a_16_title_bytes"], "Assign '16 Levels'")
+    _expect_hex(image, int(pad["be1a_16_d6ad_file"], 16), pad["be1a_16_d6ad_bytes"], "BE1A MOV AL,[D6AD]")
+    _expect_hex(image, int(pad["be1a_16_callf_file"], 16), pad["be1a_16_callf_bytes"], "CALLF BE1A:0002")
+    _expect_hex(image, int(pad["be1a_16_dir_file"], 16), pad["be1a_16_dir_bytes"], "+3E22 VELOCITY/NOTE VAR")
+    _expect_hex(image, int(pad["be1a_16_vel_file"], 16), pad["be1a_16_vel_bytes"], "VELOCITY")
+    _expect_hex(image, int(pad["be1a_16_sel_file"], 16), pad["be1a_16_sel_bytes"], "BE1A CMP [81B3],0")
+    _expect_hex(image, int(pad["be1a_16_fd0d_file"], 16), pad["be1a_16_fd0d_bytes"], "BE1A:0203 LES +FD0D")
     _expect_hex(image, int(pad["midi90_file"], 16), pad["midi90_bytes"], "56D4:000A AND/CMP 90")
     def_off = int(pad["def_file"], 16)
     def_n = int(pad["def_count"])
@@ -181,7 +189,7 @@ def verify(image: bytes, facts: dict) -> list[str]:
     expect = list(range(int(pad["def_first"]), int(pad["def_last"]) + 1))
     if got != expect:
         raise AssertionError(f"+0859 default table {got[:4]}.. != {expect[:4]}..")
-    checks.append("D20: C44E assign; [E5F9] 9770: Pgm; BE1A Note Var Slider")
+    checks.append("D20: C44E assign; [E5F9] 9770: Pgm; BE1A Slider / 16 Levels")
 
     if image[0x7AC1C:0x7AC1F] != bytes.fromhex("0fe011"):
         raise AssertionError("missing BRKXA 0x11 at FAC0:001C")

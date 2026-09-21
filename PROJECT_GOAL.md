@@ -43,7 +43,9 @@ DGROUP `+0054` is a 101-slot pan-name table (`Pan:` /
 D20 assign UI is `C44E:0119` / `D9F2` (`000C`/`003D`/`0072`).
 ROM default `+0859` is `0x23`..`0x62`. `[E5F9]` selects a
 `9770:` record that `BE1A:026C` titles `Pgm`. Param
-`0..3` is `TUNING`/`DECAY`/`ATTACK`/`FILTER`. Owned
+`0..3` is `TUNING`/`DECAY`/`ATTACK`/`FILTER`.
+`BE1A:0002` is `Assign '16 Levels'` (`[D6AD]` /
+`[81B3]` `VELOCITY`/`NOTE VAR`). Owned
 `[D6AC]` writers are remaps, not pad-hit
 ([`notes/pad_note.md`](notes/pad_note.md)).
 
