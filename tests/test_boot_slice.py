@@ -150,6 +150,22 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x313A5:0x313B0], bytes.fromhex(copy["ds8010_store_1d11"]["bytes"]))
         self.assertEqual(self.image[src + 0x125C : src + 0x1264], b"\x00" * 8)
 
+    def test_amx_idle_wake(self) -> None:
+        wake = self.facts["amx"]["idle_wake"]
+        self.assertEqual(wake["handler_cs_ip"], "D52A:0008")
+        self.assertEqual(wake["ivt_slot"], 8)
+        self.assertEqual(wake["tick_reload_value"], 10)
+        self.assertEqual(wake["phys20"], "0xD52A8")
+        self.assertEqual(wake["phys24_second_pgr"], "0x0D52A8")
+        self.assertEqual(self.image[0x7B804:0x7B806], bytes.fromhex("0a00"))
+        self.assertEqual(self.image[0x7B5A0:0x7B5A6], bytes.fromhex("33d20ee8f0fd"))
+        self.assertEqual(self.image[0x552CC:0x552D1], bytes.fromhex("9a860500fb"))
+        self.assertEqual(self.image[0x552F8:0x552FD], bytes.fromhex("9a940100fb"))
+        self.assertEqual(self.image[0x552FD], 0xCF)
+        self.assertEqual(self.image[0x7AD1E:0x7AD20], bytes.fromhex("3500"))
+        self.assertNotIn(0, wake["plant_dl"])
+        self.assertNotIn(4, wake["plant_dl"])
+
     def test_owner_ledger_seed(self) -> None:
         ledger = load_ledger()
         meta = self.facts["owner_ledger"]
@@ -1069,6 +1085,35 @@ class BootSliceTests(unittest.TestCase):
         self.assertFalse(hit_limit)
         self.assertEqual(len(insns), 5)
         self.assertEqual(insns[-1].kind, "JMPS")
+
+    def test_hex_helper_1896(self) -> None:
+        hx = self.facts["hex_helper"]
+        self.assertEqual(self.image[0x79896:0x7989C], bytes.fromhex(hx["bytes"]))
+        self.assertEqual(self.image[0x7989C:0x798CA], bytes.fromhex(hx["body_bytes"]))
+        self.assertEqual(self.image[0x798B4:0x798BE], bytes.fromhex(hx["ascii_bytes"]))
+        self.assertEqual(self.image[0x798C0:0x798C3], bytes.fromhex("e80700"))
+        self.assertEqual(self.image[0x798C9], 0xC3)
+        self.assertEqual(self.image[0x798CA:0x798D6], bytes.fromhex("50538ad9b80400cd435b58c3"))
+        self.assertEqual(self.image[0x79A14:0x79A17], bytes.fromhex("e87ffe"))
+        self.assertEqual(self.image.count(bytes.fromhex(hx["bytes"])), 1)
+        self.assertEqual(self.image.count(bytes.fromhex(hx["ascii_bytes"])), 1)
+        stub, hit = follow_local(self.image, 0xF800, 0x1896)
+        self.assertFalse(hit)
+        self.assertEqual(len(stub), 3)
+        self.assertEqual(stub[1].kind, "CALLN")
+        self.assertEqual((stub[1].target_cs, stub[1].target_ip), (0xF800, 0x189C))
+        self.assertEqual(stub[-1].kind, "RET")
+        body, hit = follow_local(self.image, 0xF800, 0x189C)
+        self.assertFalse(hit)
+        self.assertEqual(len(body), 26)
+        put = next(insn for insn in body if insn.kind == "CALLN")
+        self.assertEqual((put.target_cs, put.target_ip), (0xF800, 0x18CA))
+        self.assertEqual(body[-1].kind, "RET")
+        self.assertEqual(self.image[0x797F2:0x797F6], bytes.fromhex("b40ce863"))
+        self.assertEqual(int(hx["lcd_put_file"], 16), 0x7985A)
+        self.assertEqual(hx["digit_count"], 2)
+        self.assertEqual(hx["pgr_slot"], 62)
+        self.assertEqual(hx["xa"], 1)
 
     def test_v53_decode_brkxa_retxa(self) -> None:
         brk = decode_one(self.image, 0xFAC0, 0x001C)

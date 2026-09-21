@@ -21,6 +21,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`amx_public_api.md`](amx_public_api.md) | AMX far-call surface and TCB grammar |
 | [`amx_create_table.md`](amx_create_table.md) | Create-table tasks 0–7 entries and exits |
 | [`calling_convention.md`](calling_convention.md) | Far cdecl, BIOS walker, AMX registers |
+| [`hex_helper.md`](hex_helper.md) | `F800:1896` prints `AL` as two hex digits via INT 43 AX=4 |
 | [`irq_wrappers.md`](irq_wrappers.md) | FAC0 XA switch and AMX IRET rewrite |
 | [`copy_7c92.md`](copy_7c92.md) | `8010` DGROUP grammar, consumers, writers |
 | [`owner_ledger.md`](owner_ledger.md) | Seeded file-range owners; gaps are debt |

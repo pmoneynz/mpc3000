@@ -109,8 +109,8 @@ Three near callers, no far caller. **PROVEN.**
 | `0x79A17` | `F800:1A17` | `h\r\ncaused all memory to be lost.…` (after `CALL 1896` hex) |
 
 `19BE` is the unexpected-vector path from [`ivt_inventory.md`](ivt_inventory.md).
-`1896` (file `0x79896`) is a *register* helper (`CL=2` hex digits ?
-`18CA`), not this walker.
+`1896` (file `0x79896`) prints `AL` as two hex digits through `189C` /
+`18CA`. Contract: [`hex_helper.md`](hex_helper.md). It is not this walker.
 
 This convention is BIOS-only. It is not how application tasks pass
 strings (`D9B5` takes a far pointer on the stack).
@@ -155,7 +155,6 @@ BIOS, AMX, or an `INT`.
 | File range | Owner |
 |------------|-------|
 | `[0x79875, 0x7987F)` | code — walker `1875` (already opened through `1895`) |
-| `[0x79896, 0x7989C)` | code — hex helper `1896` |
 | `[0x30600, 0x3060D)` | code — `B060:0000` (already opened) |
 | `[0x59B95, 0x59BA1)` | code — `D9B5:0045` prologue through `LDS SI,[BP+6]` |
 

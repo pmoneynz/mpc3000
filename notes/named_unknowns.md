@@ -6,7 +6,7 @@ A guess is not listed as a fact.
 | ID | Unknown | Why it matters | What would close it |
 |----|---------|----------------|---------------------|
 | U-XA-LIVE | PGR after task 7 body (and later picker `OUT`s) | Second table is live through task 6 wait and task 7 select | Follow `B000:00DF` callees and `D510:008D` callers for `OUT` to `0xFF00-0xFF7E` |
-| U-AMX-WAIT | Which IRQ or hook leaves a later `FB00:023A` idle | First `01EA` creates task 6; later empty-queue wake is open | Find an ISR that rewrites the `023A` frame, `JMP`s `01EA`/`0281`, or `RETF`s a TCB |
+| U-AMX-WAIT | **Closed.** IVT[8] `D52A:0008` leaves a later `FB00:023A` idle | Tick word `[DI+12h]` starts at 10; the zero entry readies TCB 0 and `0194` enters `01EA`. Hooks stay null | See [`amx_wait.md`](amx_wait.md). Pin of slot 8 stays `U-V53A` |
 | U-LC7981 | Meaning of `INT 43` AX=0 pairs and AX=4 AH=`0x0A`/`0x0B`/`0x0C` | Port writes are proven; controller state is not | LC7981 / HD61830 register manual applied to those exact pairs |
 | U-C0XX | Board decode of `0xC000-0xC033` | BIOS and FAC0 program this window | Schematic or a tested PAL fusemap; MAME is a hypothesis |
 | U-PGR61 | NVRAM record format / LC3517 identity | Window is `0x500000` (P7/P8). Consumer is `D9B5` `ES=0xF400`. Chip name is MAME commentary | Schematic, capture, or a caller that pins `CX` and the `0xAA`/`0x44` marker |

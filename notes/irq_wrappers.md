@@ -4,8 +4,8 @@
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 **Date:** 2026-09-21.
 
-Closes D9. Slot *meaning* (`U-V53A`) and which IRQ leaves a later
-`023A` idle (`U-AMX-WAIT`) stay open.
+Closes D9. Slot *meaning* (`U-V53A`) stays open. The later
+`023A` idle is left by IVT[8] `D52A:0008` ([`amx_wait.md`](amx_wait.md)).
 
 Reproduction: `python3 tools/verify_boot_slice.py`.
 
@@ -22,7 +22,7 @@ Reproduction: `python3 tools/verify_boot_slice.py`.
 | Observable | `FAC0:01A4` third-PGR reload via ROM `IVT[12]`; `02F8`/`02EF` `IRET` to `TCB+18h+AX` or to the interrupted IP; `0157` stack-switch `RETF` |
 | Inputs | RAM vs ROM IVT (XA); list header `CS:[0042]`; TCB `+18h`/`+1Ch` hooks |
 | Outputs | Frame layouts below |
-| Confidence | Instruction streams and the XA=0 vs XA=1 vector fetch **PROVEN**. Hook *consumers* on reset **PROVEN** as null (create zeros `+18h..+1Eh`). Which later writer fills a hook **UNDETERMINED** |
+| Confidence | Instruction streams and the XA=0 vs XA=1 vector fetch **PROVEN**. Hook slots stay zero: `0284` clears `+18h..+1Eh`, and no `CALL 0347` passes `DL` 0 or 4. **PROVEN** |
 | Hardware deferred | IRQ source for `IVT[10h]` / `IVT[0]` / `IVT[4]` (`U-V53A`, `U-PHYS`) |
 
 ---
@@ -154,14 +154,13 @@ work, `CALL 0586`. Device effect **UNDETERMINED** (`U-V53A`).
 
 ## 4. What wakes `023A`
 
-The NOP spin does not re-scan TCBs. Leave it only by transferring
-off that RIP: an `IRET` frame rewrite (`0312`), a `JMP 01EA`/`0281`,
-or a task `RETF`.
-
-If `[DI+10h]` is 1 (as `01EA` left it) and a TCB hook is non-null,
-`02F8`/`02EF` `IRET` to that hook with the `023A` frame still on the
-stack. That is a **software-possible** wake. Which IRQ and which
-writer fill the hook remain `U-AMX-WAIT` / `U-V53A`.
+The NOP spin does not re-scan TCBs. `02F8`/`02EF` do not rewrite the
+frame: the hook words stay zero. The leave is IVT[8] `D52A:0008`.
+When `[DI+12h]` decrements to 0, `0586` calls `05A0` (`0396` `DL=0`,
+which lowers `[DI+11h]`), and this handler’s `0194` calls `01CF`
+with `AX=2`, which enters `01EA`. Contract:
+[`amx_wait.md`](amx_wait.md). The pin that raises slot 8 stays
+`U-V53A`.
 
 ---
 
@@ -180,5 +179,5 @@ writer fill the hook remain `U-AMX-WAIT` / `U-V53A`.
 
 - That `IVT[10h]` fires on reset (no software `INT 10h` in the slice).
 - A non-null TCB hook on the first-select path.
-- Which vector leaves a later empty-queue idle.
+- Which pin raises IVT[8] (`U-V53A`). The software leave of `023A` is closed.
 - `901C:1130` 24-bit identity after a later PGR write (`U-XA-LIVE`).

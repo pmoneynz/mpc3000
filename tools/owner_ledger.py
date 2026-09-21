@@ -222,7 +222,7 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x79839, 0x79843, "code", "code", "notes/int43_ax4.md", "INT 43 AX=7 cursor /40 -> AH=row AL=col"),
     (0x79843, 0x79875, "code", "code", "notes/boot_reset_to_bios_banner.md", "cursor 1843 + LCD put"),
     (0x79875, 0x79896, "code", "code", "notes/boot_reset_to_bios_banner.md", "inline-string walker 1875"),
-    (0x79896, 0x7989C, "code", "code", "notes/calling_convention.md", "hex helper 1896"),
+    (0x79896, 0x798CA, "code", "code", "notes/hex_helper.md", "F800:1896/189C AL as 2 hex digits via 18CA"),
     (0x798CA, 0x798D6, "code", "code", "notes/boot_reset_to_bios_banner.md", "18CA INT 43 AX=4"),
     (0x79906, 0x79946, "data", "table", "notes/transfer_scan.md", "F800:1906 16x4-byte records; LEA SI,[BX+1906] OUTSW"),
     (0x79946, 0x79B26, "code", "code", "notes/ivt_inventory.md", "1946 IRET + ladder + F800:1AD4 RETF"),

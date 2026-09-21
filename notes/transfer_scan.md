@@ -344,4 +344,5 @@ those runs; do not treat a walk’s `[min, max)` as one range.
   The 40 bounded table dests are owned; the 25 indirect dests
   stay prefix-only.
 - That a bounded cdecl body is fully owned (D17).
-- The later empty-queue wake (`U-AMX-WAIT`).
+- The pin that raises IVT[8]. The software leave of `023A` is in
+  [`amx_wait.md`](amx_wait.md).

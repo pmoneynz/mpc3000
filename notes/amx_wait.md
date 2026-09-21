@@ -4,9 +4,9 @@
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 **Date:** 2026-09-21.
 
-Closes the *condition* half of `U-AMX-WAIT`. First `01EA` does not take
-this idle; see [`amx_first_dispatch.md`](amx_first_dispatch.md). The wake
-ISR for a later empty queue is still open.
+Closes `U-AMX-WAIT`. First `01EA` does not take this idle; see
+[`amx_first_dispatch.md`](amx_first_dispatch.md). A later empty queue
+leaves `023A` when IVT[8] `D52A:0008` drives the tick word to zero.
 
 Reproduction: `python3 tools/verify_boot_slice.py`.
 
@@ -20,8 +20,8 @@ Reproduction: `python3 tools/verify_boot_slice.py`.
 | Observable | `STI` + four `NOP` + `jmp 023A` when `0537` returns `SF=1` or a TCB word has bit 15 set |
 | Inputs | List header at `CS:[0042]` = `A850:0024`; index `DL`; TCB word `[SI]` |
 | Outputs | Ready task: `[SI]=0x4000` and either `RETF` (bit 1 set) or `0240` (bit 1 clear). Empty: idle with `IF=1` |
-| Confidence | Instruction partition **PROVEN**. 24-bit of `A850:0024` **PROVEN** only while the second PGR is live. Wake ISR **UNDETERMINED** |
-| Hardware deferred | Which IRQ actually leaves `023A` (`U-PHYS`) |
+| Confidence | Instruction partition **PROVEN**. Leave-`023A` transfer **PROVEN** as IVT[8] `D52A:0008` under the second PGR. Pin that raises slot 8 **UNDETERMINED** (`U-V53A`) |
+| Hardware deferred | Which pin raises IVT[8], and the device effect of `OUT 0xC010, 0x60` (`U-V53A`, `U-C0XX`, `U-PHYS`) |
 
 ---
 
@@ -110,11 +110,35 @@ The NOP spin does **not** re-scan TCBs. Setting `[SI] |= 1` at
 writer; it does not leave `023A` by itself. Full TCB grammar:
 [`amx_public_api.md`](amx_public_api.md).
 
-No `INT 0` / `INT 8` instruction exists in this image (the `CD 00` / `CD 08` hits are immediates or PGR data). AMX plants `IVT[0]=FB00:02F8` and `IVT[4]=FB00:02EF`. Those handlers IRET to a hook table at `[DI+0Ah]+18h+AX`, or IRET to the interrupted IP if the hook is null.
+No `INT 0` / `INT 8` instruction exists in this image (the `CD 00` / `CD 08` hits are immediates or PGR data). AMX plants `IVT[0]=FB00:02F8` and `IVT[4]=FB00:02EF`. `0284` zeros TCB `+18h..+1Eh`. Every `CALL 0347` in the image passes `DL` in `{8, 0xC, 0xD, 0xE, 9, 8}` — never 0 or 4 — so the hook arm of `0347` is not taken. **PROVEN:** those handlers `IRET` to the interrupted IP. They do not rewrite a `023A` frame.
 
-**PROVEN:** leave `023A` only by transferring control off that RIP (ISR frame rewrite, `JMP 01EA`/`0281`, or a task `RETF`).  
-**UNDETERMINED:** which IRQ or hook does that on a later empty queue.
-First select does not reach `023A`.
+The only near transfers to `01EA` are `0143` `CALL`, `01E2` `JS` from `01CF`, and `0281` `JMP`. Nothing transfers to `0281`. **PROVEN.**
+
+## 5. IVT[8] leaves `023A` — `D52A:0008`
+
+XA=1, second PGR (file `0x7ACB4`). Page 53 word `0x0035` (file `0x7AD1E`), same in the first table. Third-table page 53 is `0x00F5` (file `0x7AE39`); the only `INT 10h` in the image is `FB00:09CA` (file `0x7B9CA`), and nothing calls or stores `FB00:0996`.
+
+| Form | Value |
+|------|-------|
+| CS:IP | `D52A:0008` |
+| 20-bit | `0xD52A8` |
+| 24-bit | `0x0D52A8` (page 53 frame `0x35`) |
+| File | `0x552A8` |
+| IVT slot | 8, planted by `B03B:000A` via `0347` |
+
+`FB00` is page 62 frame `0x3E` in all three boot tables, so `FB00:IP` is file `0x7B000+IP`, 20-bit `0xFB000+IP`, 24-bit `0x0FB000+IP`.
+
+Start writes `[DI+14h]` from `FB76:00A4` (file `0x7B804`) = word `0x000A`, then `011E` `CALL 055F` which `CALL`s `05AB`. `05AB` copies `[DI+14h]` to `[DI+12h]`. **PROVEN:** the tick word is 10 before the first `01EA`. Header `A850:0024` is page 42 frame `0xEA`, 24-bit `0x3A8524`. The tick word is `A850:0036` = 24-bit `0x3A8536`. The reload is `A850:0038` = 24-bit `0x3A8538`.
+
+`D52A:0008` is straight-line `CALL 0157`, work, `CALL 0586` (file `0x552CC`), `OUT 0xC010, 0x60` (file `0x552F2`), `CALL 0194` (file `0x552F8`), `IRET` (file `0x552FD`). The only far call of `0586` is that one. No near call of `0586` exists in `FB00`.
+
+`0586` decrements `[DI+12h]` on every IVT[8] entry, including while a task is running. An entry that does not hit zero returns: `0194` sees `[DI+0Ch]==[DI+11h]` (the scan stores both at file `0x7B22D`) and the `IRET` returns to the interrupted IP. While the idle is live, that IP is `023A`. The entry that decrements 1 to 0 calls `05A0`: `XOR DX,DX` / `CALL 0396` (file `0x7B5A0`). That is the only near call of `0396` in `FB00`. `DL=0` is below the sentinel index, so `[DI+11h]` becomes 0 and bit 0 is set on TCB 0. `05A0` then reloads `[DI+12h]` from `[DI+14h]` (10). The inner `0194` sees the nest byte wrap `0xFF` to `0` and does not reschedule. The outer `0194` increments the nest byte `0` to `1` and takes `CALL 01CF` with `AX=2` because `[DI+0Ch] > 0`.
+
+On the idle path `[DI+0Ah]` is still `[DI+2]`, the bit-15 sentinel (`011A` `MOV word [SI],8000h` lands on that address). `01CF` ORs 2 into it (`8002h`) and `JS 01EA` (file `0x7B1E2`) without saving `SS:SP`. `01EA` reloads the kernel stack from `CS:[004A]` and creates task 0 (`FB00:05B2`) because bit 1 is clear. **PROVEN:** that `IRET` frame is abandoned. Control does not return to `023A`.
+
+`D5DD:000C` (IVT[0xC]) can `CALL 04AC` with `DL=2` before its `0194`. `04AC` lowers the index only when that TCB has bit 2. Slots 0–5 are still zero on the reset-path empty queue, so this call does not leave it. `D5F3:000E` `CALL`s `0396` with `DL=3` only when `[9756]!=0`. That byte is inside the `8010:7C92`–`FFB7` clear. Whether a later writer sets it before the first idle is **UNDETERMINED**. The IVT[8] path does not read it.
+
+Task 0’s `05E9` walk is what later turns an expired `[SI+0Ah]` wait into `[SI]=0002`. It is not what leaves `023A`. The leave is the tick zero-crossing, which readies slot 0 even while task 6 is still blocked.
 
 ---
 
@@ -127,5 +151,6 @@ First select does not reach `023A`.
 | `[0x7B240, 0x7B284)` | code — create path through `JMP 01EA` |
 | `[0x7B537, 0x7B552)` | code — `0537` |
 | `[0x7B762, 0x7B7F2)` | data — eight 18-byte create records; record 7 = `B000:00DF` |
+| `[0x552A8, 0x552FE)` | code — `D52A:0008` through `IRET`; IVT[8] wake |
 
 Do not own the rest of the AMX kernel from this note.

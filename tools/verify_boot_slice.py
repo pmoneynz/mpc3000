@@ -40,6 +40,115 @@ def _expect_hex(image: bytes, offset: int, expected_hex: str, label: str) -> Non
         raise AssertionError(f"{label}: file 0x{offset:05X} expected {expected_hex}, got {got.hex()}")
 
 
+def _fb00_near(image: bytes, target: int) -> list[int]:
+    """File offsets in FB00 whose E8/E9/EB/Jcc short target this IP."""
+    base = 0x7B000
+    end = min(len(image), base + 0x5000)
+    hits: list[int] = []
+    i = base
+    while i + 2 < end:
+        op = image[i]
+        ip = i - base
+        if op in (0xE8, 0xE9) and i + 3 <= end:
+            rel = image[i + 1] | (image[i + 2] << 8)
+            if rel >= 0x8000:
+                rel -= 0x10000
+            tgt = (ip + 3 + rel) & 0xFFFF
+            if tgt == target:
+                hits.append(i)
+        elif op == 0xEB or 0x70 <= op <= 0x7F:
+            rel = image[i + 1]
+            if rel >= 128:
+                rel -= 256
+            tgt = (ip + 2 + rel) & 0xFFFF
+            if tgt == target:
+                hits.append(i)
+        i += 1
+    return hits
+
+
+def _check_idle_wake(image: bytes, wake: dict) -> None:
+    _expect_hex(image, int(wake["handler_file"], 16), "9a570100fb", "IVT[8] CALL 0157")
+    _expect_hex(image, int(wake["call_0586_file"], 16), wake["call_0586_bytes"], "D52A CALL 0586")
+    _expect_hex(image, int(wake["eoi_file"], 16), wake["eoi_bytes"], "D52A OUT 0xC010")
+    _expect_hex(image, int(wake["call_0194_file"], 16), wake["call_0194_bytes"], "D52A CALL 0194")
+    if image[int(wake["iret_file"], 16)] != 0xCF:
+        raise AssertionError("D52A:005D is not IRET")
+    _expect_hex(image, int(wake["tick_reload_file"], 16), wake["tick_reload_bytes"], "FB76:00A4")
+    if _u16(image, int(wake["tick_reload_file"], 16)) != wake["tick_reload_value"]:
+        raise AssertionError("tick reload is not 10")
+    _expect_hex(image, int(wake["header_store_file"], 16), wake["header_store_bytes"], "start [DI+14]")
+    _expect_hex(image, int(wake["counter_init_call_file"], 16), wake["counter_init_call_bytes"], "055F CALL 05AB")
+    _expect_hex(image, int(wake["counter_copy_file"], 16), wake["counter_copy_bytes"], "05AB copy tick")
+    _expect_hex(image, int(wake["dec_file"], 16), wake["dec_bytes"], "0586 DEC [DI+12]")
+    _expect_hex(image, int(wake["dec_jnz_file"], 16), wake["dec_jnz_bytes"], "0586 JNZ")
+    _expect_hex(image, int(wake["call_05a0_file"], 16), wake["call_05a0_bytes"], "0586 CALL 05A0")
+    _expect_hex(image, int(wake["ready_slot0_file"], 16), wake["ready_slot0_bytes"], "05A0 ready DL=0")
+    _expect_hex(image, int(wake["reschedule_file"], 16), wake["reschedule_bytes"], "0194 INC nest")
+    _expect_hex(image, int(wake["index_cmp_file"], 16), wake["index_cmp_bytes"], "0194 index compare")
+    _expect_hex(image, int(wake["scan_index_file"], 16), wake["scan_index_bytes"], "01EA both indices")
+    _expect_hex(image, int(wake["wait_js_file"], 16), wake["wait_js_bytes"], "01CF JS 01EA")
+    _expect_hex(image, int(wake["sentinel_mask_file"], 16), wake["sentinel_mask_bytes"], "01CF keep bit 15")
+    _expect_hex(image, int(wake["hook_zero_file"], 16), wake["hook_zero_bytes"], "0284 zero hooks")
+    _expect_hex(image, int(wake["second_pgr_frame_file"], 16), wake["second_pgr_frame"], "second PGR[53]")
+    _expect_hex(image, int(wake["third_pgr_frame_file"], 16), wake["third_pgr_frame"], "third PGR[53]")
+    if image[int(wake["int10_file"], 16) : int(wake["int10_file"], 16) + 2] != bytes.fromhex("cd10"):
+        raise AssertionError("pinned INT 10h site is not CD 10")
+    int10 = []
+    pos = 0
+    while True:
+        j = image.find(bytes.fromhex("cd10"), pos)
+        if j < 0:
+            break
+        int10.append(j)
+        pos = j + 1
+    if int10 != [int(wake["int10_file"], 16)]:
+        raise AssertionError(f"INT 10h sites {int10} != pinned")
+    plants = []
+    pos = 0
+    pat = bytes.fromhex("9a470300fb")
+    while True:
+        j = image.find(pat, pos)
+        if j < 0:
+            break
+        if image[j - 2] != 0xB2:
+            raise AssertionError(f"CALL 0347 at 0x{j:05X} is not preceded by MOV DL,imm8")
+        plants.append(image[j - 1])
+        pos = j + 1
+    if plants != wake["plant_dl"]:
+        raise AssertionError(f"0347 DL values {plants} != pinned")
+    if any(dl in (0, 4) for dl in plants):
+        raise AssertionError("0347 hook arm DL 0/4 is reachable")
+    far_0586 = []
+    pos = 0
+    pat = bytes.fromhex("9a860500fb")
+    while True:
+        j = image.find(pat, pos)
+        if j < 0:
+            break
+        far_0586.append(j)
+        pos = j + 1
+    if far_0586 != [int(wake["call_0586_file"], 16)]:
+        raise AssertionError(f"CALLF 0586 sites {far_0586}")
+    if _fb00_near(image, 0x0586):
+        raise AssertionError("near transfer to 0586 exists in FB00")
+    if _fb00_near(image, 0x05A0) != [int(wake["call_05a0_file"], 16)]:
+        raise AssertionError("05A0 callers are not only 0586")
+    if _fb00_near(image, 0x05AB) != [int(wake["counter_init_call_file"], 16)]:
+        raise AssertionError("05AB callers are not only 055F")
+    if _fb00_near(image, 0x0396) != [0x7B5A3]:
+        raise AssertionError("near CALL 0396 is not only 05A3")
+    if _fb00_near(image, 0x0996) or _fb00_near(image, 0x09B8):
+        raise AssertionError("FB00:0996 has a near transfer")
+    if image.find(bytes.fromhex("960900fb")) != -1 or image.find(bytes.fromhex("b80900fb")) != -1:
+        raise AssertionError("stored far pointer to FB00:0996/09B8")
+    entries = _fb00_near(image, 0x01EA)
+    if entries != [0x7B143, 0x7B1E2, 0x7B281]:
+        raise AssertionError(f"01EA entries { [hex(x) for x in entries] }")
+    if _fb00_near(image, 0x0281):
+        raise AssertionError("something transfers to 0281")
+
+
 def verify(image: bytes, facts: dict) -> list[str]:
     checks: list[str] = []
 
@@ -678,6 +787,9 @@ def verify(image: bytes, facts: dict) -> list[str]:
         raise AssertionError("TCB stride must be 0x40")
     checks.append("AMX public far-call surface / TCB [SI] grammar")
 
+    _check_idle_wake(image, amx["idle_wake"])
+    checks.append("AMX idle wake: IVT[8] D52A:0008 tick word 10")
+
     ivt = facts["ivt"]
     _expect_hex(image, int(ivt["fac0_slot10_file"], 16), ivt["fac0_slot10_bytes"], "FAC0 IVT[10h]")
     _expect_hex(image, int(ivt["default_iret_file"], 16), ivt["default_iret_bytes"], "BIOS default IRET")
@@ -696,6 +808,37 @@ def verify(image: bytes, facts: dict) -> list[str]:
     if image[0x797F2:0x797F6] != bytes.fromhex("b40ce863"):
         raise AssertionError("AX=4 default does not MOV AH,0x0C / CALL 185A")
     checks.append("INT43 AX=4 default -> LCD_put AH=0x0C")
+
+    hx = facts["hex_helper"]
+    _expect_hex(image, int(hx["file"], 16), hx["bytes"], "F800:1896 hex stub")
+    if image.count(bytes.fromhex(hx["bytes"])) != 1:
+        raise AssertionError("F800:1896 stub is not unique")
+    _expect_hex(image, int(hx["body_file"], 16), hx["body_bytes"], "F800:189C hex loop")
+    _expect_hex(image, int(hx["ascii_file"], 16), hx["ascii_bytes"], "189C nibble ASCII")
+    if image.count(bytes.fromhex(hx["ascii_bytes"])) != 1:
+        raise AssertionError("189C nibble-to-ASCII convert is not unique")
+    call_off = int(hx["call_18ca_file"], 16)
+    _expect_hex(image, call_off, hx["call_18ca_bytes"], "189C CALL 18CA")
+    rel = image[call_off + 1] | (image[call_off + 2] << 8)
+    if rel >= 0x8000:
+        rel -= 0x10000
+    if (0x18C0 + 3 + rel) & 0xFFFF != 0x18CA:
+        raise AssertionError("0x798C0 does not CALL F800:18CA")
+    _expect_hex(image, int(hx["put_file"], 16), ax4["walker_bytes"], "18CA INT 43 AX=4")
+    caller_off = int(hx["caller_file"], 16)
+    _expect_hex(image, caller_off, hx["caller_bytes"], "F800:1A14 CALL 1896")
+    if image.count(bytes.fromhex(hx["caller_bytes"])) != 1:
+        raise AssertionError("CALL 1896 encoding is not unique")
+    rel = image[caller_off + 1] | (image[caller_off + 2] << 8)
+    if rel >= 0x8000:
+        rel -= 0x10000
+    if (0x1A14 + 3 + rel) & 0xFFFF != 0x1896:
+        raise AssertionError("0x79A14 does not CALL F800:1896")
+    if int(hx["lcd_put_file"], 16) != 0x7985A:
+        raise AssertionError("hex helper lcd_put_file is not 0x7985A")
+    if hx["digit_count"] != 2 or hx["pgr_slot"] != 62 or hx["xa"] != 1:
+        raise AssertionError("hex helper digit_count / PGR slot / XA mismatch")
+    checks.append("F800:1896 hex digits -> 18CA / INT 43 AX=4")
 
     copy = facts["copy_7c92"]
     src = int(copy["source_file"], 16)

@@ -5,8 +5,8 @@
 **Date:** 2026-09-21.
 
 This is the first connected slice. Reset now reaches the AMX dispatcher
-spin. That is still not a named application event loop: the wake source
-is open (`U-AMX-WAIT`).
+spin. The empty-queue leave is IVT[8] `D52A:0008`
+([`amx_wait.md`](amx_wait.md)), not an application event loop.
 
 Reproduction: `python3 tools/verify_boot_slice.py`.
 
@@ -22,7 +22,7 @@ Address forms: [`address_model.md`](address_model.md).
 | Observable | Seven `OUT` pairs to LC7981 ports `0xE2`/`0xE0` from `INT 43` AX=0, then an inline-string print of `MPC-3000 BIOS 21/08/07`, then AMX dispatcher spin |
 | Inputs | Reset state; ROM as mapped; RAM and NVRAM contents ignored after the clear |
 | Outputs | PGR live; XA=1 after `BRKXA 0x14`; IVT in work RAM; LCD controller programmed; AMX entered |
-| Confidence | Path to LCD init and AMX start: **PROVEN** statically. Glyph pixels for the banner: **HYPOTHESIS**. Dispatcher wake source: **UNDETERMINED**. |
+| Confidence | Path to LCD init and AMX start: **PROVEN** statically. Glyph pixels for the banner: **HYPOTHESIS**. Empty-queue leave: IVT[8] `D52A:0008` **PROVEN** ([`amx_wait.md`](amx_wait.md)). Pin of slot 8: **UNDETERMINED**. |
 | Hardware deferred | Actual LC7981 glass; busy-bit timing; PAL decode of `0xC0xx` |
 
 ---
@@ -257,8 +257,8 @@ record 7 is `B000:00DF` — same CS:IP as `FAC0:019E`, different path.
 
 **PROVEN:** start call, dispatcher site, wait *condition*.
 First `01EA` creates task 6; see
-[`amx_first_dispatch.md`](amx_first_dispatch.md). A later empty-queue
-wake ISR is still `U-AMX-WAIT`.
+[`amx_first_dispatch.md`](amx_first_dispatch.md). A later empty queue
+is left by IVT[8] `D52A:0008` ([`amx_wait.md`](amx_wait.md)).
 
 Reaching `013E` from `004E` walks data-dependent tables. This-trace from
 the header bytes in this image has no `RETF` on that path. All-paths
@@ -328,8 +328,9 @@ kernel. Helpers past `0148` stay unresolved.
 
 ## What this slice does *not* prove
 
-- What leaves a later AMX idle spin (`U-AMX-WAIT` remainder). First
-  select creates task 6 and does not idle.
+- Which pin raises IVT[8]. The software leave of a later idle is
+  closed in [`amx_wait.md`](amx_wait.md). First select creates task 6
+  and does not idle.
 - That `B000:00DF` runs after reset. The instruction exists; AMX start
   does not return on the traced path.
 - Panel, MIDI, SCSI, FDC, or DSP behavior.

@@ -24,7 +24,7 @@ frame (page = frame). `CS:IP` = file `20-bit & 0x7FFFF` = 20-bit =
 | Observable | Eight 18-byte records; terminator `FFFF:FFFF` at file `0x7B7F2` |
 | Inputs | `0240` `DL`; `SS:SP` from the record; `E937:0004` sets `DS=ES=8010` |
 | Outputs | Entry/exit table below |
-| Confidence | Record bytes, first instructions, and listed exits **PROVEN**. Ready-on-reset only for 6 and 7 **PROVEN**. Later `0396` sites **PROVEN** as bytes. Task 0 first-ready **UNDETERMINED** |
+| Confidence | Record bytes, first instructions, and listed exits **PROVEN**. Ready-on-reset only for 6 and 7 **PROVEN**. Slot 0’s first ready is the IVT[8] tick ([`amx_wait.md`](amx_wait.md)). Slot 2’s first bit 0 stays **UNDETERMINED** |
 | Hardware deferred | `D213:0008` `OUT` `0x60`/`0x62` device effect (`U-PHYS`) |
 
 ---
@@ -83,8 +83,9 @@ Timed wait. Tasks 5 and 6 use it.
 `FB76:00B2` (file `0x7B812`) is `CB` (`RETF`). Start `055F` counts that
 slot into `[DI+8]`. **PROVEN:** the only exit of task 0 is `05E8 RETF`.
 
-No `CALL FB00:0396` with `DL=0` exists in the image. First ready of
-slot 0 is **UNDETERMINED**.
+No far `CALL FB00:0396` uses `DL=0`. The ready is the near `CALL 0396`
+at `FB00:05A3` with `DL=0`, from `05A0`, when `0586` sees `[DI+12h]`
+hit zero. **PROVEN.** See [`amx_wait.md`](amx_wait.md).
 
 ### 1 — `B259:0006` — `8010` walker
 
@@ -172,7 +173,7 @@ wait.
 
 | Slot | Reset (`B03B:000A`) | Later `0396` (file) | Notes |
 |------|---------------------|---------------------|-------|
-| 0 | no | none | First ready **UNDETERMINED** |
+| 0 | no | near `0x7B5A3` | First ready is the IVT[8] tick |
 | 1 | no | `0x521A1` | |
 | 2 | no | none | `04AC`/`03B3` `DL=2`; first bit 0 **UNDETERMINED** |
 | 3 | no | `0x56112` | |

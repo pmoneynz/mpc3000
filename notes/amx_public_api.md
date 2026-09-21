@@ -204,7 +204,8 @@ and creates task 7. **PROVEN** (see [`pgr_live_after_amx.md`](pgr_live_after_amx
 ## What this note does *not* prove
 
 - Create-table task 0–5 and 7 bodies (D7).
-- Which writer fills a non-null TCB hook, and which IRQ uses it
-  (`U-AMX-WAIT`). Frame transform is in [`irq_wrappers.md`](irq_wrappers.md).
+- A non-null TCB hook. `0284` zeros `+18h..+1Eh`, and no `CALL 0347`
+  passes `DL` 0 or 4. The leave of `023A` is IVT[8], not a hook
+  ([`amx_wait.md`](amx_wait.md)).
 - Mailbox/pool record layout past the `065B` zeroing (D11).
 - KADAK source names. Automated “aj_wait” labels remain proposals.

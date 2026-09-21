@@ -23,7 +23,7 @@ Second PGR (file `0x7ACB4`) is still live: `004E`, `B03B:000A`, `0396`,
 | Observable | Far transfer to `D9BD:0009` via `0240` `RETF` at `02EE` |
 | Inputs | Eight zeroed TCBs; ready bits from `B03B:000A` ? `0396` `DL=7` then `DL=6` |
 | Outputs | TCB[6] and TCB[7] have bit 0 set; scan index `[DI+11h]` stays 0; create record 6 is entered |
-| Confidence | This-trace first select **PROVEN**. Later empty-queue idle / wake ISR still **UNDETERMINED** |
+| Confidence | This-trace first select **PROVEN**. Later empty-queue leave is IVT[8] `D52A:0008` ([`amx_wait.md`](amx_wait.md)) |
 | Hardware deferred | Device effect of `B03B` TE7774 / DSP / DMA ports (`U-TE7774`, `U-PHYS`) |
 
 ---
@@ -265,8 +265,8 @@ Callees `E937:0004`, `B060:0000`, `D9B5:0045` stay unowned until D3/D7.
 
 ## What this note does *not* prove
 
-- The wake ISR that would leave `023A` if the queue is later empty
-  (`U-AMX-WAIT` remainder).
+- The pin that raises IVT[8]. The software leave of a later `023A`
+  is `D52A:0008` ([`amx_wait.md`](amx_wait.md)).
 - That tasks 0–5 or 7 run on reset. 7 is ready but not selected first.
 - Meaning of `[D6A1]`, `B060:0000`, or `E937:0004`.
 - PGR after task 6 runs (`U-XA-LIVE`).

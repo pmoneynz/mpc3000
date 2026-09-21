@@ -40,152 +40,9 @@ P7/P8: `D9B5` consumes page 61 (`ES=0xF400`) at 24-bit
 ([`notes/pgr61.md`](notes/pgr61.md)).
 DGROUP `+0054` is a 101-slot pan-name table (`Pan:` /
 `B354:01C6`), not pad labels ([`notes/pan_table.md`](notes/pan_table.md)).
-D20 assign UI is `C44E:0119` / `D9F2` (`000C`/`003D`/`0072`).
-ROM default `+0859` is `0x23`..`0x62`. `[E5F9]` selects a
-`9770:` record that `BE1A:026C` titles `Pgm`. Param
-`0..3` is `TUNING`/`DECAY`/`ATTACK`/`FILTER`.
-`BE1A:0002` is `Assign '16 Levels'` (`[D6AD]` /
-`[81B3]` `VELOCITY`/`NOTE VAR`; `Center pad:`
-`[E613]` default `0x0D`). Task 3 `EAD0:000B`
-consumes `[E614]` and `CALLF CFB3:0008` /
-`CFC6:0007` (note `+2` / `02D6`/`033A`
-slot / `+063E` / `[E639]`;
-`FCF6+17=FD0D`; `+5`/`+3` note-floor;
-`0007` `CALLN 039E` leftover indexes
-`+7`/`+8` through `[E5F9]+FCF6`.
-`D9C0:0006` is the same Param
-`0..3` pair map as `BE1A`.
-`DC2A:0033` / `DC85:0047` consume
-`[81B3]==0`. `C20F:0478` leftover
-walks `[E5F9]+SI*0x18+3E` for
-`SI` `0..0x3F` to exclusive
-`+063E`; sibling `0874`
-wrapped by `CA45` on
-`[BP-8]` `0..0x17` then
-restore;
-`0BBF` skips `[E60E]`, compares
-`+3E` to `[BP+6]`, stores
-`[BP+8]`, restores `CA45`;
-`D0C0:0C9C` walks `FCF6` with
-`CX` `0x348`..`0x930` and
-`(FCF6+0x23*0x18)&0xFFFF=+3E`.
-`BE1A:0131` stores NOTE VAR
-Param to `FD0D` when
-`[81B3]!=0`. `0105` `CALLN`
-`0203` with the note then
-reads `[81B3]`. `DCE4:000C`
-is the same `0xF0` /
-`+2==0x47` / `+5` in
-`{0x45,0x46}` gate plus
-`[E60F]`/`[E610]==1`.
-`CA45:0008` then loads
-`+11` `*0x18` `FD0D` into
-`[996B]` like `BE1A:0329`
-/ `0380`. `DC2A:010A`
-leftover is `0033`'s
-`DC3A:000A` dest, `AND
-0xF8` / `CMP 0xC0` then
-`CALLN 013B`. `DC85:011A`
-leftover `CALLF`s
-`DCE4:000C` with
-`CMP SI,0x100`.
-`DC2A:0033` / `DC85:0047`
-also read `[996B]`.
-`D9EA:0042` is `AX=[BP+6]`
-`SHL AX,1` / `SHR AL,1`,
-dest of `DC85:0047` /
-`011A`. `DCE4:000C`
-`[E60F]`/`[E610]==1`
-taken arms `CALLF`
-`DC3A:000A`, the named
-`DC2A:010A` linear.
-`BE1A:022B` leftover after
-`0203` put-strings
-`Center pad:` when
-`[81B3]==0` and
-`[BP+6]==1`. `BE1A:026C`
-`CMP [996B],2` / `1` after
-the `0380` store.
-`BE1A:0508` `CALLF`s
-`CA45:0008` with
-`[E60E]+1` minus 1.
-`D9F2:000C`/`0072`
-`[8375]==0` arms are
-`[E5F9]+073E`. `C44E`
-copies `[D6AC]` to
-`[BP-1]` then extra
-`000C`/`0072`.
-`BE1A:0592` `JMP
-CS:[BX+062F]` stores
-`Low`/`High` temps to
-`+12`..`+19`. `C44E:0251`
-second clamp / `0268`
-copy; `CA45:001A`
-`CALLF DA04:002B` then
-reload `[BP+6]` into
-`[E60E]`; `CF37:04AD`
-`CALLF DA04:002B` then
-defaults `+11` /
-`+12`..`+19` on the
-picker record; `BDF1:0014`
-/ `0022` `CALLF B21A:000F`,
-which `CALLN`s the named
-`+0859` copy; `BE1A:0002`
-`00A5` `B354:03B1`
-`Center pad:` / `[E613]`
-then `CALLN 022B` with
-`[81B3]`; `0002` `0029`
-`Note:` `B354:03B1` of
-`[D6AD]`; `005E` `Param:`
-`B354:01C6` of `[81B3]`;
-`0070` `CALLN 0203`;
-`C44E:013E` `Mode:`
-`B354:01C6` of `[8375]`
-via `+4F0C` `PROGRAM` /
-`MASTER`; `C44E:017A`
-`Pad:` `B354:01C6` of
-`[D6AC]` via `+0264`
-`A01`..`D16`; `BE1A:0488`
-/ `04B3` `B354:02BB`
-`[BP-4]` / `[BP-6]`;
-`BE1A:0315` `B354:03B1`
-of `[E60E]+1`;
-`C44E:01A3` `B354:03B1`
-of the `000C` return as
-` = Note:`;
-`BE1A:03AC` `B354:01C6`
-of `[996B]` via `+0224`
-`TUNING`..`FILTER`;
-`BE1A:037B` `MOV [996B],0`
-before the `0380` load;
-`BE1A:0344` `B354:03B1`
-of the named `+11`
-`Note:` byte;
-`BE1A:028D`/`02A5`/`02BD`/
-`02D5` `B1B1:005B` labels
-`Note:`/`Param:`/`Low
-range:`/`High range:`;
-`EAD0:001D` `[E614]*0x18`
-into the named `FD0D`
-load;
-`C44E:0005` dest 0
-`CALLN` `0119`;
-`C44E:00C2` `(Gen MIDI:`
-of the named `000C` note;
-`C44E:0235` `CALLF B060:035D`
-/ `AX==0x44` takes `0251`;
-`EAD0:0064` `CALLF CFB3:0008`).
-`CFB3` `0xC0` is `CA45:0008`; `0xF0`
-is `D0AE:0002`. Leftover after that
-`RETF` paints matching `D9F2:000C`
-slots. `D9A2:0004`/`0031`/`005F`
-store `[BP+8]` at the `02D6`/`033A`
-far pointer `+0`/`+1`/`+2`;
-`00C7`/`00E9`/`010C` read those
-bytes. `BDF1:00E1` is `000C(0)`
-into `[D6AD]`. Owned
-`[D6AC]` writers are remaps, not pad-hit
-([`notes/pad_note.md`](notes/pad_note.md)).
+D20 pad/note assign UI is in [`notes/pad_note.md`](notes/pad_note.md).
+Pad-hit writer of `[D6AC]` is still open. Owned `[D6AC]` stores are
+note-to-slot remaps, not pad-hit.
 
 Physical hardware qualification is deferred. Continue software-verifiable
 work. Record any fact that cannot be distinguished without hardware as an
@@ -228,35 +85,19 @@ An explained **reset-to-event-loop** path plus **one small observable
 interaction**, with the relevant code, data, RAM state, and hardware
 interface connected end to end.
 
-Current slice (2026-09-21): reset through the FAC0 boot stub, the first PGR
-map, the `F07A` init table, LC7981 init via `INT 43` AX=0, and the BIOS
-banner through `INT 43` AX=4 to ports `0xE2`/`0xE0`. First AMX select
-creates task 6 at `D9BD:0009`. The second PGR stays live through that
-task’s first wait and the select of task 7. AMX public far calls and
-TCB `[SI]` grammar are catalogued. Create-table tasks 0–7 have
-pinned entries and exits. Application calls are far cdecl.
-The `0x7C92` copy is the `8010` DGROUP (directory + strings +
-writable globals). The owner ledger covers 365870 proven bytes;
-gaps stay unowned. 1096 strings are
-consumer-established; printable-without-consumer
-stays candidate. 143 entries are
-consumer-established; raw `9A`/`EA` stay suspects.
-Every local exit from those entries is classified (128 bounded,
-14 indirect, 1 idle loop); new CALL dests stay candidates.
-Glass pixels and the later
-empty-queue wake ISR stay open. See
+Current slice (2026-09-21): reset through the FAC0 boot stub, first and
+second PGR, LC7981 init and BIOS banner via `INT 43`, and AMX dispatch
+through task 6 create and task 7 select. The `0x7C92` copy is the `8010`
+DGROUP; the owner ledger and entry/string/transfer inventories are seeded
+(365870 owned bytes; gaps stay unowned). Glass pixels stay open.
+U-AMX-WAIT is closed by IVT[8] `D52A:0008`
+([`notes/amx_wait.md`](notes/amx_wait.md)). Evidence:
 [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),
-[`notes/int43_ax4.md`](notes/int43_ax4.md),
-[`notes/amx_wait.md`](notes/amx_wait.md),
 [`notes/amx_first_dispatch.md`](notes/amx_first_dispatch.md),
-[`notes/amx_public_api.md`](notes/amx_public_api.md),
-[`notes/amx_create_table.md`](notes/amx_create_table.md),
-[`notes/calling_convention.md`](notes/calling_convention.md),
-[`notes/irq_wrappers.md`](notes/irq_wrappers.md), and
 [`notes/copy_7c92.md`](notes/copy_7c92.md),
-[`notes/owner_ledger.md`](notes/owner_ledger.md), and
-[`notes/string_scan.md`](notes/string_scan.md), and
-[`notes/entry_scan.md`](notes/entry_scan.md), and
+[`notes/owner_ledger.md`](notes/owner_ledger.md),
+[`notes/string_scan.md`](notes/string_scan.md),
+[`notes/entry_scan.md`](notes/entry_scan.md),
 [`notes/transfer_scan.md`](notes/transfer_scan.md).
 
 ## Priority order

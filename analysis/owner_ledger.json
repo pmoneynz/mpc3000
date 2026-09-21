@@ -6290,19 +6290,11 @@
     },
     {
       "start": "0x79896",
-      "end": "0x7989C",
-      "owner": "code",
-      "kind": "code",
-      "source": "notes/calling_convention.md",
-      "why": "hex helper 1896"
-    },
-    {
-      "start": "0x7989C",
       "end": "0x798CA",
       "owner": "code",
       "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+      "source": "notes/hex_helper.md",
+      "why": "F800:1896/189C AL as 2 hex digits via 18CA"
     },
     {
       "start": "0x798CA",

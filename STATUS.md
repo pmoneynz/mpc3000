@@ -5,11 +5,12 @@
 
 This tree was a document-and-dump pack. It now has a project goal, an
 address model, a static reset-to-AMX-start slice, a seeded owner
-ledger (865 ranges, 365870 bytes), a consumer-established string
+ledger (864 ranges, 365870 bytes), a consumer-established string
 inventory, an entry inventory (143 unique `CS:IP`), and a
 local-exit inventory (128 bounded / 14 indirect / 1 idle loop).
-It does not have whole-image coverage, Ghidra exports, or a named
-wake source for the AMX idle spin.
+It does not have whole-image coverage or Ghidra exports.
+U-AMX-WAIT is closed by IVT[8] `D52A:0008`
+([`notes/amx_wait.md`](notes/amx_wait.md)).
 
 ## What is established
 
@@ -87,13 +88,15 @@ Validator: `python3 tools/verify_boot_slice.py`.
 
 ## What is not established
 
-- Which IRQ leaves a later AMX idle spin (`U-AMX-WAIT` remainder). First
-  select is closed; see [`notes/amx_first_dispatch.md`](notes/amx_first_dispatch.md).
+- Which pin raises IVT[8] (`U-V53A`). U-AMX-WAIT is closed by IVT[8]
+  `D52A:0008` ([`notes/amx_wait.md`](notes/amx_wait.md)). First select
+  is closed; see [`notes/amx_first_dispatch.md`](notes/amx_first_dispatch.md).
 - LC7981 glass pixels (`D3-glass`). Software banner path is closed.
 - PGR after task 7 runs (`U-XA-LIVE`). Second table is live through
   task 6’s first wait and task 7 select. Only three full-table `OUTSW`
   sites exist, all FAC0.
-- First ready of create-table slots 0 and 2.
+- First ready of create-table slot 2. Slot 0 is the IVT[8] tick
+  ([`notes/amx_wait.md`](notes/amx_wait.md)).
 - Word `+2` = `0x0100` and the `+0238` numeric-island *meaning*
   (`copy_7c92.md`). Per-screen string meaning stays D25.
 - Panel ROM, PAL fusemaps, full schematics. D19 is PARTIAL
@@ -102,172 +105,9 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - DGROUP `+0054`..`+01E4` is 101 pan names (`50L`..` C `..`50R`),
   not drum-pad labels. Owned printer `B354:01C6` is called with
   title `Pan:` ([`notes/pan_table.md`](notes/pan_table.md)).
-- D20 assign UI is `C44E:0119` with `D9F2:000C`/`003D`/`0072`
-  (slot/note, index `<0x40`). ROM default `+0859` is
-  `0x23`..`0x62` (`B21A:0033` / `CF37:04AD` overlay).
-  `[E5F9]` is a far pointer into the `9770:` record array
-  (`CA45:0008` / `DA04:002B`, index `0..0x17`).
-  `BE1A:026C` (`C425:0200`) titles that record `Pgm`
-  (`Assign Note Var Slider (Pgm:  )`). Param `0..3`
-  is `TUNING`/`DECAY`/`ATTACK`/`FILTER` (`+0224` /
-  `BE1A:0641`). `BE1A:0002` (`C425:01F6`) is
-  `Assign '16 Levels'`; `Note:` is `[D6AD]`;
-  `[81B3]` selects `VELOCITY` / `NOTE VAR`
-  (default 0 at `B21A:01E2`). `Center pad:` is
-  `[E613]` (default `0x0D` at `CF37:0325`).
-  Task 3 `EAD0:000B` consumes `[E614]` (`JB` if
-  `<0x23`) and `CALLF CFB3:0008` (`& 0xF8`;
-  `0xB0` writes `[D6AB]=0x50` not `[D6AC]`;
-  `0xC0` `CALLF C887:1BE8` is `CA45:0008`;
-  `0xF0` gates `+2==0x47` / `+5` in
-  `{0x45,0x46}` then `CALLF D0AE:0002`;
-  leftover after that `RETF` paints
-  matching `D9F2:000C` slots;
-  sibling cdecl at `0x50A07` is a
-  second `FCF6` `+3`/`+5` picker;
-  `D9A2:0004`/`0031`/`005F` store
-  `[BP+8]` at the `02D6`/`033A`
-  far pointer `+0`/`+1`/`+2`;
-  `00C7`/`00E9`/`010C` read those
-  bytes; `BDF1:00E1` is `000C(0)`
-  into `[D6AD]`;
-  `0x80` via `FCF6`;
-  `0x90` to `CFC6:0007`, note `+2` in
-  `0x23`..`0x62`, `02D6` note-to-slot,
-  `[E5F9]+slot*4+063E` when `[E60F]==2`;
-  `[920A]+slot*4+002A` when `==1`; else
-  `DS:E639+slot*4`; `0007` `CALLN`
-  `02D6`/`033A`;   `FCF6+17=FD0D`;
-  `FCF6+5`/`+3` are note-floor;
-  `+1==3` uses `+0C` / event `+4`;
-  `+1==1` uses `+3` / `+5`;
-  `0007` `CALLN 039E` leftover
-  indexes `+7`/`+8` through
-  `[E5F9]+FCF6`; `D9C0:0006` is
-  the same Param `0..3` pair map;
-  `DC2A:0033` / `DC85:0047` consume
-  `[81B3]==0`; `C20F:0478` leftover
-  walks `[E5F9]+SI*0x18+3E` for
-  `SI` `0..0x3F` to exclusive
-  `+063E`; sibling `0874`
-  wrapped by `CA45` on
-  `[BP-8]` `0..0x17` then
-  restore;
-  `0BBF` skips `[E60E]`, compares
-  `+3E` to `[BP+6]`, stores
-  `[BP+8]`, restores `CA45`;
-  `D0C0:0C9C` walks `FCF6` with
-  `CX` `0x348`..`0x930` and
-  `(FCF6+0x23*0x18)&0xFFFF=+3E`;
-  `BE1A:0131` stores NOTE VAR
-  Param to `FD0D` when
-  `[81B3]!=0`; `0105` `CALLN`
-  `0203` with the note then
-  reads `[81B3]`; `DCE4:000C`
-  is the same `0xF0` /
-  `+2==0x47` / `+5` in
-  `{0x45,0x46}` gate plus
-  `[E60F]`/`[E610]==1`;
-  `CA45:0008` then loads
-  `+11` `*0x18` `FD0D` into
-  `[996B]` like `BE1A:0329`
-  / `0380`; `DC2A:010A`
-  leftover is `0033`'s
-  `DC3A:000A` dest, `AND
-  0xF8` / `CMP 0xC0` then
-  `CALLN 013B`; `DC85:011A`
-  leftover `CALLF`s
-  `DCE4:000C` with
-  `CMP SI,0x100`;
-  `DC2A:0033` / `DC85:0047`
-  also read `[996B]`;
-  `D9EA:0042` is `AX=[BP+6]`
-  `SHL AX,1` / `SHR AL,1`,
-  dest of `DC85:0047` /
-  `011A`; `DCE4:000C`
-  `[E60F]`/`[E610]==1`
-  taken arms `CALLF`
-  `DC3A:000A`, the named
-  `DC2A:010A` linear;
-  `BE1A:022B` leftover after
-  `0203` put-strings
-  `Center pad:` when
-  `[81B3]==0` and
-  `[BP+6]==1`; `BE1A:026C`
-  `CMP [996B],2` / `1` after
-  the `0380` store;
-  `BE1A:0508` `CALLF`s
-  `CA45:0008` with
-  `[E60E]+1` minus 1;
-  `D9F2:000C`/`0072`
-  `[8375]==0` arms are
-  `[E5F9]+073E`; `C44E`
-  copies `[D6AC]` to
-  `[BP-1]` then extra
-  `000C`/`0072`;
-  `BE1A:0592` `JMP
-  CS:[BX+062F]` stores
-  `Low`/`High` temps to
-  `+12`..`+19`; `C44E:0251`
-  second clamp / `0268`
-  copy; `CA45:001A`
-  `CALLF DA04:002B` then
-  reload `[BP+6]` into
-  `[E60E]`; `CF37:04AD`
-  `CALLF DA04:002B` then
-  defaults `+11` /
-  `+12`..`+19` on the
-  picker record; `BDF1:0014`
-  / `0022` `CALLF B21A:000F`,
-  which `CALLN`s the named
-  `+0859` copy;   `BE1A:0002`
-  `00A5` `B354:03B1`
-  `Center pad:` / `[E613]`
-  then `CALLN 022B` with
-  `[81B3]`; `0002` `0029`
-  `Note:` `B354:03B1` of
-  `[D6AD]`; `005E` `Param:`
-  `B354:01C6` of `[81B3]`;
-  `0070` `CALLN 0203`;
-  `C44E:013E` `Mode:`
-  `B354:01C6` of `[8375]`
-  via `+4F0C` `PROGRAM` /
-  `MASTER`; `C44E:017A`
-  `Pad:` `B354:01C6` of
-  `[D6AC]` via `+0264`
-  `A01`..`D16`;   `BE1A:0488`
-  / `04B3` `B354:02BB`
-  `[BP-4]` / `[BP-6]`;
-  `BE1A:0315` `B354:03B1`
-  of `[E60E]+1`;
-  `C44E:01A3` `B354:03B1`
-  of the `000C` return as
-  ` = Note:`;
-  `BE1A:03AC` `B354:01C6`
-  of `[996B]` via `+0224`
-  `TUNING`..`FILTER`;
-  `BE1A:037B` `MOV [996B],0`
-  before the `0380` load;
-  `BE1A:0344` `B354:03B1`
-  of the named `+11`
-  `Note:` byte;
-  `BE1A:028D`/`02A5`/`02BD`/
-  `02D5` `B1B1:005B` labels
-  `Note:`/`Param:`/`Low
-  range:`/`High range:`;
-  `EAD0:001D` `[E614]*0x18`
-  into the named `FD0D`
-  load;
-  `C44E:0005` dest 0
-  `CALLN` `0119`;
-  `C44E:00C2` `(Gen MIDI:`
-  of the named `000C` note;
-  `C44E:0235` `CALLF B060:035D`
-  / `AX==0x44` takes `0251`;
-  `EAD0:0064` `CALLF CFB3:0008`).
-  `BE40:000C` is a retracted CS alias. Owned
-  `[D6AC]` stores are remaps. Pad-hit writer
-  is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).
+- D20 pad/note assign UI and owned `[D6AC]` remap stores are documented in
+  [`notes/pad_note.md`](notes/pad_note.md). Pad-hit writer of `[D6AC]` is
+  still unnamed.
 - PGR page 61 word `0x0140` maps to 24-bit `0x500000`
   (full-word `v33_translate`). Consumer is `D9B5`
   `ES=0xF400`; `ES:[03FE]` is `0x5003FE` inside the
@@ -348,4 +188,5 @@ Physical hardware remains deferred.
 ## Progress measure
 
 The useful increment is the removal of a named uncertainty. First `01EA`
-creates task 6. The later empty-queue wake ISR is still open.
+creates task 6. U-AMX-WAIT is closed by IVT[8] `D52A:0008`
+([`notes/amx_wait.md`](notes/amx_wait.md)).

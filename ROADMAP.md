@@ -18,7 +18,7 @@ Reset to a named loop plus one observable, end to end.
   idle condition; first `01EA` creates task 6 (`D9BD:0009`); create
   records 0–7 pinned as bytes; second PGR live through that transfer;
   `0x7C92` copy bounded; LC7981 init writes; banner AX=4 to `LCD_put`.
-- Open: later AMX wake ISR; task 6 wait / task 7 body; PGR after
+- Open: task 6 wait / task 7 body; PGR after
   task 7; glass pixels. AMX public API (D6) and create-table
   entries/exits (D7) are closed.
 
