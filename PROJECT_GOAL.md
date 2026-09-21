@@ -152,7 +152,10 @@ via `+4F0C` `PROGRAM` /
 of `[E60E]+1`;
 `C44E:01A3` `B354:03B1`
 of the `000C` return as
-` = Note:`).
+` = Note:`;
+`BE1A:03AC` `B354:01C6`
+of `[996B]` via `+0224`
+`TUNING`..`FILTER`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

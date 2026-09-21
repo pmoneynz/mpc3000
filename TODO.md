@@ -351,7 +351,10 @@ bounds, evidence, unknowns).
       of `[E60E]+1`;
       `C44E:01A3` `B354:03B1`
       of the `000C` return as
-      ` = Note:`).
+      ` = Note:`;
+      `BE1A:03AC` `B354:01C6`
+      of `[996B]` via `+0224`
+      `TUNING`..`FILTER`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

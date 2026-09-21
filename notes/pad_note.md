@@ -267,15 +267,19 @@ the `Param:` index. `+FD0D` is a 16-bit disp
 this load after the `[E5F9]` store (files
 `0x4A4B0` / `0x4A4BF` / `0x4A4C4`).
 
-`B354:01C6` is called with table `DS:0224` and index
-`[996B]`. Directory `+0224`..`+0230` is four
-`xxxx:8010` ptrs `TUNING` / `DECAY` / `ATTACK` /
-`FILTER` plus a NULL (`+0234`). **PROVEN** as the
-`Param:` names. DGROUP `+0204` is SMPTE
-`24`/`25`/`30`/`29.97 DROP`, not this table. The
-`PUSH 0x3E62` title is the NUL after `VELOCITY`,
-not a name table. Nearby `(TUNING)` / `(DECAY)`
-pool strings are not this consumer.
+`03A1` (file `0x3E541`): `PUSH +0224`; `PUSH 0x996B`
+(file `0x3E545`); `PUSH +3E62` (file `0x3E549`);
+`CALLF B354:01C6` (file `0x3E54C`). Directory
+`+0224`..`+0230` is four `xxxx:8010` ptrs `TUNING`
+/ `DECAY` / `ATTACK` / `FILTER` plus a NULL
+(`+0234`). **PROVEN** as the Slider `Param:` names
+for the named `[996B]` byte after the `0380` store.
+Same `01C6` shape as `C44E` `Mode:` / `Pad:` and
+`BE1A:0002` `Param:`. Title `+3E62` is the NUL after
+`VELOCITY`, not a name table. DGROUP `+0204` is SMPTE
+`24`/`25`/`30`/`29.97 DROP`, not this table. Nearby
+`(TUNING)` / `(DECAY)` pool strings are not this
+consumer. Not a pad-hit.
 
 After the pair display, `04BB`
 (file `0x3E65B`) `CMP [996B],2`
