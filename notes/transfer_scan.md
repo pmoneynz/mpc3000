@@ -111,6 +111,9 @@ is the hole-start through `RETF`
 `E398:0119` / `01F0` / `0366` / `0386` /
 `03BD` / `045A` and far dest `E3E7:0008`
 fill `[0x63A99, 0x63EA5)`.
+`DCA2:0166` / `0371` / `03C9` are the
+hole-start chain after `0154` (`CALLN`
+`DCA2:0019`); they close `[0x5CB86, 0x5CE02)`.
 `D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
@@ -227,6 +230,9 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x7A0F7, 0x7A0FA)` | code — `F800:20F7` `POP CX`/`PUSH CS`/`PUSH CX`; `CALLN` `F800:2687`/`26A8` |
 | `[0x31C00, 0x31C6F)` | code — `B1BC:0040` `LES DI`/`SCASB` count through `RETF`; `CALLN` `B1BC:0382` |
 | `[0x5CB74, 0x5CB79)` | code — `DCA2:0154` `MOV AL,0x59` / `JMP 0016`; `CALLF` `DE5C:055B` |
+| `[0x5CB86, 0x5CD91)` | code — `DCA2:0166` through `RETF`; `CALLN` `DCA2:0019` |
+| `[0x5CD91, 0x5CDE9)` | code — `DCA2:0371` through `RETF`; `CALLN` `DCA2:0361` |
+| `[0x5CDE9, 0x5CE02)` | code — `DCA2:03C9` through `RET`; `CALLN` `DCA2:0187` |
 | `[0x444B9, 0x444E5)` | code — `C425:0269` cdecl through `RETF`; `CALLN` `C425:0220` |
 | `[0x7A42D, 0x7A45B)` | code — `F800:242D` copy through `RET 8`; 6 `CALLN` from `24A5`.. |
 | `[0x33EDF, 0x33FD6)` | code — `B3ED:000F` cdecl through `RETF`; `CALLF` `C425:01B5` |
