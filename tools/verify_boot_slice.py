@@ -20,6 +20,8 @@ from tools.owner_ledger import (
     validate_ledger,
 )
 from tools.string_scan import load_scan, validate as validate_string_scan
+from tools.entry_scan import load_scan as load_entry_scan
+from tools.entry_scan import validate as validate_entry_scan
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FACTS_PATH = REPO_ROOT / "analysis" / "boot_slice_facts.json"
@@ -327,6 +329,18 @@ def verify(image: bytes, facts: dict) -> list[str]:
     checks.append(
         f"string scan: {scan['established']['unique_starts']} established, "
         f"{scan['candidates']['dgroup_unconsumed_min2']} DGROUP candidates"
+    )
+
+    entries = load_entry_scan()
+    checks.extend(validate_entry_scan(image, entries))
+    emeta = facts["entry_scan"]
+    if entries["established"]["unique_cs_ip"] != emeta["unique_cs_ip"]:
+        raise AssertionError("entry_scan unique_cs_ip does not match facts")
+    if entries["raw_encodings"]["callf_9a"] != emeta["raw_9a"]:
+        raise AssertionError("entry_scan raw 9A count does not match facts")
+    checks.append(
+        f"entry scan: {entries['established']['unique_cs_ip']} unique CS:IP, "
+        f"{entries['raw_encodings']['callf_9a']} raw 9A suspects"
     )
 
     return checks

@@ -91,8 +91,10 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       directory / disk table / walker / `PUSH DS`+far. Put-string
       `B1B1:005B` walks `INT 43` AX=4. Printable-without-consumer
       stays candidate. KADAK is identity bytes, not text.
-- [ ] **D15.** Whole-image entry-candidate scan (reset, IVT, far-call
-      tables, create-table). Investigate before accepting as code.
+- [x] **D15.** Entry scan: 143 unique `CS:IP` from named consumers.
+      Raw `9A`/`EA` (6154/825) stay suspects. `0x7FF01` and
+      `0x797A7` are immediates, not transfers. 67 `PUSH DS`+far
+      cdecl entries. Bodies stay D16.
 - [ ] **D16.** From each established entry, follow control flow, check
       instruction bounds, and resolve or exclude every exit.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is

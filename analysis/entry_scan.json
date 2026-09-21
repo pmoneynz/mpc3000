@@ -1,0 +1,303 @@
+{
+  "target": "vailixi-3.50",
+  "rule": "consumer_not_encoding",
+  "raw_encodings": {
+    "callf_9a": 6154,
+    "jmpf_ea": 825,
+    "note": "Counts are encodings, not instructions. See lookalikes."
+  },
+  "amx_public": {
+    "pattern": "9A iw 00 FB",
+    "count": 76,
+    "unique_ips": 19,
+    "ips": [
+      "0x0157",
+      "0x0194",
+      "0x0347",
+      "0x038A",
+      "0x0396",
+      "0x03B3",
+      "0x0469",
+      "0x0484",
+      "0x04AC",
+      "0x0552",
+      "0x0586",
+      "0x0624",
+      "0x0637",
+      "0x0648",
+      "0x065B",
+      "0x067C",
+      "0x06B9",
+      "0x06E8",
+      "0x0725"
+    ]
+  },
+  "push_ds_far": {
+    "pattern": "1E 68 iw 9A ip cs",
+    "unique_targets": 67,
+    "site_count": 1409,
+    "all_cdecl": true,
+    "top": {
+      "cs_ip": "B1B1:005B",
+      "file": "0x31B6B",
+      "bytes": "558bec",
+      "count": 406
+    }
+  },
+  "create_table": [
+    {
+      "cs_ip": "FB00:05B2",
+      "file": "0x7B5B2",
+      "phys20": "0xFB5B2",
+      "bytes": "2ec53e4200",
+      "source": "create_table_0",
+      "n": 0,
+      "table_file": "0x7B762"
+    },
+    {
+      "cs_ip": "B259:0006",
+      "file": "0x32596",
+      "phys20": "0xB2596",
+      "bytes": "b810808ed8",
+      "source": "create_table_1",
+      "n": 1,
+      "table_file": "0x7B774"
+    },
+    {
+      "cs_ip": "EC05:0000",
+      "file": "0x6C050",
+      "phys20": "0xEC050",
+      "bytes": "558bec568b",
+      "source": "create_table_2",
+      "n": 2,
+      "table_file": "0x7B786"
+    },
+    {
+      "cs_ip": "EAD0:000B",
+      "file": "0x6AD0B",
+      "phys20": "0xEAD0B",
+      "bytes": "558bec83ec",
+      "source": "create_table_3",
+      "n": 3,
+      "table_file": "0x7B798"
+    },
+    {
+      "cs_ip": "DDF1:000A",
+      "file": "0x5DF1A",
+      "phys20": "0xDDF1A",
+      "bytes": "b810808ed8",
+      "source": "create_table_4",
+      "n": 4,
+      "table_file": "0x7B7AA"
+    },
+    {
+      "cs_ip": "B14B:0002",
+      "file": "0x314B2",
+      "phys20": "0xB14B2",
+      "bytes": "9a040037e9",
+      "source": "create_table_5",
+      "n": 5,
+      "table_file": "0x7B7BC"
+    },
+    {
+      "cs_ip": "D9BD:0009",
+      "file": "0x59BD9",
+      "phys20": "0xD9BD9",
+      "bytes": "9a040037e9",
+      "source": "create_table_6",
+      "n": 6,
+      "table_file": "0x7B7CE"
+    },
+    {
+      "cs_ip": "B000:00DF",
+      "file": "0x300DF",
+      "phys20": "0xB00DF",
+      "bytes": "5633f69a04",
+      "source": "create_table_7",
+      "n": 7,
+      "table_file": "0x7B7E0"
+    }
+  ],
+  "f07a": [
+    {
+      "cs_ip": "F800:000A",
+      "file": "0x7800A",
+      "phys20": "0xF800A",
+      "bytes": "fa1e06",
+      "source": "f07a_0",
+      "ah": 0,
+      "table_bytes": "01000a0000f8"
+    },
+    {
+      "cs_ip": "F800:1AD4",
+      "file": "0x79AD4",
+      "phys20": "0xF9AD4",
+      "bytes": "1eb800",
+      "source": "f07a_1",
+      "ah": 1,
+      "table_bytes": "0101d41a00f8"
+    },
+    {
+      "cs_ip": "FB00:000C",
+      "file": "0x7B00C",
+      "phys20": "0xFB00C",
+      "bytes": "eb4010",
+      "source": "f07a_2",
+      "ah": 255,
+      "table_bytes": "01ff0c0000fb"
+    }
+  ],
+  "int43_near": [
+    {
+      "cs_ip": "F800:16E4",
+      "file": "0x796E4",
+      "phys20": "0xF96E4",
+      "bytes": "b83c00e8",
+      "source": "int43_ax_0",
+      "ax": 0
+    },
+    {
+      "cs_ip": "F800:171D",
+      "file": "0x7971D",
+      "phys20": "0xF971D",
+      "bytes": "33c0e821",
+      "source": "int43_ax_1",
+      "ax": 1
+    },
+    {
+      "cs_ip": "F800:1734",
+      "file": "0x79734",
+      "phys20": "0xF9734",
+      "bytes": "8bc32503",
+      "source": "int43_ax_2",
+      "ax": 2
+    },
+    {
+      "cs_ip": "F800:1744",
+      "file": "0x79744",
+      "phys20": "0xF9744",
+      "bytes": "8ac7b728",
+      "source": "int43_ax_3",
+      "ax": 3
+    },
+    {
+      "cs_ip": "F800:1752",
+      "file": "0x79752",
+      "phys20": "0xF9752",
+      "bytes": "be6e172e",
+      "source": "int43_ax_4",
+      "ax": 4
+    },
+    {
+      "cs_ip": "F800:1808",
+      "file": "0x79808",
+      "phys20": "0xF9808",
+      "bytes": "fcbe2b66",
+      "source": "int43_ax_5",
+      "ax": 5
+    },
+    {
+      "cs_ip": "F800:181B",
+      "file": "0x7981B",
+      "phys20": "0xF981B",
+      "bytes": "33c0e823",
+      "source": "int43_ax_6",
+      "ax": 6
+    },
+    {
+      "cs_ip": "F800:1839",
+      "file": "0x79839",
+      "phys20": "0xF9839",
+      "bytes": "a1ab68b1",
+      "source": "int43_ax_7",
+      "ax": 7
+    }
+  ],
+  "lookalikes": [
+    {
+      "file": "0x7FF01",
+      "bytes": "eaffb80700",
+      "why": "MOV DX,0xFFEA immediate; not JMPF",
+      "real_cs_ip": "FFF0:0000"
+    },
+    {
+      "file": "0x797A7",
+      "bytes": "9a00c3a1ab",
+      "why": "low byte of CALL 1843 at F800:17A6 (E8 9A 00); not CALLF",
+      "real_cs_ip": "F800:17A6"
+    }
+  ],
+  "established": {
+    "unique_cs_ip": 143,
+    "record_count": 148,
+    "by_source": {
+      "reset_vector": 1,
+      "wait_stub": 1,
+      "fac0_reset": 1,
+      "rom_ivt_11": 1,
+      "rom_ivt_12": 1,
+      "rom_ivt_14": 1,
+      "fac0_cx0_jmp": 1,
+      "f07a": 3,
+      "create_table": 8,
+      "amx_public": 19,
+      "amx_internal": 10,
+      "ivt_named": 17,
+      "int43_near": 8,
+      "ds8010_set": 1,
+      "timed_wait_cdecl": 1,
+      "far_cdecl_lds": 1,
+      "inline_walker": 1,
+      "hex_helper": 1,
+      "int43_ax4_from_walker": 1,
+      "unexpected_vector": 1,
+      "cursor": 1,
+      "lcd_put": 1,
+      "push_ds_far": 67
+    }
+  },
+  "specimens": [
+    {
+      "cs_ip": "FFFF:0000",
+      "file": "0x7FFF0",
+      "source": "reset_vector"
+    },
+    {
+      "cs_ip": "FAC0:0000",
+      "file": "0x7AC00",
+      "source": "wait_stub_jmp"
+    },
+    {
+      "cs_ip": "B000:00DF",
+      "file": "0x300DF",
+      "source": "fac0_cx0_jmp"
+    },
+    {
+      "cs_ip": "B1B1:005B",
+      "file": "0x31B6B",
+      "source": "push_ds_far"
+    },
+    {
+      "cs_ip": "D9BD:0009",
+      "file": "0x59BD9",
+      "source": "create_table_6"
+    },
+    {
+      "cs_ip": "FB00:013E",
+      "file": "0x7B13E",
+      "source": "dispatcher"
+    }
+  ],
+  "later_ivt_plants": [
+    {
+      "file": "0x305B8",
+      "bytes": "9a470300fb",
+      "note": "B03B:0208 CALL 0347 DL=9; not reset-path"
+    },
+    {
+      "file": "0x7B9B8",
+      "bytes": "9a470300fb",
+      "note": "FB00:09B8 CALL 0347 DL=8; not reset-path"
+    }
+  ]
+}

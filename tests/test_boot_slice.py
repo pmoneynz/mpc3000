@@ -16,6 +16,8 @@ from tools.owner_ledger import (
     validate_ledger,
 )
 from tools.string_scan import load_scan, validate as validate_string_scan
+from tools.entry_scan import load_scan as load_entry_scan
+from tools.entry_scan import validate as validate_entry_scan
 from tools.v53_decode import decode_one
 from tools.verify_boot_slice import FACTS_PATH, verify
 
@@ -171,6 +173,21 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x31B90], 0xCB)
         self.assertEqual(self.image[0x210F5:0x210F5 + 26], b"Vailixi 3.50 (---/--/----)")
         self.assertIn(b"mpc3000le@yahoo.com.au", self.image[0x79A1A:0x79AD2])
+
+    def test_entry_scan_consumers(self) -> None:
+        entries = load_entry_scan()
+        meta = self.facts["entry_scan"]
+        checks = validate_entry_scan(self.image, entries)
+        self.assertGreaterEqual(len(checks), 4)
+        self.assertEqual(entries["established"]["unique_cs_ip"], meta["unique_cs_ip"])
+        self.assertEqual(entries["raw_encodings"]["callf_9a"], 6154)
+        self.assertEqual(entries["raw_encodings"]["jmpf_ea"], 825)
+        self.assertEqual(entries["push_ds_far"]["unique_targets"], 67)
+        self.assertEqual(entries["push_ds_far"]["top"]["cs_ip"], "B1B1:005B")
+        self.assertEqual(self.image[0x7FF00:0x7FF03], bytes.fromhex("baeaff"))
+        self.assertEqual(self.image[0x797A6:0x797A9], bytes.fromhex("e89a00"))
+        self.assertEqual(self.image[0x7FFF0:0x7FFF5], bytes.fromhex("ea0000f0ff"))
+        self.assertEqual(entries["create_table"][6]["cs_ip"], "D9BD:0009")
 
     def test_v53_decode_brkxa_retxa(self) -> None:
         brk = decode_one(self.image, 0xFAC0, 0x001C)

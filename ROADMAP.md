@@ -34,7 +34,8 @@ conventional function bounds. D10 is closed. D11 waits on a named slice.
 Every persistent byte owned. Every transfer in scope resolved or excluded.
 Machine-audited ledger. D12/D13 seeded `analysis/owner_ledger.json`
 (61 ranges, 26 gaps; every `0xFF` run of 4+ classified; D14
-established 1096 strings by consumer). Ghidra is the planned navigation environment; its
+established 1096 strings by consumer; D15 established 143
+entries). Ghidra is the planned navigation environment; its
 processor spec must be checked against V53 `BRKXA`/`RETXA` and PGR, not
 assumed from “8086-compatible.”
 

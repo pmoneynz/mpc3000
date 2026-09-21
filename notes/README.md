@@ -22,6 +22,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`owner_ledger.md`](owner_ledger.md) | Seeded file-range owners; gaps are debt |
 | [`padding.md`](padding.md) | Every `0xFF` window ≥ 4 bytes |
 | [`string_scan.md`](string_scan.md) | Consumer-established text; put-string `B1B1:005B` |
+| [`entry_scan.md`](entry_scan.md) | Consumer-established entries; raw `9A`/`EA` are suspects |
 | [`named_unknowns.md`](named_unknowns.md) | Ranked open uncertainties |
 
 Do not duplicate the MPC2000XL note corpus here. Cite it when a V53

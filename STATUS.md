@@ -5,8 +5,9 @@
 
 This tree was a document-and-dump pack. It now has a project goal, an
 address model, a static reset-to-AMX-start slice, a seeded owner
-ledger (61 ranges), and a consumer-established string inventory.
-It does not have whole-image coverage, a transfer inventory, Ghidra
+ledger (61 ranges), a consumer-established string inventory, and an
+entry inventory (143 unique `CS:IP`).
+It does not have whole-image coverage, a finished transfer inventory, Ghidra
 exports, or a named wake source for the AMX idle spin.
 
 ## What is established
@@ -64,11 +65,17 @@ exports, or a named wake source for the AMX idle spin.
   Put-string `B1B1:005B` (file `0x31B6B`) does `LDS DI,[BP+6]` and
   `INT 43` AX=4. 355 DGROUP C-strings and app-ROM lookalikes stay
   candidates. KADAK is identity bytes, not text.
+- Entry scan (D15): 143 unique `CS:IP` from reset, ROM IVT, `F07A`,
+  create-table, AMX public/internals, reset-path IVT, INT 43, BIOS
+  helpers, `E937`/`B060`/`D9B5:0045`, and 67 `PUSH DS`+far cdecl
+  targets. 6154 `9A` and 825 `EA` encodings are suspects.
+  `0x7FF01` and `0x797A7` are immediates, not far transfers.
 
 Evidence: [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),
 [`notes/copy_7c92.md`](notes/copy_7c92.md),
 [`notes/owner_ledger.md`](notes/owner_ledger.md),
-[`notes/string_scan.md`](notes/string_scan.md).
+[`notes/string_scan.md`](notes/string_scan.md),
+[`notes/entry_scan.md`](notes/entry_scan.md).
 Validator: `python3 tools/verify_boot_slice.py`.
 
 ## What is not established
@@ -83,6 +90,7 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Word `+2` = `0x0100` and the `+0238` numeric-island *meaning*
   (`copy_7c92.md`). Per-screen string meaning stays D18+.
 - Panel ROM, PAL fusemaps, full schematics.
+- Every exit from the 143 entries (D16). Raw `9A`/`EA` stay suspects.
 - Whole-image ledger coverage (D17). 26 gaps remain after padding.
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
   `065B` overlays.

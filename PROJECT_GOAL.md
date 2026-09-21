@@ -87,7 +87,9 @@ The `0x7C92` copy is the `8010` DGROUP (directory + strings +
 writable globals). The owner ledger covers 252100 proven bytes;
 gaps stay unowned. 1096 strings are
 consumer-established; printable-without-consumer
-stays candidate. Glass pixels and the later
+stays candidate. 143 entries are
+consumer-established; raw `9A`/`EA` stay suspects.
+Glass pixels and the later
 empty-queue wake ISR stay open. See
 [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),
 [`notes/int43_ax4.md`](notes/int43_ax4.md),
@@ -99,7 +101,8 @@ empty-queue wake ISR stay open. See
 [`notes/irq_wrappers.md`](notes/irq_wrappers.md), and
 [`notes/copy_7c92.md`](notes/copy_7c92.md),
 [`notes/owner_ledger.md`](notes/owner_ledger.md), and
-[`notes/string_scan.md`](notes/string_scan.md).
+[`notes/string_scan.md`](notes/string_scan.md), and
+[`notes/entry_scan.md`](notes/entry_scan.md).
 
 ## Priority order
 

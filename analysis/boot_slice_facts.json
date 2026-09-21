@@ -367,5 +367,13 @@
     "dgroup_unconsumed_min2": 355,
     "put_string_file": "0x31B6B",
     "put_string_cs_ip": "B1B1:005B"
+  },
+  "entry_scan": {
+    "file": "analysis/entry_scan.json",
+    "unique_cs_ip": 143,
+    "raw_9a": 6154,
+    "raw_ea": 825,
+    "push_ds_far_targets": 67,
+    "amx_public_count": 76
   }
 }
