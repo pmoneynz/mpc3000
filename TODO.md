@@ -322,7 +322,11 @@ bounds, evidence, unknowns).
       copy; `CA45:001A`
       `CALLF DA04:002B` then
       reload `[BP+6]` into
-      `[E60E]`).
+      `[E60E]`; `CF37:04AD`
+      `CALLF DA04:002B` then
+      defaults `+11` /
+      `+12`..`+19` on the
+      picker record).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

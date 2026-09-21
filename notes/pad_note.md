@@ -109,7 +109,21 @@ store sets `[8375]` nonzero. The `000C` overlay-read arm
 is encoded; who selects it is **UNDETERMINED**.
 
 `CF37:04AD` (file `0x4F81D`, leftover after `044F` `RETF`,
-already owned). At `056A` (file `0x4F8DA`): `ADD DI,0x073E`;
+already owned). `CALLF DA04:002B` (file `0x4F828`);
+`MOV [BP-2],DX`; `MOV [BP-4],AX` (file
+`0x4F830`). `LES BX,[BP-4]` (file
+`0x4F864`) then stores the named
+`Pgm` fields: `ES:[BX+11]=0x22`
+(file `0x4F867`); `+12`/`+13`,
+`+14`/`+15`, `+16`/`+17`,
+`+18`/`+19` (files `0x4F86C` /
+`0x4F876` / `0x4F880` /
+`0x4F88A`). **PROVEN** as defaults
+on the picker record, the same
+`+11` / Param pairs `BE1A:0641`
+reads. Do not name the other
+`+1A`.. stores. At `056A` (file
+`0x4F8DA`): `ADD DI,0x073E`;
 `MOV AL,[SI+8376]`; `MOV ES,[BP-2]`; `MOV ES:[DI],AL`;
 loop `SI<0x40`. **PROVEN** as overlay to far-`+073E`
 (the live table `000C` reads when `[8375]==0`).
@@ -285,7 +299,10 @@ unseeded.
 Do not BFS `B77C:20C5`, `B77C:202D`, or `C887:09AC`.
 
 `CF37:04AD` also `CALLF DA04:002B` (file `0x4F828`)
-before the overlay-to-`+073E` copy.
+and writes `+11` / `+12`..`+19` on
+that picker pointer before the
+overlay-to-`+073E` copy. Not
+`[E5F9]` / `[E60E]`.
 
 ---
 

@@ -123,7 +123,11 @@ second clamp / `0268`
 copy; `CA45:001A`
 `CALLF DA04:002B` then
 reload `[BP+6]` into
-`[E60E]`).
+`[E60E]`; `CF37:04AD`
+`CALLF DA04:002B` then
+defaults `+11` /
+`+12`..`+19` on the
+picker record).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`
