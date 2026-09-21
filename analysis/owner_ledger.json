@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 356579,
+  "owned_bytes": 357805,
   "ranges": [
     {
       "start": "0x00000",
@@ -215,6 +215,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "B060:0A4A cdecl through RETF; CALLN B060:07D7"
+    },
+    {
+      "start": "0x3107B",
+      "end": "0x310D9",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:0A7B cdecl through RETF; CALLF B2A0:0007/B31B:0007"
     },
     {
       "start": "0x310D9",
@@ -513,6 +521,14 @@
       "why": "B292:0008 cdecl through RETF; CALLF B060:06A1"
     },
     {
+      "start": "0x32A07",
+      "end": "0x32BA3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B2A0:0007 cdecl through RETF; CALLF B060:0691"
+    },
+    {
       "start": "0x32BA3",
       "end": "0x32C5C",
       "owner": "code",
@@ -551,6 +567,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "B2F1:0002 cdecl through RETF; CALLF B060:0661"
+    },
+    {
+      "start": "0x331B7",
+      "end": "0x333C4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B31B:0007 cdecl through RETF; CALLF B060:063D"
     },
     {
       "start": "0x333C4",
@@ -4943,6 +4967,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "E4FA:000C cdecl through RETF; CALLF C303:06D1"
+    },
+    {
+      "start": "0x65110",
+      "end": "0x651D3",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E4FA:0170 cdecl through RETF; CALLN E4FA:0167"
     },
     {
       "start": "0x651D3",

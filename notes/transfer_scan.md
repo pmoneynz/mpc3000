@@ -97,7 +97,10 @@ Owned `CALLF` dests that sit at hole-starts and walk
 through `RETF` are seed-only: `B292:0008`, `B2F1:0002`,
 `B354:05F8`, `E4FA:000C`, `E582:0000`, `E676:000D`,
 `E7E0:000A`, `EB1A:0002`, `EBC8:0003`. Leftovers after
-those walks stay unowned until a named caller exists.
+`B292` / `B2F1` are far dests `B2A0:0007` / `B31B:0007`
+(`CALLF` from `B060`). `E4FA:0170` is the leftover
+`CALLN` after `E4FA:000C`. `B060:0A7B` now has those
+far callers.
 `D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
@@ -187,7 +190,11 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x53B20, 0x53B78)` | code — `D3A7:00B0` port poll / `CALL 0058` / `RET`; six `CALLN` sites |
 | `[0x32DAF, 0x32E79)` | code — `B2DA:000F` cdecl through `RETF`; `CALLF` `B060:0681` |
 | `[0x32928, 0x32A07)` | code — `B292:0008` cdecl through `RETF`; `CALLF` `B060:06A1` |
+| `[0x32A07, 0x32BA3)` | code — `B2A0:0007` cdecl through `RETF`; `CALLF` `B060:0691` |
 | `[0x32F12, 0x331B7)` | code — `B2F1:0002` cdecl through `RETF`; `CALLF` `B060:0661` |
+| `[0x331B7, 0x333C4)` | code — `B31B:0007` cdecl through `RETF`; `CALLF` `B060:063D` |
+| `[0x3107B, 0x310D9)` | code — `B060:0A7B` cdecl through `RETF`; `CALLF` `B2A0:0007`/`B31B:0007` |
+| `[0x65110, 0x651D3)` | code — `E4FA:0170` cdecl through `RETF`; `CALLN` `E4FA:0167` |
 | `[0x33B38, 0x33B8E)` | code — `B354:05F8` cdecl through `RETF`; `CALLF` `C303:00D4` |
 | `[0x64FAC, 0x65110)` | code — `E4FA:000C` cdecl through `RETF`; `CALLF` `C303:06D1` |
 | `[0x65820, 0x6595A)` | code — `E582:0000` cdecl through `RETF`; `CALLF` `B3FD:0615` |
