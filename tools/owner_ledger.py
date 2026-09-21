@@ -165,11 +165,22 @@ def transfer_insn_ranges(image: bytes) -> list[tuple[int, int]]:
     return _merge_runs(raw)
 
 
+def switch_table_dests(image: bytes) -> set[str]:
+    dests: set[str] = set()
+    for start, end, cs in SWITCH_TABLES:
+        for off in range(start, end, 2):
+            ip = image[off] | (image[off + 1] << 8)
+            dests.add(f"{cs:04X}:{ip:04X}")
+    return dests
+
+
 def callee_walks(image: bytes) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
-    """BFS CALL dests from D15.
+    """BFS CALL dests from D15 and bounded switch-table IPs.
 
     Bounded dests are promoted. Indirect dests are not promoted;
     only their decoded instruction bytes are returned as prefixes.
+    ``D61A:000A`` is a planted IVT slot, not a switch dest; it stays
+    prefix-only in ``switch_and_planted_ranges``.
     """
     established = set(scan_entries(image)["_unique"])
     accepted = set(established)
@@ -177,6 +188,19 @@ def callee_walks(image: bytes) -> tuple[list[tuple[int, int]], list[tuple[int, i
     bounded_raw: list[tuple[int, int]] = []
     prefix_raw: list[tuple[int, int]] = []
     seen_unbounded: set[str] = set()
+    for dest in sorted(switch_table_dests(image)):
+        if dest in accepted:
+            continue
+        cs, ip = _parse_cs_ip(dest)
+        insns, extra, hit = follow_entry(image, cs, ip, accepted)
+        exits = classify_exits(insns, accepted) + extra
+        if _is_bounded(exits, hit):
+            accepted.add(dest)
+            frontier.append(dest)
+            continue
+        seen_unbounded.add(dest)
+        for insn in insns:
+            prefix_raw.append((insn.file, insn.file + insn.length))
     while frontier:
         dests: set[str] = set()
         for cs_ip in frontier:
@@ -297,7 +321,7 @@ def emit_ledger(image: bytes | None = None) -> dict:
                 "code",
                 "code",
                 "notes/transfer_scan.md",
-                "bounded CALL dest reachable from a D16 entry",
+                "bounded CALL dest reachable from a D16 entry or switch-table dest",
             )
         )
     owned_spans = [(start, end) for start, end, *_ in seed]

@@ -74,9 +74,12 @@ Task 6 never `RETF`s. That is a resolved loop, not a missing exit
 | `retxa` | 2 | `0F F0 ib` |
 
 The 74+42 new dests are **candidates** as *entries* (D15). A
-bounded CALL dest on a consumer chain from a D16 entry is owned
-as *code* (D17): 336 dests to fixpoint; 17 indirect dests stay
-unowned and stop that chain. A `55 8B EC` prologue still does
+bounded CALL dest on a consumer chain from a D16 entry or a
+bounded switch-table dest is owned as *code* (D17): 356 dests to
+fixpoint (336 from D15, then 20 from the 40 bounded switch IPs);
+19 indirect dests stay unowned and stop that chain. 25 switch
+dests are themselves indirect; they stay prefix-only.
+`D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
 ---
@@ -116,14 +119,18 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x5D35E, 0x5D376)` | data — `DCF0` `JMP CS:[BX+045E]` 12 near IPs |
 | `[0x561AA, 0x561AF)` | code — `D61A:000A` `0347` IVT[9] plant prefix (`CALL 0157`) |
 | `[0x319CE, 0x319FE)` | code — `B19C:000E` hop-2 cdecl dest through `RETF` |
+| `[0x5D9AE, 0x5DBBC)` | code — `DD9A:000E` hop-1 CALLF dest of `D5F3:018A` through `RETF` |
+| `[0x79E81, 0x79E97)` | code — `F800:1E81` hop-1 CALLN dest of INT 40 `AH<=7` through `RET` |
+| `[0x5614D, 0x561A9)` | code — `D5F3:021D` hop-1 CALLN dest of `D5F3` switch IPs through `RET` |
 
 ---
 
 ## What this note does *not* prove
 
-- Destinations selected by the 17 indirect dests (`BX` domain).
+- Destinations selected by the 19 indirect dests (`BX` domain).
 - `CALL [rm]` tables (BIOS and FAC0).
-- Jump-table *targets* (which IP `BX` selects) and the four
-  unbounded `CS:[BX+disp]` tables.
+- Which IP `BX` selects at the six `JMP CS:[BX+disp]` sites.
+  The 40 bounded table dests are owned; the 25 indirect dests
+  stay prefix-only.
 - That a bounded cdecl body is fully owned (D17).
 - The later empty-queue wake (`U-AMX-WAIT`).

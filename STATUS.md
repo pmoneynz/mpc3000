@@ -5,7 +5,7 @@
 
 This tree was a document-and-dump pack. It now has a project goal, an
 address model, a static reset-to-AMX-start slice, a seeded owner
-ledger (559 ranges, 327633 bytes), a consumer-established string
+ledger (596 ranges, 329166 bytes), a consumer-established string
 inventory, an entry inventory (143 unique `CS:IP`), and a
 local-exit inventory (128 bounded / 14 indirect / 1 idle loop).
 It does not have whole-image coverage, Ghidra exports, or a named
@@ -58,7 +58,7 @@ wake source for the AMX idle spin.
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
-- Owner ledger: 559 ranges, 327633 bytes, 194 gaps. Owners are
+- Owner ledger: 596 ranges, 329166 bytes, 197 gaps. Owners are
   `code` or `data` only. Every `0xFF` run of 4+ bytes is classified.
 - String scan (D14): 1096 C-string starts are text because a
   consumer points at them (directory 345 `8010` ptrs, 27 disk
@@ -97,13 +97,14 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Word `+2` = `0x0100` and the `+0238` numeric-island *meaning*
   (`copy_7c92.md`). Per-screen string meaning stays D18+.
 - Panel ROM, PAL fusemaps, full schematics.
-- Instruction bounds for the 74+42 new CALL dests (candidates, not
-  entries). Jump-table contents at the six `CS:[BX+disp]` sites.
-- Whole-image ledger coverage (D17). 194 gaps remain. Switch-
-  table near IPs, INT 40 `AH<=7` dests, and the `D61A:000A`
-  `0347` IVT[9] prefix are owned. Indirect *targets* and
-  unentered app ROM stay debt. The 1-byte `CF` at `0x7ADA3`
-  has no entry.
+- Instruction bounds for CALL dests that are still indirect or
+  have no named consumer. Jump-table *selection* (`BX` domain)
+  at the six `CS:[BX+disp]` sites.
+- Whole-image ledger coverage (D17). 197 gaps remain. CALL
+  dests of the 40 bounded switch-table IPs are owned (356
+  dests to fixpoint). 25 switch dests stay prefix-only.
+  Indirect *targets* and unentered app ROM stay debt. The
+  1-byte `CF` at `0x7ADA3` has no entry.
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
   `065B` overlays.
 
