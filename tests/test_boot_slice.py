@@ -316,6 +316,19 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x3E671:0x3E676], bytes.fromhex("9abf0c60b0"))
         self.assertEqual(self.image[0x312BF:0x312C7], bytes.fromhex("558bec83ec04ff76"))
         self.assertEqual(self.image[0x31303], 0xCB)
+        self.assertEqual(self.image[0x6BD30:0x6BD35], bytes.fromhex("9a040d60b0"))
+        self.assertEqual(self.image[0x31304:0x31309], bytes.fromhex("9a0200b1b1"))
+        self.assertEqual(self.image[0x3136F], 0xCB)
+        self.assertEqual(self.image[0x6B2F5:0x6B2FA], bytes.fromhex("9a04000ab2"))
+        self.assertEqual(self.image[0x320A3], 0xFF)
+        self.assertEqual(self.image[0x320A4:0x320AC], bytes.fromhex("558bec83c4e81e57"))
+        self.assertEqual(self.image[0x321AE], 0xCB)
+        self.assertEqual(self.image[0x432CC:0x432D1], bytes.fromhex("9a8b00e0d6"))
+        self.assertEqual(self.image[0x56E8B:0x56E95], bytes.fromhex("068cd88ec0bbbc129a25"))
+        self.assertEqual(self.image[0x56EB4], 0xCB)
+        self.assertEqual(self.image[0x43019:0x4301E], bytes.fromhex("9a090098e3"))
+        self.assertEqual(self.image[0x63989:0x6398E], bytes.fromhex("56a0f289a2"))
+        self.assertEqual(self.image[0x63A98], 0xCB)
         self.assertEqual(self.image[0x30C91:0x30C96], bytes.fromhex("9a0700a0b2"))
         self.assertEqual(self.image[0x32A07:0x32A0F], bytes.fromhex("558bec83ec0a5657"))
         self.assertEqual(self.image[0x32BA2], 0xCB)
@@ -412,7 +425,7 @@ class BootSliceTests(unittest.TestCase):
                 for rec in ledger["ranges"]
                 if rec.get("kind") == "padding" and int(rec["end"], 16) - int(rec["start"], 16) == 1
             ),
-            28,
+            29,
         )
 
     def test_string_scan_consumers(self) -> None:

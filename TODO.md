@@ -101,16 +101,15 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 357805 owned / 123 gaps. Leftovers after
-      `B292` / `B2F1` are far dests `B2A0:0007` /
-      `B31B:0007` (`CALLF` `B060`). `E4FA:0170` is the
-      leftover `CALLN` after `E4FA:000C`. `B060:0A7B`
-      now has those far callers. Mid-hole `C4C8` / `B77C`
-      stay unowned. `C44E:00C2` / `CEBF:0272` /
-      `BE1A:0649` / `E582:013A` have no owned caller.
-      Isolated 1-byte `0xFF` between owned ranges is align
-      padding (28 bytes). `D3A7:0005` `INT 40` still has
-      no owned caller. `0xC0xx` bit meaning is not claimed.
+      Progress: 358495 owned / 121 gaps. `B060:0D04` /
+      `B20A:0004` / `D6E0:008B` / `E398:0009` are
+      hole-starts with named `CALLF`. Mid-hole `C4C8` /
+      `B77C` / `E398:01F0` / `0366` / `E3E7:0008` stay
+      unowned. `C44E:00C2` / `CEBF:0272` / `BE1A:0649`
+      / `E582:013A` have no owned caller. Isolated 1-byte
+      `0xFF` between owned ranges is align padding
+      (29 bytes). `D3A7:0005` `INT 40` still has no
+      owned caller. `0xC0xx` bit meaning is not claimed.
       Unentered app ROM remains. The 1-byte `CF` at
       `0x7ADA3` has no entry.
 

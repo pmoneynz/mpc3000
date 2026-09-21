@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 357805,
+  "owned_bytes": 358495,
   "ranges": [
     {
       "start": "0x00000",
@@ -273,6 +273,14 @@
       "why": "B060:0CBF cdecl through RETF; CALLF BE1A:04D1/04E1"
     },
     {
+      "start": "0x31304",
+      "end": "0x31370",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B060:0D04 through RETF; CALLF EBC8:00B0"
+    },
+    {
       "start": "0x314B2",
       "end": "0x3156E",
       "owner": "code",
@@ -479,6 +487,22 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x320A3",
+      "end": "0x320A4",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
+      "start": "0x320A4",
+      "end": "0x321AF",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B20A:0004 cdecl through RETF; CALLF EB1A:0155/025F/030D"
     },
     {
       "start": "0x321AF",
@@ -2495,6 +2519,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x56E8B",
+      "end": "0x56EB5",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "D6E0:008B ES=DS / AMX 0725/06B9 through RETF; CALLF C303:029C"
     },
     {
       "start": "0x56EB5",
@@ -4919,6 +4951,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x63989",
+      "end": "0x63A99",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E398:0009 through RETF; CALLF C2E6:01B9"
     },
     {
       "start": "0x63EA5",
