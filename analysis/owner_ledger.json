@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 361041,
+  "owned_bytes": 361345,
   "ranges": [
     {
       "start": "0x00000",
@@ -943,6 +943,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "C303:0C64 cdecl through RETF; CALLN C303:067B/09CF/09F9"
+    },
+    {
+      "start": "0x43D77",
+      "end": "0x43DA6",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "C303:0D47 PUSH 0/6 put-string through RETF; CALLF B1B1/EA97"
     },
     {
       "start": "0x44259",
@@ -5263,6 +5271,38 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "E582:0000 cdecl through RETF; CALLF B3FD:0615"
+    },
+    {
+      "start": "0x659E6",
+      "end": "0x65A15",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E59E:0006 copy 9208.. through RETF; CALLF from E398:0036"
+    },
+    {
+      "start": "0x65A15",
+      "end": "0x65A79",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E59E:0035 flag/AMX through RETF; CALLF E521/DF4F/E566"
+    },
+    {
+      "start": "0x65A83",
+      "end": "0x65AB0",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E5A8:0003 copy 9209.. through RETF; CALLF from E398:0031"
+    },
+    {
+      "start": "0x65AB0",
+      "end": "0x65AF1",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E5A8:0030 copy 9209.. through RETF; CALLF EB5B:0087"
     },
     {
       "start": "0x65AF1",

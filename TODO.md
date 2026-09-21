@@ -101,7 +101,7 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 361041 owned / 115 gaps. Owned seed and
+      Progress: 361345 owned / 117 gaps. Owned seed and
       extra-only walks reach no gap instruction bytes
       and no hole-start `CALLF`/`CALLN` dest. A
       real-modrm CS-relative pass owned `D5DD:0124`
@@ -133,7 +133,14 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       owned `B261:000A` (file `0x3261A`, +0x1A after
       task 1) through `RETF` and leftover `0273`.
       Prefix cdecls `[0x32600, 0x3261A)` have no `9A`.
-      Next D17 hunt: another mid-gap named dest, not
+      Mid-gap owned `CALLF` dests `E59E:0006`/`0035`
+      and `E5A8:0003`/`0030` (from `E398`) plus
+      leftover `C303:0D47` (from `B3FD`/`C2D0`) are
+      seeded. `E582:013A` / `E59E:0099` / `C303:0CEE`
+      have no owned caller. Mid-hole `C4C8` / `B77C`
+      stay unowned. Gap count rose because two holes
+      split around the new bodies. Next D17 hunt:
+      remaining mid-gap dests that walk-bound, not
       the exhausted hole-start / CS-rel / DS-abs16
       passes.
 

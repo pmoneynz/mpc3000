@@ -121,8 +121,16 @@ hole-start chain after `0154` (`CALLN`
 `0200 RETF`. `0273` is the leftover `CALLN` after
 already-owned `0201`. Prefix cdecls at
 `[0x32600, 0x3261A)` have no `9A` and stay unowned.
-Do not BFS `000A`. A `55 8B EC` prologue still does
-not accept a dest as an entry.
+Do not BFS `000A`. Owned mid-gap `CALLF` dests
+`E59E:0006` / `0035` and `E5A8:0003` / `0030`
+(`9A` from owned `E398`) walk through `RETF` and
+fill `[0x659E6, 0x65A79)` + `[0x65A83, 0x65AF1)`.
+`E582:013A` / `E59E:0099` stay unowned (no owned
+`9A`). `C303:0D47` is the leftover after `0C64`
+(`9A` at `0x34274` / `0x42D97`). `C303:0CEE` has
+no owned caller. Do not BFS those dests. A
+`55 8B EC` prologue still does not accept a dest
+as an entry.
 
 ---
 
@@ -235,6 +243,10 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x33B38, 0x33B8E)` | code — `B354:05F8` cdecl through `RETF`; `CALLF` `C303:00D4` |
 | `[0x64FAC, 0x65110)` | code — `E4FA:000C` cdecl through `RETF`; `CALLF` `C303:06D1` |
 | `[0x65820, 0x6595A)` | code — `E582:0000` cdecl through `RETF`; `CALLF` `B3FD:0615` |
+| `[0x659E6, 0x65A15)` | code — `E59E:0006` through `RETF`; `CALLF` from `E398:0036` |
+| `[0x65A15, 0x65A79)` | code — `E59E:0035` through `RETF`; `CALLF` `E521:0006`/`DF4F:0009`/`E566:000A` |
+| `[0x65A83, 0x65AB0)` | code — `E5A8:0003` through `RETF`; `CALLF` from `E398:0031` |
+| `[0x65AB0, 0x65AF1)` | code — `E5A8:0030` through `RETF`; `CALLF` `EB5B:0087` |
 | `[0x6676D, 0x66883)` | code — `E676:000D` cdecl through `RETF`; `CALLF` `B3FD:0042` |
 | `[0x67E0A, 0x67F57)` | code — `E7E0:000A` cdecl through `RETF`; `CALLF` `CEBF:021C` |
 | `[0x6B1A2, 0x6B4F2)` | code — `EB1A:0002` cdecl through `RETF`; `CALLF` `DE5C:0496` |
@@ -266,6 +278,7 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x43C18, 0x43C3E)` | data — `C303` `JMP CS:[BX+0BE8]` 19 near IPs (`BX<=0x12` then `SHL 1`) |
 | `[0x43C3E, 0x43C94)` | code — `C303:0C0E` cdecl through `RETF`; `CALLN` `C303:0465`/`04D3` |
 | `[0x43C94, 0x43D1E)` | code — `C303:0C64` cdecl through `RETF`; `CALLN` `C303:067B`/`09CF`/`09F9` |
+| `[0x43D77, 0x43DA6)` | code — `C303:0D47` through `RETF`; `CALLF` `B1B1:0026`/`005B`/`EA97:000E` |
 | `[0x444E5, 0x44535)` | code — `C44E:0005` through `JMP CS:[BX+00B8]`; `CALLF` `C425:01BF` |
 | `[0x44535, 0x44598)` | code — `C44E` `00B8` dests `0055`..`0079` plus shared `RETF` `00B3` |
 | `[0x44598, 0x445A2)` | data — `C44E` `JMP CS:[BX+00B8]` 5 near IPs (`BX<=4` then `SHL 1`) |

@@ -5,7 +5,7 @@
 
 This tree was a document-and-dump pack. It now has a project goal, an
 address model, a static reset-to-AMX-start slice, a seeded owner
-ledger (842 ranges, 361041 bytes), a consumer-established string
+ledger (847 ranges, 361345 bytes), a consumer-established string
 inventory, an entry inventory (143 unique `CS:IP`), and a
 local-exit inventory (128 bounded / 14 indirect / 1 idle loop).
 It does not have whole-image coverage, Ghidra exports, or a named
@@ -58,7 +58,7 @@ wake source for the AMX idle spin.
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
-- Owner ledger: 842 ranges, 361041 bytes, 115 gaps. Owners are
+- Owner ledger: 847 ranges, 361345 bytes, 117 gaps. Owners are
   `code` or `data` only. Every `0xFF` run of 4+ bytes is classified.
 - String scan (D14): 1096 C-string starts are text because a
   consumer points at them (directory 345 `8010` ptrs, 27 disk
@@ -100,7 +100,7 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Instruction bounds for CALL dests that are still indirect or
   have no named consumer. Jump-table *selection* (`BX` domain)
   at the six `CS:[BX+disp]` sites.
-- Whole-image ledger coverage (D17). 115 gaps remain. Later
+- Whole-image ledger coverage (D17). 117 gaps remain. Later
   `IVT[8]` is `FB93:0059` (file `0x7B989`). `F800:1906` is
   a 16×4-byte OUTSW table.   `D547:0561` is a 16-IP `DI` switch. `D547:053A` is 8 IPs
   (`AND BX,0x0E`); slot 7 is `054A`.
@@ -143,9 +143,13 @@ Validator: `python3 tools/verify_boot_slice.py`.
   owned `B060` prefix at `0x30A85`/`0x30C4D`)
   and leftover `0273` are seed-only. Prefix
   cdecls at `[0x32600, 0x3261A)` stay unowned.
-  Further D17 growth needs another named
-  consumer (including far dests a few bytes
-  into a gap).
+  `E59E:0006`/`0035` and `E5A8:0003`/`0030`
+  (`CALLF` from owned `E398`) and leftover
+  `C303:0D47` (`B3FD:02A4` / `C2D0:000C`) are
+  seed-only. `E582:013A` / `E59E:0099` /
+  `C303:0CEE` stay unowned. Mid-hole `C4C8`
+  / `B77C` stay unowned. Further D17 growth
+  needs another named consumer.
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
   `065B` overlays.
 
