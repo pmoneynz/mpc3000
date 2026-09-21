@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 342414,
+  "owned_bytes": 342658,
   "ranges": [
     {
       "start": "0x00000",
@@ -431,6 +431,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x32DAF",
+      "end": "0x32E79",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B2DA:000F cdecl through RETF; CALLF B060:0681"
     },
     {
       "start": "0x32E79",
@@ -2871,6 +2879,14 @@
       "kind": "jump_table",
       "source": "notes/transfer_scan.md",
       "why": "DB28 JMP CS:[BX+09EB] 14 near IPs"
+    },
+    {
+      "start": "0x5BCAD",
+      "end": "0x5BCD4",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "DB28:0A2D ES:[BX] init through RETF; CALLN DB28:077B"
     },
     {
       "start": "0x5BCD4",
@@ -5399,6 +5415,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x7A0F7",
+      "end": "0x7A0FA",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "F800:20F7 POP CX/PUSH CS/PUSH CX; CALLN F800:2687/26A8"
     },
     {
       "start": "0x7A0FA",

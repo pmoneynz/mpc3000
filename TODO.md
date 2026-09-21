@@ -101,11 +101,13 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 342414 owned / 164 gaps. `D3A7:0058` and `00B0`
-      close the hole after `003A`. Six prefix `CALLN`s target
-      `00B0`; `00B0` calls `0058`. `0xC0xx` bit meaning is not
-      claimed. `D3A7:0005` still has no caller. Unentered app
-      ROM remains. The 1-byte `CF` at `0x7ADA3` has no entry.
+      Progress: 342658 owned / 163 gaps. `B2DA:000F` is hole-exact
+      through `RETF` (`CALLF` `B060:0681`). `DB28:0A2D` is a 39-byte
+      `ES:[BX]` init (`CALLN` `DB28:077B`). `F800:20F7` is the
+      `590e51` near-to-far prefix (`CALLN` `2687`/`26A8`).
+      `20FE`/`2106`/`210E` and `DB28:0A07` have no owned caller.
+      `0xC0xx` bit meaning is not claimed. Unentered app ROM
+      remains. The 1-byte `CF` at `0x7ADA3` has no entry.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.
