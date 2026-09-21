@@ -129,7 +129,8 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `DS:E639+slot*4`; `0007` `CALLN`
   `02D6`/`033A`;   `FCF6+17=FD0D`;
   `FCF6+5`/`+3` are note-floor;
-  `+1==3` uses `+0C` / event `+4`).
+  `+1==3` uses `+0C` / event `+4`;
+  `+1==1` uses `+3` / `+5`).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).

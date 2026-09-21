@@ -319,7 +319,11 @@ or event `+4` if event status `& 3 == 1`
 (file `0x4FDA5` / `0x4FDAD`). Then the
 same `+5` / `+3` note-floor arms.
 **PROVEN** as note-floor
-bytes. Do not name `+1` / `+2` / `+4` /
+bytes. When `+1==1` (file `0x4FE59`)
+`+3` is the note if `>=0x23` (file
+`0x4FE63` / `0x4FE6A`); else `+5`
+(file `0x4FECC` / `0x4FED3`).
+**PROVEN.** Do not name `+1` / `+2` / `+4` /
 `+0C`.
 Leftover `02D6`
 (file `0x4FF36`, `CALLN` from `0066`):
