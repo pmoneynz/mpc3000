@@ -145,6 +145,9 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x5DBCF, 0x5DBEF)` | data — `DD9A` `MOV BX,CS:[BX+022F]` 16 mask words |
 | `[0x5DBEF, 0x5DC0F)` | data — `DD9A` `MOV BX,CS:[BX+024F]` 16 mask words |
 | `[0x7A094, 0x7A09A)` | data — `F800` `MOV AX,CS:[BX+2094]` 3 words (`BL<3`) |
+| `[0x31B32, 0x31B36)` | code — `B1B1:0022` `MOV AX,[1D1A]` / `RETF`; `CALLF` `DE5C:0040` |
+| `[0x32922, 0x32928)` | code — `B261:0312` `MOV [E748],0` / `RETF`; `CALLF` `B060:03B7` |
+| `[0x670C1, 0x670CB)` | code — `E704:0081` `PUSH CS` / `CALL 0007` / `CALLF E614:0008` / `RETF` |
 
 ---
 

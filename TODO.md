@@ -101,13 +101,13 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 342101 owned / 166 gaps. `D547` `JMP CS:[DI+0561]`
-      is a 16-IP table (`(AX&0xF)<<1`). `DD9A` CS-relative
-      word tables at `021C`/`022F`/`024F` are owned. `F800:2094`
-      is 3 words (`BL<3`), not the following 42-byte hole.
-      25 JMP/CALL tables seed the BFS (135/187 dests bounded).
-      Indirect targets and unentered app ROM remain. The
-      1-byte `CF` at `0x7ADA3` has no entry.
+      Progress: 342121 owned / 165 gaps. Hole-exact `RETF` thunks
+      `B1B1:0022`, `B261:0312`, and `E704:0081` have owned `CALLF`
+      sites. `E614:0008` is not promoted (large hole). `B77C:20EA`
+      has callers only in unentered ROM. 25 JMP/CALL tables seed
+      the BFS (135/187 dests bounded). Indirect targets and
+      unentered app ROM remain. The 1-byte `CF` at `0x7ADA3`
+      has no entry.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.

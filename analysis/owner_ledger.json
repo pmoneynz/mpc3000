@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 342101,
+  "owned_bytes": 342121,
   "ranges": [
     {
       "start": "0x00000",
@@ -273,6 +273,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x31B32",
+      "end": "0x31B36",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B1B1:0022 MOV AX,[1D1A] RETF; CALLF DE5C:0040"
+    },
+    {
       "start": "0x31B36",
       "end": "0x31B6B",
       "owner": "code",
@@ -399,6 +407,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x32922",
+      "end": "0x32928",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "B261:0312 MOV [E748],0 RETF; CALLF B060:03B7"
     },
     {
       "start": "0x32BA3",
@@ -4407,6 +4423,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x670C1",
+      "end": "0x670CB",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "E704:0081 PUSH CS / CALL 0007 / CALLF E614:0008 RETF"
     },
     {
       "start": "0x670CB",
