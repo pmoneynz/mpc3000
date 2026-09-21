@@ -83,7 +83,8 @@ because the dests `CALLN` mid-hole IPs. `CEBF:026A` and
 `BE1A:01FB` are 4-IP tables owned the same way (`BX<=3` then
 `SHL 1`). `BE1A:026C` adds three packed tables at `062F` /
 `0637` / `0641`; dests fill the two walk holes and are not
-BFS seeds.
+BFS seeds. `C303:0004` is the same pattern after `C2E6`
+(`0BCC` 14 IPs, `0BE8` 19 IPs).
 `D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
@@ -172,6 +173,9 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x33EDF, 0x33FD6)` | code — `B3ED:000F` cdecl through `RETF`; `CALLF` `C425:01B5` |
 | `[0x42D0C, 0x42E67)` | code — `C2D0:000C` cdecl through `RETF`; `CALLF` `C425:012F` |
 | `[0x42E67, 0x43034)` | code — `C2E6:0007` cdecl through `RETF`; `CALLF` `C425:019B` |
+| `[0x43034, 0x43BFC)` | code — `C303:0004` through two `JMP CS:[BX]`; `CALLF` `C425:0106` |
+| `[0x43BFC, 0x43C18)` | data — `C303` `JMP CS:[BX+0BCC]` 14 near IPs (`BX<=0x0D` then `SHL 1`) |
+| `[0x43C18, 0x43C3E)` | data — `C303` `JMP CS:[BX+0BE8]` 19 near IPs (`BX<=0x12` then `SHL 1`) |
 | `[0x444E5, 0x44535)` | code — `C44E:0005` through `JMP CS:[BX+00B8]`; `CALLF` `C425:01BF` |
 | `[0x44535, 0x44598)` | code — `C44E` `00B8` dests `0055`..`0079` plus shared `RETF` `00B3` |
 | `[0x44598, 0x445A2)` | data — `C44E` `JMP CS:[BX+00B8]` 5 near IPs (`BX<=4` then `SHL 1`) |
