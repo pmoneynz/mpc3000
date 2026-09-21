@@ -192,7 +192,10 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `[81B3]==0` and
   `[BP+6]==1`; `BE1A:026C`
   `CMP [996B],2` / `1` after
-  the `0380` store).
+  the `0380` store;
+  `BE1A:0508` `CALLF`s
+  `CA45:0008` with
+  `[E60E]+1` minus 1).
   `BE40:000C` is a retracted CS alias. Owned
   `[D6AC]` stores are remaps. Pad-hit writer
   is unnamed ([`notes/pad_note.md`](notes/pad_note.md)).

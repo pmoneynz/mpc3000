@@ -102,7 +102,10 @@ taken arms `CALLF`
 `[81B3]==0` and
 `[BP+6]==1`. `BE1A:026C`
 `CMP [996B],2` / `1` after
-the `0380` store).
+the `0380` store.
+`BE1A:0508` `CALLF`s
+`CA45:0008` with
+`[E60E]+1` minus 1).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

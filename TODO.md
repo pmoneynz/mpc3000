@@ -301,7 +301,10 @@ bounds, evidence, unknowns).
       `[81B3]==0` and
       `[BP+6]==1`; `BE1A:026C`
       `CMP [996B],2` / `1` after
-      the `0380` store).
+      the `0380` store;
+      `BE1A:0508` `CALLF`s
+      `CA45:0008` with
+      `[E60E]+1` minus 1).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

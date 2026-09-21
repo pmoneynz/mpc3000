@@ -155,6 +155,18 @@ not exist. **PROVEN.** Labels `Note:` / `Param:` /
 At `02FC` (file `0x3E49C`): `MOV AL,[E60E]`; `INC AL`;
 printed via `B354:03B1`. **PROVEN** the title `Pgm:`
 slot is the 1-based form of `CA45`'s `0..0x17` index.
+Already-owned `0637` dest `0508`
+(file `0x3E6A8`, table word
+`0x3E7D7`) does `MOV AL,[BP-9]`;
+`DEC AX`; `CALLF C887:1BE8`
+(file `0x3E6AE`). That dest is
+the named `CA45:0008` linear.
+**PROVEN** as the 1-based
+`[E60E]` converted back to
+`CA45`'s `0..0x17`. Not a
+pad-hit. Do not BFS `C887`.
+Do not name the other `0637`
+dests.
 
 At `0329` (file `0x3E4C9`): `LES BX,[E5F9]`;
 `AL=ES:[BX+11]`; `MOV [996C],AL`; then `B354:03B1` with
