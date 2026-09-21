@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 283943,
+  "owned_bytes": 283991,
   "ranges": [
     {
       "start": "0x00000",
@@ -601,6 +601,14 @@
       "why": "D16 local-walk instruction bytes"
     },
     {
+      "start": "0x55F64",
+      "end": "0x55F7A",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "D5F3 JMP CS:[BX+0034] 11 near IPs"
+    },
+    {
       "start": "0x55F7A",
       "end": "0x55F9D",
       "owner": "code",
@@ -1111,6 +1119,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5B447",
+      "end": "0x5B461",
+      "owner": "data",
+      "kind": "jump_table",
+      "source": "notes/transfer_scan.md",
+      "why": "DB28 JMP CS:[BX+01C7] 13 near IPs"
     },
     {
       "start": "0x5B461",

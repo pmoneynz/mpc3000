@@ -5,8 +5,8 @@
 **Date:** 2026-09-21.
 
 Closes D16 for the 143 D15 entries. Every local exit is classified.
-New CALLF/CALLN targets are named candidates, not accepted as code.
-Indirect `[rm]` stays UNDETERMINED (no jump-table ownership).
+New CALLF/CALLN targets are named candidates, not accepted as entries.
+Two `JMP CS:[BX+disp]` tables are owned as data; four stay open.
 
 Reproduction: `python3 tools/transfer_scan.py --write` then
 `python3 tools/verify_boot_slice.py`.
@@ -86,8 +86,10 @@ Six `JMP CS:[BX+disp16]` switch-shaped sites, all `2E FF A7 iw`:
 
 Ten `CALL [rm]` sit in BIOS (`F800:0364`, `16AA`, `1752`, `19B3`,
 `1B36`), `B354:02BB`, and two FAC0 walks (`001F`, `0134`). The
-**slot** is named by file and bytes. The **table** is not owned.
-**UNDETERMINED.**
+**slot** is named by file and bytes. Two `JMP CS:[BX+disp]` tables
+are owned because `disp16` plus a word index fills a hole of
+in-CS IPs: `D5F3` `+0034` and `DB28:000D` `+01C7`. The other four
+tables stay **UNDETERMINED** (length not bounded by a hole).
 
 ---
 
@@ -103,6 +105,8 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x56E40, 0x56E41)` | code — specimen `NOP` between owned ranges |
 | `[0x59BC3, 0x59BD9)` | code — `D9B5:0073` bounded CALLF dest through `RETF` |
 | `[0x7989C, 0x798CA)` | code — `F800:189C` bounded CALLN dest through `RET` |
+| `[0x55F64, 0x55F7A)` | data — `D5F3` `JMP CS:[BX+0034]` 11 near IPs |
+| `[0x5B447, 0x5B461)` | data — `DB28` `JMP CS:[BX+01C7]` 13 near IPs |
 
 ---
 
@@ -110,6 +114,7 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 
 - Instruction bounds for the five indirect first-hop dests.
 - Second-hop CALL dests of the 111 promoted callees.
-- Jump-table contents at the six `CS:[BX+disp]` sites.
+- Jump-table *targets* (which IP `BX` selects) and the four
+  unbounded `CS:[BX+disp]` tables.
 - That a bounded cdecl body is fully owned (D17).
 - The later empty-queue wake (`U-AMX-WAIT`).

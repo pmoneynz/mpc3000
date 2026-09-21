@@ -18,9 +18,9 @@ Reproduction: `python3 tools/owner_ledger.py --write` then
 | Field | Value |
 |-------|-------|
 | Purpose | Machine-readable owner map for proven file ranges |
-| Observable | `analysis/owner_ledger.json`; 339 ranges; 283943 owned bytes |
+| Observable | `analysis/owner_ledger.json`; 341 ranges; 283991 owned bytes |
 | Inputs | Byte-ownership tables in the notes; D16 walks; bounded first-hop CALL dests |
-| Outputs | Owner `code` or `data` only. 121 gaps left as debt |
+| Outputs | Owner `code` or `data` only. 119 gaps left as debt |
 | Confidence | Seed spans **PROVEN** as the union of those tables. Gaps are **UNDETERMINED**, not owners |
 | Hardware deferred | None |
 
