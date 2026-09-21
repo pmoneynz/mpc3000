@@ -101,8 +101,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 340541 owned / 172 gaps. 21 hole-bounded JMP
-      tables seed the D17 BFS (108 of 160 dests bounded).
+      Progress: 341565 owned / 170 gaps. 24 hole-bounded
+      JMP/CALL tables seed the D17 BFS (125 of 177 dests
+      bounded).
       Indirect targets and unentered app ROM remain. The
       1-byte `CF` at `0x7ADA3` has no entry.
 

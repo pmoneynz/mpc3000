@@ -75,9 +75,9 @@ Task 6 never `RETF`s. That is a resolved loop, not a missing exit
 
 The 74+42 new dests are **candidates** as *entries* (D15). A
 bounded CALL dest on a consumer chain from a D16 entry or a
-bounded switch-table dest is owned as *code* (D17). 21 hole- or
-edge-bounded `JMP CS:[BX+disp]` tables (plus INT 40) seed that
-BFS. 108 of 160 table dests are bounded; 52 stay prefix-only.
+bounded switch-table dest is owned as *code* (D17). 24 hole- or
+edge-bounded near-IP tables (JMP/CALL CS:[BX+disp], INT 40) seed that
+BFS. 125 of 177 table dests are bounded; 52 stay prefix-only.
 `D61A:000A` is not a BFS seed. A `55 8B EC` prologue still does
 not accept a dest as an entry.
 
@@ -135,6 +135,9 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x5EE8D, 0x5EE9B)` | data — `DE5C` `JMP CS:[BX+08CD]` 7 near IPs |
 | `[0x6B7E2, 0x6B7EC)` | data — `EB74` `JMP CS:[BX+00A2]` 5 near IPs |
 | `[0x6BE65, 0x6BE6F)` | data — `EBC8` `JMP CS:[BX+01E5]` 5 near IPs |
+| `[0x553FF, 0x55417)` | data — `D52A` `CALL CS:[BX+015F]` 12 near IPs |
+| `[0x55420, 0x55430)` | data — `D52A` `CALL CS:[BX+0180]` 8 near IPs |
+| `[0x5660C, 0x56618)` | data — `D61A` `JMP CS:[BX+046C]` 6 near IPs |
 
 ---
 
