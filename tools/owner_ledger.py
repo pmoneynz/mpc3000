@@ -47,6 +47,7 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x303BA, 0x3058A, "code", "code", "notes/amx_first_dispatch.md", "B03B:000A through RETF"),
     (0x30600, 0x3060D, "code", "code", "notes/amx_create_table.md", "B060:0000 timed wait"),
     (0x314B2, 0x3156E, "code", "code", "notes/amx_create_table.md", "create-table task 5 through RETF"),
+    (0x31B6B, 0x31B91, "code", "code", "notes/string_scan.md", "B1B1:005B put-string INT 43 AX=4"),
     (0x32596, 0x32600, "code", "code", "notes/amx_create_table.md", "create-table task 1 through RETF"),
     (0x5518D, 0x55206, "code", "code", "notes/pgr_live_after_amx.md", "D510:008D port picker through RETF"),
     (0x59B95, 0x59BA1, "code", "code", "notes/calling_convention.md", "D9B5:0045 LDS [BP+6]"),

@@ -4,8 +4,9 @@
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 **Date:** 2026-09-21.
 
-Closes D10 / `U-COPY-7C92`. Per-string consumers stay D14 / D18+.
-Mailbox record *meaning* at the `065B` overlays stays D11 /
+Closes D10 / `U-COPY-7C92`. Consumer *classes* for the string pool
+are in [`string_scan.md`](string_scan.md). Per-screen meaning stays
+D18+. Mailbox record *meaning* at the `065B` overlays stays D11 /
 `U-AMX-POOL`.
 
 Reproduction: `python3 tools/verify_boot_slice.py`.
@@ -72,7 +73,9 @@ Directory groups that resolve (DS=`8010`):
 - `+01EC` `MIDI` / `DRUM`; SMPTE rate strings; `EARLIER` / `LATER`; `TUNING` / `DECAY` / `ATTACK` / `FILTER`
 
 `+05C8` is `???????????` then more far ptrs and `ALL EVENTS` at
-`+066C` (already tested). ~1250 ASCII runs ?4 bytes occupy ~21 KiB.
+`+066C` (already tested). DGROUP has 1153 C-string candidates of
+length >=4; consumer-established text is in
+[`string_scan.md`](string_scan.md).
 **PROVEN** as bytes and as the targets of the `8010` far ptrs.
 
 ---
@@ -163,5 +166,5 @@ No second segment is proven to address `20-bit 0x80100`. After
 - A runtime reader of `8010:0000` = `55AA` (none found).
 - Meaning of `+0002` = `0x0100`.
 - A consumer of the `+0238` numeric island.
-- Every string’s caller (D14 / slices).
+- Every string's screen meaning (D18+). Consumer classes are D14.
 - `065B` header fields past the eight-byte zero (`U-AMX-POOL`).

@@ -15,6 +15,7 @@ from tools.owner_ledger import (
     validate_ff_windows,
     validate_ledger,
 )
+from tools.string_scan import load_scan, validate as validate_string_scan
 from tools.v53_decode import decode_one
 from tools.verify_boot_slice import FACTS_PATH, verify
 
@@ -152,6 +153,24 @@ class BootSliceTests(unittest.TestCase):
         self.assertNotIn("unresolved", ledger["owners"])
         self.assertFalse(any(rec["owner"] == "excluded_workspace" for rec in ledger["ranges"]))
         self.assertIsNone(next((rec for rec in ledger["ranges"] if rec["owner"] == "unresolved"), None))
+
+    def test_string_scan_consumers(self) -> None:
+        scan = load_scan()
+        meta = self.facts["string_scan"]
+        checks = validate_string_scan(self.image, scan)
+        self.assertGreaterEqual(len(checks), 4)
+        self.assertEqual(scan["established"]["unique_starts"], meta["established_unique"])
+        self.assertEqual(scan["push_ds_far"]["count"], meta["push_ds_far_count"])
+        self.assertEqual(scan["push_ds_far"]["top_callee"], "B1B1:005B")
+        self.assertEqual(scan["directory"]["ptr_8010"], 345)
+        self.assertEqual(scan["directory"]["empty_targets"], 2)
+        self.assertEqual(scan["disk_label_table"]["count"], 27)
+        self.assertEqual(len(scan["walker_inline"]), 3)
+        self.assertFalse(scan["candidates"]["kadak"]["established"])
+        self.assertEqual(self.image[0x31B6B:0x31B91], bytes.fromhex(scan["put_string"]["bytes"]))
+        self.assertEqual(self.image[0x31B90], 0xCB)
+        self.assertEqual(self.image[0x210F5:0x210F5 + 26], b"Vailixi 3.50 (---/--/----)")
+        self.assertIn(b"mpc3000le@yahoo.com.au", self.image[0x79A1A:0x79AD2])
 
     def test_v53_decode_brkxa_retxa(self) -> None:
         brk = decode_one(self.image, 0xFAC0, 0x001C)

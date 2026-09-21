@@ -17,9 +17,9 @@ Reproduction: `python3 tools/owner_ledger.py --write` then
 | Field | Value |
 |-------|-------|
 | Purpose | Machine-readable owner map for proven file ranges |
-| Observable | `analysis/owner_ledger.json`; 60 ranges; 252062 owned bytes |
+| Observable | `analysis/owner_ledger.json`; 61 ranges; 252100 owned bytes |
 | Inputs | Byte-ownership tables in the notes |
-| Outputs | Owner `code` or `data` only. 25 gaps left as debt |
+| Outputs | Owner `code` or `data` only. 26 gaps left as debt |
 | Confidence | Seed spans **PROVEN** as the union of those tables. Gaps are **UNDETERMINED**, not owners |
 | Hardware deferred | None |
 
@@ -49,7 +49,7 @@ table” row is covered by that split.
 
 ## 2. Gaps
 
-25 holes, 355635 bytes. They are debt. They are not
+26 holes. They are debt. They are not
 `excluded_workspace`. Largest:
 
 | File range | Bytes | Why it is a gap |

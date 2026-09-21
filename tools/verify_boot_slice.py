@@ -19,6 +19,7 @@ from tools.owner_ledger import (
     validate_ff_windows,
     validate_ledger,
 )
+from tools.string_scan import load_scan, validate as validate_string_scan
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FACTS_PATH = REPO_ROOT / "analysis" / "boot_slice_facts.json"
@@ -313,6 +314,20 @@ def verify(image: bytes, facts: dict) -> list[str]:
     if validate_ff_windows(image, ledger) != meta["ff_runs_ge4"]:
         raise AssertionError("FF run count does not match facts")
     checks.append(f"owner ledger: {ledger['owned_bytes']} bytes, {n_notes} note rows")
+
+    scan = load_scan()
+    checks.extend(validate_string_scan(image, scan))
+    smeta = facts["string_scan"]
+    if scan["established"]["unique_starts"] != smeta["established_unique"]:
+        raise AssertionError("string_scan established_unique does not match facts")
+    if scan["push_ds_far"]["count"] != smeta["push_ds_far_count"]:
+        raise AssertionError("string_scan PUSH DS+far count does not match facts")
+    if scan["directory"]["ptr_8010"] != smeta["directory_ptr_8010"]:
+        raise AssertionError("string_scan directory count does not match facts")
+    checks.append(
+        f"string scan: {scan['established']['unique_starts']} established, "
+        f"{scan['candidates']['dgroup_unconsumed_min2']} DGROUP candidates"
+    )
 
     return checks
 

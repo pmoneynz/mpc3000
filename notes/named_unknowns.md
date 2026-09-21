@@ -10,7 +10,7 @@ A guess is not listed as a fact.
 | U-LC7981 | Meaning of `INT 43` AX=0 pairs and AX=4 AH=`0x0A`/`0x0B`/`0x0C` | Port writes are proven; controller state is not | LC7981 / HD61830 register manual applied to those exact pairs |
 | U-C0XX | Board decode of `0xC000-0xC033` | BIOS and FAC0 program this window | Schematic or a tested PAL fusemap; MAME is a hypothesis |
 | U-PGR61 | Frame `0x40` ? `0x100000` | Not in the MAME program map | Consumer of linear page 61, or a decode document |
-| U-COPY-7C92 | **Closed (D10).** DGROUP at `8010:0000`; directory + string pool + writable globals. Word `+2` and the `+0238` island meaning stay local UNDETERMINED / HYPOTHESIS | — | See [`copy_7c92.md`](copy_7c92.md) |
+| U-COPY-7C92 | **Closed (D10).** DGROUP at `8010:0000`; directory + string pool + writable globals. Word `+2` and the `+0238` island meaning stay local UNDETERMINED / HYPOTHESIS. String *consumers* closed in D14 | - | See [`copy_7c92.md`](copy_7c92.md), [`string_scan.md`](string_scan.md) |
 | U-AMX-POOL | Mailbox/pool record at `ES:[BX]` past `065B` zeroing | `065B`/`067C`/`06B9`/`06E8`/`0725` are the bulk of the public surface | A named slice that consumes one object (D11) |
 | U-PANEL-ROM | Panel µPD78C10 image absent | Pad/button/dial path | Obtain the AM27C256 dump MAME names |
 | U-PAL | IC25/IC29/IC31 18CV8 fusemaps | Memory and I/O decode | Readout or full schematic sheets |

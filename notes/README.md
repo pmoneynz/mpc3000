@@ -21,6 +21,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`copy_7c92.md`](copy_7c92.md) | `8010` DGROUP grammar, consumers, writers |
 | [`owner_ledger.md`](owner_ledger.md) | Seeded file-range owners; gaps are debt |
 | [`padding.md`](padding.md) | Every `0xFF` window ≥ 4 bytes |
+| [`string_scan.md`](string_scan.md) | Consumer-established text; put-string `B1B1:005B` |
 | [`named_unknowns.md`](named_unknowns.md) | Ranked open uncertainties |
 
 Do not duplicate the MPC2000XL note corpus here. Cite it when a V53

@@ -81,14 +81,16 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
 
 ## G3 — Structural closure (byte and transfer domains)
 
-- [x] **D12.** Owner ledger seeded: 51 ranges, 168653 bytes,
-      `code`/`data` only. 25 gaps are debt. No `unresolved` owner.
-      No `excluded_workspace`. `analysis/owner_ledger.json`.
+- [x] **D12.** Owner ledger seeded: `code`/`data` only. Gaps are
+      debt. No `unresolved` owner. No `excluded_workspace`.
+      `analysis/owner_ledger.json`.
 - [x] **D13.** Every `0xFF` run ≥ 4 bytes classified: 11 padding
       windows, 3 table terminators, reset `CS` high byte. Short
       `FFFF` runs are immediates, not windows.
-- [ ] **D14.** Whole-image string scan. A consumer, not printability,
-      establishes text.
+- [x] **D14.** Whole-image string scan. 1096 starts established by
+      directory / disk table / walker / `PUSH DS`+far. Put-string
+      `B1B1:005B` walks `INT 43` AX=4. Printable-without-consumer
+      stays candidate. KADAK is identity bytes, not text.
 - [ ] **D15.** Whole-image entry-candidate scan (reset, IVT, far-call
       tables, create-table). Investigate before accepting as code.
 - [ ] **D16.** From each established entry, follow control flow, check
@@ -115,8 +117,8 @@ bounds, evidence, unknowns).
 - [ ] **D22.** Sampling / DSP register path (`0x0060`, DMA3).
 - [ ] **D23.** Load / save (FDC `0xE8`, SCSI `0xA0`, IRQ3 demux).
 - [ ] **D24.** MIDI (TE7774 `0xC0-0xDF`).
-- [ ] **D25.** Error, cancel, and recovery paths (system-error text at
-      `0x79ABB` is bytes only).
+- [ ] **D25.** Error, cancel, and recovery paths (system-error text is
+      walker-established; path semantics stay open).
 - [ ] **D26.** Option-dependent behavior only when a consumer exists.
 
 ---

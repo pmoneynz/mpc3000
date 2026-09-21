@@ -1,0 +1,134 @@
+{
+  "target": "vailixi-3.50",
+  "rule": "consumer_not_printability",
+  "cstring_min_printable": 2,
+  "scan_counts": {
+    "whole_min2": 2576,
+    "whole_min4": 1451,
+    "dgroup_min2": 1441,
+    "dgroup_min4": 1153,
+    "app_min2": 1037,
+    "app_min4": 295,
+    "bios_min2": 72,
+    "bios_min4": 3
+  },
+  "directory": {
+    "file": "0x20004",
+    "end": "0x205C8",
+    "ptr_8010": 345,
+    "null": 19,
+    "numeric": 5,
+    "cstring_targets": 343,
+    "empty_targets": 2,
+    "empty_off": "0x0677",
+    "unique_starts": 325
+  },
+  "disk_label_table": {
+    "file": "0x205FC",
+    "end": "0x20668",
+    "count": 27,
+    "first": "FLOPPY DISK",
+    "last": "SCSI PART Z"
+  },
+  "walker_inline": [
+    {
+      "call_file": "0x78122",
+      "file": "0x78125",
+      "end": "0x7813E",
+      "length": 24,
+      "text": "MPC-3000 BIOS 21/08/07\r\n"
+    },
+    {
+      "call_file": "0x799BE",
+      "file": "0x799C1",
+      "end": "0x79A0C",
+      "length": 74,
+      "text": "============= System Error =============Sorry, but a software bug of type "
+    },
+    {
+      "call_file": "0x79A17",
+      "file": "0x79A1A",
+      "end": "0x79AD2",
+      "length": 183,
+      "text": "h\r\ncaused all memory to be lost.\tPlease\r\nwrite down as much as you can remember\r\nof what happened that caused this screento appear. Email this information to:-\r\nmpc3000le@yahoo.com.au"
+    }
+  ],
+  "push_ds_far": {
+    "pattern": "1E 68 iw 9A ip cs",
+    "count": 886,
+    "unique_targets": 741,
+    "callee_count": 15,
+    "top_callee": "B1B1:005B",
+    "top_callee_count": 382,
+    "put_string_cs_ip": "B1B1:005B"
+  },
+  "put_string": {
+    "cs_ip": "B1B1:005B",
+    "file": "0x31B6B",
+    "end": "0x31B91",
+    "bytes": "558bec1e57c57e068a1d0adb7408b80400cd4347ebf2b80700cd438bd8b80300cd435f1f5dcb",
+    "phys20": "0xB1B6B"
+  },
+  "established": {
+    "unique_starts": 1096,
+    "payload_bytes": 19843,
+    "by_class": {
+      "directory": 325,
+      "disk_table": 27,
+      "walker": 3,
+      "push_ds_far": 741
+    }
+  },
+  "candidates": {
+    "dgroup_unconsumed_min2": 355,
+    "app_rom_min4": 295,
+    "kadak": {
+      "file": "0x7B00F",
+      "bytes": "434f50595249474854202843292031393833204b4144414b2050524f4455435453204c54442e",
+      "established": false,
+      "reason": "EB 40 skips; no NUL terminator; no reader"
+    }
+  },
+  "specimens": [
+    {
+      "file": "0x210F5",
+      "text": "Vailixi 3.50 (---/--/----)",
+      "consumer": "push_ds_far"
+    },
+    {
+      "file": "0x210E0",
+      "text": "www.mansell-labs.com",
+      "consumer": "push_ds_far"
+    },
+    {
+      "file": "0x2066C",
+      "text": "ALL EVENTS ",
+      "consumer": "directory"
+    },
+    {
+      "file": "0x20690",
+      "text": "NO ",
+      "consumer": "directory"
+    },
+    {
+      "file": "0x206C5",
+      "text": "50L",
+      "consumer": "directory"
+    },
+    {
+      "file": "0x20F9C",
+      "text": "FLOPPY DISK",
+      "consumer": "disk_table"
+    },
+    {
+      "file": "0x78125",
+      "text": "MPC-3000 BIOS 21/08/07\r\n",
+      "consumer": "walker"
+    },
+    {
+      "file": "0x799C1",
+      "text": "============= System Error =============Sorry, but a software bug of type ",
+      "consumer": "walker"
+    }
+  ]
+}

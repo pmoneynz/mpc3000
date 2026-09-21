@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 252062,
+  "owned_bytes": 252100,
   "ranges": [
     {
       "start": "0x00000",
@@ -103,6 +103,14 @@
       "kind": "code",
       "source": "notes/amx_create_table.md",
       "why": "create-table task 5 through RETF"
+    },
+    {
+      "start": "0x31B6B",
+      "end": "0x31B91",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/string_scan.md",
+      "why": "B1B1:005B put-string INT 43 AX=4"
     },
     {
       "start": "0x32596",
