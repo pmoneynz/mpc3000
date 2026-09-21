@@ -101,20 +101,25 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 360167 owned / 119 gaps. Owned seed and
-      extra-only walks reach no gap bytes and no
-      hole-start `CALLF`/`CALLN` dest. Owned `9A`
-      encodings hit no gap start. `PUSH DS`+far dests
-      are all owned. Mid-hole `C4C8` / `B77C` stay
-      unowned. `C44E:00C2` / `CEBF:0272` /
-      `BE1A:0649` / `E582:013A` / `B060:0D70` /
-      `D3A7:0005` have no owned caller. Isolated
+      Progress: 360245 owned / 117 gaps. Owned seed and
+      extra-only walks reach no gap instruction bytes
+      and no hole-start `CALLF`/`CALLN` dest. A
+      real-modrm CS-relative pass owned `D5DD:0124`
+      (two 4-word arrays), `DC5B:0002` (12 words),
+      `DC6E:0002` (16 mask words, `(n&0xF)<<1`), and
+      `EB0B:0002`/`0004` (32-bit dividend). Isolated
       1-byte `0xFF` between owned ranges is align
-      padding (29 bytes). `0xC0xx` bit meaning is not
+      padding (31 bytes). `EB0D` / `EB5B` stay
+      unowned (RAM `BX`). Mid-hole `C4C8` / `B77C`
+      stay unowned. `C44E:00C2` / `CEBF:0272` /
+      `BE1A:0649` / `E582:013A` / `B060:0D70` /
+      `D3A7:0005` / `DC5B:001A` / `DC5B:0123` have
+      no owned caller. `0xC0xx` bit meaning is not
       claimed. Unentered app ROM remains. The 1-byte
       `CF` at `0x7ADA3` has no entry. Next D17 hunt
-      needs a new named consumer, not another pass
-      over the same CALL set.
+      needs another boundable CS-relative object or
+      a new named CALL dest, not another pass over
+      the same CALL set.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.

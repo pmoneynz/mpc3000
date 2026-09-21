@@ -352,10 +352,10 @@
   },
   "owner_ledger": {
     "file": "analysis/owner_ledger.json",
-    "range_count": 823,
-    "owned_bytes": 360167,
-    "gap_count": 119,
-    "note_rows": 236,
+    "range_count": 829,
+    "owned_bytes": 360245,
+    "gap_count": 117,
+    "note_rows": 240,
     "ff_runs_ge4": 15
   },
   "string_scan": {

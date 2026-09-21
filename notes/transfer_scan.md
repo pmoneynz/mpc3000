@@ -201,6 +201,10 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x5DBBC, 0x5DBC8)` | data — `DD9A` `MOV CX,CS:[SI+021C]` 6 words |
 | `[0x5DBCF, 0x5DBEF)` | data — `DD9A` `MOV BX,CS:[BX+022F]` 16 mask words |
 | `[0x5DBEF, 0x5DC0F)` | data — `DD9A` `MOV BX,CS:[BX+024F]` 16 mask words |
+| `[0x55EF4, 0x55F04)` | data — `D5DD` `MOV BX,CS:[SI+0124]` / `[SI+012C]` two 4-word arrays; `CALLN` `D5DD:0032` |
+| `[0x5C5B2, 0x5C5CA)` | data — `DC5B` `MOV BX,CS:[BX+0002]` 12 words; `CALLF` `DA9B:0002` |
+| `[0x5C6E2, 0x5C702)` | data — `DC6E` `MOV DX,CS:[BX+0002]` 16 mask words (`(n&0xF)<<1`); `CALLF` `DC23:000A` |
+| `[0x6B0B2, 0x6B0B6)` | data — `EB0B` `MOV AX/DX,CS:[0002]`/`[0004]` 32-bit dividend; `CALLF` `DC08:0046` |
 | `[0x7A094, 0x7A09A)` | data — `F800` `MOV AX,CS:[BX+2094]` 3 words (`BL<3`) |
 | `[0x31B32, 0x31B36)` | code — `B1B1:0022` `MOV AX,[1D1A]` / `RETF`; `CALLF` `DE5C:0040` |
 | `[0x32922, 0x32928)` | code — `B261:0312` `MOV [E748],0` / `RETF`; `CALLF` `B060:03B7` |
