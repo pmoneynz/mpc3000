@@ -77,7 +77,8 @@ as encodings and as `CALLF` dests.
 
 ## 3. What this does not close
 
-D20 needs a path from a pad hit or a note-on to a note number.
+D20 now has a MIDI note-on remap to `[D6AC]`. It still needs
+a pad-hit writer.
 `B354:01C6` prints a pan name. It does not read TE7774 or write a
 note. Do not treat `C303:0930` `CMP BX,0x65` as this table’s
 bound — that site switches on ASCII after `B060:035D`.

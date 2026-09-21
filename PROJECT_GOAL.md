@@ -40,7 +40,8 @@ P7/P8: `D9B5` consumes page 61 (`ES=0xF400`) at 24-bit
 ([`notes/pgr61.md`](notes/pgr61.md)).
 DGROUP `+0054` is a 101-slot pan-name table (`Pan:` /
 `B354:01C6`), not pad labels ([`notes/pan_table.md`](notes/pan_table.md)).
-D20 assign UI is `C44E:0119` / `D9F2`; pad-hit stays open
+D20 assign UI is `C44E:0119` / `D9F2` (`000C`/`003D`/`0072`).
+Owned `[D6AC]` writers are remaps, not pad-hit
 ([`notes/pad_note.md`](notes/pad_note.md)).
 
 Physical hardware qualification is deferred. Continue software-verifiable

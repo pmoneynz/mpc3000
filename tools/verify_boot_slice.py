@@ -138,8 +138,15 @@ def verify(image: bytes, facts: dict) -> list[str]:
     _expect_hex(image, int(pad["note_push_file"], 16), pad["note_push_bytes"], "PUSH = Note:")
     _expect_hex(image, int(pad["d9f2_000c_file"], 16), pad["d9f2_000c_bytes"], "D9F2:000C")
     _expect_hex(image, int(pad["d9f2_0072_file"], 16), pad["d9f2_0072_bytes"], "D9F2:0072")
+    _expect_hex(image, int(pad["d9f2_003d_file"], 16), pad["d9f2_003d_bytes"], "D9F2:003D")
+    _expect_hex(image, int(pad["b060_n_file"], 16), pad["b060_n_bytes"], "B060 'N' remap")
+    _expect_hex(image, int(pad["b060_store_file"], 16), pad["b060_store_bytes"], "B060:0504 MOV [D6AC],AL")
+    _expect_hex(image, int(pad["sa50_file"], 16), pad["sa50_bytes"], "5A50:0039")
+    _expect_hex(image, int(pad["sa50_midi90_file"], 16), pad["sa50_midi90_bytes"], "5A50 CMP AX,0x90")
+    _expect_hex(image, int(pad["sa50_call_file"], 16), pad["sa50_call_bytes"], "5A50 CALL 003D / MOV [D6AC]")
+    _expect_hex(image, int(pad["d6ad_midi_store_file"], 16), pad["d6ad_midi_store_bytes"], "56D4 MOV [D6AD],AL")
     _expect_hex(image, int(pad["midi90_file"], 16), pad["midi90_bytes"], "56D4:000A AND/CMP 90")
-    checks.append("D20: C44E:0119 assign UI; D9F2 64-slot table; 56D4 note-on test")
+    checks.append("D20: C44E assign; D9F2 000C/003D/0072; owned [D6AC] writers are remaps")
 
     if image[0x7AC1C:0x7AC1F] != bytes.fromhex("0fe011"):
         raise AssertionError("missing BRKXA 0x11 at FAC0:001C")

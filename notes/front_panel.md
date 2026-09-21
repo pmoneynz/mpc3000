@@ -75,9 +75,9 @@ this 8-bit range.
    event.
 
 Until those exist, front-panel navigation cannot be a complete
-slice. D20 assign UI is named (`C44E:0119` /
-[`pad_note.md`](pad_note.md)); the pad-hit writer of `[D6AC]`
-is not.
+slice. D20 assign UI and the owned `[D6AC]` remaps are named
+(`C44E:0119` / [`pad_note.md`](pad_note.md)); the pad-hit
+writer of `[D6AC]` is not.
 
 D11 stays gated. Mailbox/pool objects are not promoted from this
 boundary.

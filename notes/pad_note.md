@@ -4,9 +4,11 @@
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 **Date:** 2026-09-21.
 
-Names the owned assign screen and the 64-slot note table
-accessors. The physical pad-hit path stays open (`U-PANEL-ROM`,
-`U-TE7774`). The `+0054` `50L`..`50R` block is pan, not pads
+Names the owned assign screen, the 64-slot note table
+accessors, and the owned writers of `[D6AC]`. Those writers
+are note-to-slot remaps, not a pad-hit. The physical pad-hit
+path stays open (`U-PANEL-ROM`, `U-TE7774`). The `+0054`
+`50L`..`50R` block is pan, not pads
 ([`pan_table.md`](pan_table.md)).
 
 Reproduction: `python3 tools/verify_boot_slice.py`.
@@ -18,10 +20,10 @@ Reproduction: `python3 tools/verify_boot_slice.py`.
 | Field | Value |
 |-------|-------|
 | Purpose | Name the software assign path from slot index to note |
-| Observable | `C44E:0119` title `Assign Pads to Note Numbers`; `D9F2:000C` / `0072` |
-| Inputs | `[D6AC]` 0..0x3F; `D9F2` `[BP+6]` index; `0072` `[BP+8]` note |
-| Outputs | `D9F2:000C` returns a byte; `0072` stores a byte clamped `0x22`..`0x62` |
-| Confidence | Screen strings, `[D6AC]` 0..0x3F, and `D9F2` encodings **PROVEN**. That the byte is a MIDI note **HYPOTHESIS** (range + ` = Note:`). Pad-hit writer of `[D6AC]` **UNDETERMINED** |
+| Observable | `C44E:0119` title `Assign Pads to Note Numbers`; `D9F2:000C` / `003D` / `0072` |
+| Inputs | `[D6AC]` 0..0x3F; `D9F2` `[BP+6]` index or note; `0072` `[BP+8]` note |
+| Outputs | `000C` returns a byte; `003D` returns a slot or `-1`; `0072` stores a byte clamped `0x22`..`0x62` |
+| Confidence | Screen strings, `[D6AC]` 0..0x3F, `D9F2` encodings, and the two owned remap stores **PROVEN**. That the table byte is a MIDI note **HYPOTHESIS** (range + ` = Note:`). Pad-hit writer of `[D6AC]` **UNDETERMINED** |
 | Hardware deferred | Pad scan on the wire (D19 / P1 / P4) |
 
 ---
@@ -36,7 +38,7 @@ File `0x445F9`. Already owned (`[0x445F9, 0x4479F)`). Sole exit
 | `0119` | `0x445F9` | `55 8B EC 83 EC 02 1E 68 32 50 9A 89 22 09 B5` | Title `+5032` `Assign Pads to Note Numbers` via `B509:2289` |
 | `0152` | `0x44632` | `80 3E AC D6 00` / `80 3E AC D6 3F` | Clamp `[D6AC]` to 0..0x3F |
 | `0177` | `0x44657` | `68 54 50` | `Pad:` then `B354:01C6` |
-| `0187` | `0x44667` | `9A 0C 00 F2 D9` | `D9F2:000C`(`[D6AC]`) ? displayed note |
+| `0187` | `0x44667` | `9A 0C 00 F2 D9` | `D9F2:000C`(`[D6AC]`) displayed note |
 | `01A0` | `0x44680` | `68 59 50` | ` = Note:` then `B354:03B1` |
 | `020D` | `0x446ED` | `9A 72 00 F2 D9` | `D9F2:0072` store |
 
@@ -44,18 +46,26 @@ File `0x445F9`. Already owned (`[0x445F9, 0x4479F)`). Sole exit
 (mid-hole). Do not BFS it.
 
 `[D6AC]` is the slot shown after `Pad:` and passed to `D9F2`.
-**PROVEN** as that dataflow. Who writes it from a pad hit is
-**UNDETERMINED**.
+**PROVEN** as that dataflow. The clamp stores
+(`C6 06 AC D6 00` at `0x44642` / `0x44741`) force 0 when the
+byte is outside 0..0x3F. That is UI, not a pad-hit.
 
 ---
 
 ## 2. Table accessors — `D9F2`
 
-Both already owned.
+All three already owned in `[0x59F2C, 0x59F92)` and
+`[0x59F92, 0x59FCD)`.
 
 `000C` (file `0x59F2C`): `SI=[BP+6]`. If `SI>=0x40`, `AX=0x23`.
 If `[8375]!=0`, `AL=[SI+8376]`. Else `LES BX,[E5F9]`;
-`AL=ES:[BX+SI+073E]`. **PROVEN.**
+`AL=ES:[BX+SI+073E]`. Slot to byte. **PROVEN.**
+
+`003D` (file `0x59F5D`): leftover cdecl after `000C`'s `003C
+RETF`. `DI=[BP+6]`. If `DI<0x23`, `AX=0xFFFF` and `RETF`.
+Else `SI=0`; loop `AX=000C(SI)`; if `AX==DI` return `SI`;
+`INC SI`; while `SI<0x40`. Else `AX=0xFFFF`. Byte to slot.
+**PROVEN.**
 
 `0072` (file `0x59F92`): `SI=[BP+6]`, `DX=[BP+8]`. Clamp `DX` to
 `0x22`..`0x62`. If `SI>=0x40`, return. Same two stores as `000C`.
@@ -66,7 +76,45 @@ at `0x28375` is `0xFF` padding, not the live table.
 
 ---
 
-## 3. Related owned `0x90` sites (not pad-hit)
+## 3. Owned writers of `[D6AC]` (not pad-hit)
+
+Whole-image `AC D6` has 18 hits. Owned stores:
+
+| CS:IP | File | Encoding | Source of `AL` |
+|-------|------|----------|----------------|
+| `C44E` clamp | `0x44642` / `0x44741` | `C6 06 AC D6 00` | Immediate 0 |
+| `B060:0504` | `0x30B05` | `A2 AC D6` | `D9F2:003D`(`[D6AD]`) |
+| `5A50:00C5` | `0x5A5C6` | `A2 AC D6` | `D9F2:003D`(event note) |
+
+`B060:035D` (file `0x3095D`, already owned) is a key
+dispatcher. `[BP-1]` is compared to ASCII (`'D'`/`'N'`/…).
+At `04F1` (file `0x30AF1`): `CMP [BP-1],0x4E`;
+`MOV AL,[D6AD]`; `CALLF D9F2:003D`; `MOV [D6AC],AL`.
+**PROVEN** as note-to-slot on the `'N'` arm. Not an `IN`.
+
+`5A50:0039` (file `0x5A539`, leftover after `000E` `RETF`,
+already owned in `[0x5A50E, 0x5A665)`). `LES BX,[BP+6]`;
+`CMP ES:[BX],0xA0`; note at `ES:[BX+2]` is bounded
+`0x23`..`0x62`. Status switch includes `CMP AX,0x90` at
+`0071` (file `0x5A571`). The `0x90` arm (`0081`) pushes that
+note, `CALLF D9F2:003D`, `MOV [D6AC],AL`. **PROVEN** as
+MIDI note-on to slot. Not a pad scan.
+
+`56D4:000A` writes `[D6AD]`, not `[D6AC]`. After
+`AND ES:[BX],0xF8` / `CMP AL,0x90`, if `[7664]==0` it stores
+`ES:[BX+2]` to `[D6AD]` (file `0x56D6F` `A2 AD D6`).
+**PROVEN** on that arm. When `[7664]!=0`, `AL` is
+`CFC6:0DA7`'s return (**UNDETERMINED**).
+
+An owned inverse store at file `0x3DFFA` is
+`CALLF D9F2:000C` / `MOV [D6AD],AL` (slot to note into
+`[D6AD]`). Same pair, opposite direction.
+
+No owned `IN` / `OUT` sits next to an `[D6AC]` store.
+
+---
+
+## 4. Related owned `0x90` sites (not pad-hit)
 
 `56D4:000A` (file `0x56D4A`): `LES BX,[BP+6]`; `AND ES:[BX],0xF8`;
 `CMP AL,0x90`; on match take `ES:[BX+2]` and `CALL DA09:0000`.
@@ -77,9 +125,15 @@ read it as MIDI.
 
 ---
 
-## 4. Still open
+## 5. Still open
 
-- Writer that sets `[D6AC]` from a pad hit or a MIDI note-on.
+- Writer that sets `[D6AC]` from a pad hit. Missing observation:
+  a named consumer that stores a pad index from panel IPC or
+  `IN` in `0xC0-0xDF`. Gap store `A2 AC D6` at file `0x555C9`
+  is mid-gap after owned `[0x55575, 0x555B8)`. Gap start
+  `3C 10 73 21` is not hole-start cdecl. Do not seed it.
+- Third `CALLF D9F2:003D` at file `0x397B3` is in a gap. Do
+  not seed it.
 - Grammar of the 64 bytes at `[E5F9]+073E` / `8010:8376`.
 - `C887:09AC` body (mid-hole).
 - TE7774 / panel scan (D19).

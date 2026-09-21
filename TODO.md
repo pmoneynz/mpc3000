@@ -209,13 +209,13 @@ bounds, evidence, unknowns).
       are pinned; bit meaning and the wire path stay
       unnamed. See [`notes/front_panel.md`](notes/front_panel.md).
       Missing: the dump and one captured panel frame.
-- [ ] **D20.** Pad / note entry. Assign UI is `C44E:0119`
-      (`Assign Pads to Note Numbers`); `D9F2:000C`/`0072`
-      read/write a 64-slot note table (index `<0x40`,
-      store clamp `0x22`..`0x62`). See
-      [`notes/pad_note.md`](notes/pad_note.md). Pad-hit
-      writer of `[D6AC]` is still unnamed. `+0054` is pan
-      ([`notes/pan_table.md`](notes/pan_table.md)).
+- [ ] **D20.** Pad / note entry. Assign UI is `C44E:0119`;
+      `D9F2:000C`/`003D`/`0072` are slot/note. Owned
+      `[D6AC]` stores are the UI clamp, `B060:0504` (`'N'`
+      to `003D`(`[D6AD]`)), and `5A50:00C5` (MIDI `0x90` to
+      `003D`). None is a pad-hit. See
+      [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
+      pan ([`notes/pan_table.md`](notes/pan_table.md)).
 - [ ] **D21.** Sequencer transport (play/stop/position).
 - [ ] **D22.** Sampling / DSP register path (`0x0060`, DMA3).
 - [ ] **D23.** Load / save (FDC `0xE8`, SCSI `0xA0`, IRQ3 demux).
