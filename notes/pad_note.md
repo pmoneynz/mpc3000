@@ -80,6 +80,16 @@ after that NULL.
 (`C6 06 AC D6 00` at `0x44640` / `0x4473F`) force 0 when the
 byte is outside 0..0x3F. That is UI, not a pad-hit.
 
+`0187` `D9F2:000C`(`[D6AC]`) returns into
+`[BP-2]` (file `0x4466F` `88 46 FE`);
+`LEA [BP-2]` (file `0x4467B`); `PUSH +5059`
+(file `0x44680`, already pinned); `CALLF
+B354:03B1` (file `0x44683`). Label `+5059`
+is ` = Note:`. **PROVEN** as the assign-screen
+printer of the named `000C` byte. Same `03B1`
+shape as `BE1A:0315`. Not a pad-hit.
+`C887:09AC` after this printer stays unowned.
+
 ---
 
 ## 2. Table accessors — `D9F2`
