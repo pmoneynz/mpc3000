@@ -166,8 +166,11 @@ Validator: `python3 tools/verify_boot_slice.py`.
   leftover `D9F2:0072` are seed-only.
   Leftover `B060:0030` closes the 20-byte
   prefix. `C44E:02BF` and `C887:09AC` stay
-  unowned. Further D17 growth needs another
-  named consumer.
+  unowned. 2026-09-21 10:40: `LES`/`LDS`
+  static dests into gaps = 0; `INT` dests
+  already owned; CS-relative far `[rm]`
+  into gaps = 0. Further D17 growth needs
+  another named consumer.
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
   `065B` overlays.
 

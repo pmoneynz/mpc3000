@@ -176,6 +176,19 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       (full-word `v33_translate`). Consumer `D9B5`
       `ES=0xF400`; `ES:[03FE]` = `0x5003FE`.
       Low-byte-only `0x100000` is retracted.
+      2026-09-21 10:40 hunt: owned-code
+      `LES`/`LDS` static far ptrs into gaps
+      = 0 (885 encodings; 709 are `[BP+n]`).
+      `MOV AX,imm` / `MOV ES,AX` dest0 in a
+      gap: `D5DD` at `0x55DD0` and `6900` at
+      `0x69000` — both mid-hole, not entries.
+      `INT` vecs 10h/11h/40h–43h/45h/46h are
+      already owned extras. CS-relative far
+      `[rm]` dests in gaps = 0. Next D17
+      class: another transfer not already
+      exhausted. D20 pad/note path is the
+      next unblocked slice once a named
+      V53 consumer exists.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.
