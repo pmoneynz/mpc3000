@@ -123,6 +123,10 @@ Validator: `python3 tools/verify_boot_slice.py`.
   not BFS seeds.
   Indirect *targets* and unentered app ROM stay
   debt. The 1-byte `CF` at `0x7ADA3` has no entry.
+  2026-09-21 09:00 UTC hunt: owned seed/extra walks
+  reach no gap byte and no hole-start CALL dest.
+  Owned `9A` hits no gap start. Further D17 growth
+  needs a new named consumer.
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
   `065B` overlays.
 
