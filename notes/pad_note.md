@@ -83,8 +83,8 @@ Whole-image `AC D6` has 18 hits. Owned stores:
 | CS:IP | File | Encoding | Source of `AL` |
 |-------|------|----------|----------------|
 | `C44E` clamp | `0x44642` / `0x44741` | `C6 06 AC D6 00` | Immediate 0 |
-| `B060:0504` | `0x30B05` | `A2 AC D6` | `D9F2:003D`(`[D6AD]`) |
-| `5A50:00C5` | `0x5A5C6` | `A2 AC D6` | `D9F2:003D`(event note) |
+| `B060:0504` | `0x30B04` | `A2 AC D6` | `D9F2:003D`(`[D6AD]`) |
+| `5A50:00C5` | `0x5A5C5` | `A2 AC D6` | `D9F2:003D`(event note) |
 
 `B060:035D` (file `0x3095D`, already owned) is a key
 dispatcher. `[BP-1]` is compared to ASCII (`'D'`/`'N'`/…).
