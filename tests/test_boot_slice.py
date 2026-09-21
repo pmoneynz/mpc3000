@@ -161,6 +161,8 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x7B615], 0xC3)
         self.assertEqual(self.image[0x7B802:0x7B80E], bytes.fromhex("78000a0030111c90b20076fb"))
         self.assertEqual(self.image[0x27CA0:0x27CB0], b"\x00" * 16)
+        self.assertEqual(self.image[0x56E40], 0x90)
+        self.assertEqual(sum(1 for rec in ledger["ranges"] if rec.get("kind") == "align"), 26)
 
     def test_string_scan_consumers(self) -> None:
         scan = load_scan()
