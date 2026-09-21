@@ -262,7 +262,10 @@ bounds, evidence, unknowns).
       `0BBF` bounds `DX` at `0x600`;
       `D0C0:0C9C` walks `FCF6` with
       `CX` `0x348`..`0x930` and
-      `(FCF6+0x23*0x18)&0xFFFF=+3E`).
+      `(FCF6+0x23*0x18)&0xFFFF=+3E`;
+      `BE1A:0131` stores NOTE VAR
+      Param to `FD0D` when
+      `[81B3]!=0`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

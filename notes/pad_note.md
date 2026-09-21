@@ -259,6 +259,19 @@ Param byte as `026C`; `VELOCITY` is the other arm
 a 16-level algorithm from this. Do not BFS
 `B77C:202D` / `20C5`.
 
+Already-owned `0002` switch dest
+`0131` (file `0x3E2D1`, table word
+`0x3E39F`, span `[0x3E292, 0x3E335)`).
+`CMP [81B3],0` / `JZ` skips the
+store on the VELOCITY default.
+Else clamp `[BP-2]` to `0..3`
+(file `0x3E2D8`); `AX=[BP-1]*0x18`;
+`LES [E5F9]`; `MOV ES:[BX+FD0D],AL`
+(file `0x3E2F4`). **PROVEN** as the
+NOTE VAR write of that Param byte.
+Not a pad-hit. Do not invent a
+16-level algorithm.
+
 `00A5` (file `0x3E245`): `B354:03B1` with label
 `Center pad:` (`+3EB9`) and value `[E613]`, bounds
 `0` / `0x0D`. **PROVEN** as that display. `CF37:0305`
