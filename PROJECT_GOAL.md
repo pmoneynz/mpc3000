@@ -59,7 +59,11 @@ slot / `+063E` / `[E639]`;
 `[81B3]==0`. `C20F:0478` leftover
 walks `[E5F9]+SI*0x18+3E` for
 `SI` `0..0x3F` to exclusive
-`+063E`; sibling `0874`).
+`+063E`; sibling `0874`;
+`0BBF` bounds `DX` at `0x600`;
+`D0C0:0C9C` walks `FCF6` with
+`CX` `0x348`..`0x930` and
+`(FCF6+0x23*0x18)&0xFFFF=+3E`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

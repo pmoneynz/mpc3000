@@ -402,7 +402,34 @@ end is the named dword base. Not a
 pad-hit. Sibling leftover `0874`
 (file `0x42964`) is the same
 `SI*0x18` / `[BX+3E],0xFF` walk.
-Do not name the `+3E` byte.
+Already-owned `C20F:0BBF` (file
+`0x42CAF`) loads `ES:[BX+3E]`
+(file `0x42CDB`) and bounds
+`CMP DX,0x600` (file `0x42CF1`;
+`0x40*0x18`). **PROVEN.** Do not
+name the `+3E` byte.
+
+Already-owned cdecl `D0C0:0C9C`
+(file `0x5189C`, span
+`[0x5146F, 0x51917)`). Reads
+`[E60E]` (file `0x518A4`);
+`CALLF C887:1BE8` (file `0x518B4`)
+is `CA45:0008`. Inner loop
+`DI=0x23` / `CX=0x348` (files
+`0x518BC` / `0x518BF`);
+`LES [E5F9]`; `ADD BX,CX`;
+`MOV AL,ES:[BX+FCF6]` (file
+`0x518CA`); `ADD CX,0x18`;
+`CMP CX,0x930` (file `0x518F3`).
+`0x23*0x18=0x348`;
+`0x62*0x18=0x930`;
+`(FCF6+0x348)&0xFFFF=+3E`.
+**PROVEN** as that index. Outer
+bound `CMP [BP-4],0x18` (file
+`0x518FC`) is the named `CA45`
+`0..0x17` domain. Not a pad-hit.
+Do not name `D0C0`. Do not name
+the `+3E` byte.
 `033A` (file `0x4FF9A`) is the same map
 gated on `[E610]==2` (also default 2).
 If `[E60F]==1` and `[920A]:[920C]` is
