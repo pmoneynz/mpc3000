@@ -117,10 +117,10 @@ falls into `1952` `IRET`.
 | 0 | `FB00:02F8` | `C7 05 F8 02` / `MOV [DI+2],CS` with `DI=0` |
 | 4 | `FB00:02EF` | `C7 45 10 EF 02` |
 
-Both share a tail: if `[DI+10h]` (in-scheduler) is set, rewrite the
+Both share a tail: if `[DI+10h]` is `01h`–`7Fh`, rewrite the
 `IRET` frame from hook `[current TCB + 18h + AX]`; else `IRET` to the
-interrupted IP. `AX` is 0 at `02F8` and 4 at `02EF`. Full hook grammar
-is D9.
+interrupted IP. `AX` is 0 at `02F8` and 4 at `02EF`. Frame layout:
+[`irq_wrappers.md`](irq_wrappers.md).
 
 ---
 

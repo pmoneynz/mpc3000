@@ -91,7 +91,8 @@ empty-queue wake ISR stay open. See
 [`notes/amx_first_dispatch.md`](notes/amx_first_dispatch.md),
 [`notes/amx_public_api.md`](notes/amx_public_api.md),
 [`notes/amx_create_table.md`](notes/amx_create_table.md), and
-[`notes/calling_convention.md`](notes/calling_convention.md).
+[`notes/calling_convention.md`](notes/calling_convention.md), and
+[`notes/irq_wrappers.md`](notes/irq_wrappers.md).
 
 ## Priority order
 

@@ -258,6 +258,43 @@
     },
     "mov_ax_bp4_count": 0
   },
+  "irq_wrappers": {
+    "fac0_01a4": {
+      "cs_ip": "FAC0:01A4",
+      "file": "0x7ADA4",
+      "bytes": "1e5650535152b800008ed8b8bd01bb480089078c4f020ff012"
+    },
+    "rom_ivt12_continue": {
+      "cs_ip": "FAC0:024F",
+      "file": "0x7AE4F",
+      "bytes": "5a595b585e1fcf"
+    },
+    "amx_02f8": {
+      "cs_ip": "FB00:02F8",
+      "file": "0x7B2F8",
+      "bytes": "83ec045033c01e572ec53e4200f64510ff7f07"
+    },
+    "amx_02ef": {
+      "cs_ip": "FB00:02EF",
+      "file": "0x7B2EF",
+      "bytes": "83ec0450b80400eb06"
+    },
+    "hook_rewrite": {
+      "cs_ip": "FB00:0312",
+      "file": "0x7B312",
+      "bytes": "8b7d0a8d7d1803f8"
+    },
+    "irq_enter": {
+      "cs_ip": "FB00:0157",
+      "file": "0x7B157",
+      "bytes": "505152535657558bec8cdb875e0e"
+    },
+    "irq_stack": {
+      "cs_ip": "FB76:00A6",
+      "file": "0x7B806",
+      "bytes": "30111c90"
+    }
+  },
   "ivt": {
     "fac0_slot10_file": "0x7AC61",
     "fac0_slot10_bytes": "b8a401bb40008907",

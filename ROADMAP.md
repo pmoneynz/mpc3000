@@ -24,7 +24,7 @@ Reset to a named loop plus one observable, end to end.
 
 ## Gate 2 — Shared machinery
 
-Startup tails, calling convention (D8 closed: far cdecl), interrupt wrappers, dispatchers,
+Startup tails, calling convention (D8), interrupt wrappers (D9), dispatchers,
 allocators, resource interpreters. Recover entries, blocks, continuations,
 and shared tails before forcing conventional function bounds.
 

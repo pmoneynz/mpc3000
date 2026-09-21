@@ -249,6 +249,20 @@ def verify(image: bytes, facts: dict) -> list[str]:
         raise AssertionError("MOV AX,[BP+4] count is not zero")
     checks.append("calling convention: walker + far cdecl")
 
+    wrap = facts["irq_wrappers"]
+    _expect_hex(image, int(wrap["fac0_01a4"]["file"], 16), wrap["fac0_01a4"]["bytes"], "FAC0:01A4")
+    if image[0x7ADBA:0x7ADBD] != bytes.fromhex("0ff012"):
+        raise AssertionError("FAC0:01A4 does not RETXA 0x12")
+    if image[0x7ADCC:0x7ADCF] != bytes.fromhex("0fe012"):
+        raise AssertionError("FAC0:01CC is not BRKXA 0x12")
+    _expect_hex(image, int(wrap["rom_ivt12_continue"]["file"], 16), wrap["rom_ivt12_continue"]["bytes"], "FAC0:024F")
+    _expect_hex(image, int(wrap["amx_02f8"]["file"], 16), wrap["amx_02f8"]["bytes"], "AMX 02F8")
+    _expect_hex(image, int(wrap["amx_02ef"]["file"], 16), wrap["amx_02ef"]["bytes"], "AMX 02EF")
+    _expect_hex(image, int(wrap["hook_rewrite"]["file"], 16), wrap["hook_rewrite"]["bytes"], "AMX 0312")
+    _expect_hex(image, int(wrap["irq_enter"]["file"], 16), wrap["irq_enter"]["bytes"], "AMX 0157")
+    _expect_hex(image, int(wrap["irq_stack"]["file"], 16), wrap["irq_stack"]["bytes"], "0157 SS:SP")
+    checks.append("IRQ wrappers: FAC0 XA switch, AMX IRET rewrite")
+
     return checks
 
 

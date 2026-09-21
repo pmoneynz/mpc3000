@@ -64,8 +64,10 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
 - [x] **D8.** Dominant app convention is far cdecl (`[BP+6]`, caller
       `ADD SP`, `RETF`). Walker `F800:1875` is BIOS-only (3 sites).
       AMX is far + `DL`. `INT` uses `AX`.
-- [ ] **D9.** Partition interrupt wrappers that adjust return addresses
-      or switch XA (`FAC0:01A4`, AMX `02F8`/`02EF`).
+- [x] **D9.** `FAC0:01A4` `RETXA`/`BRKXA` 0x12 reloads the third PGR
+      via ROM `IVT[12]`=`024F` (no IP rewrite). AMX `02F8`/`02EF`
+      `IRET` to `TCB+18h+AX` or the interrupted IP. `0157` switches
+      `SS:SP` to `901C:1130`. Wake ISR still `U-AMX-WAIT`.
 - [ ] **D10.** Finish `U-COPY-7C92`: grammar past the string front;
       consumers of `8010:0000`; later writers and aliases.
 - [ ] **D11.** Find allocators / resource interpreters only when a
