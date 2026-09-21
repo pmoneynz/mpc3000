@@ -263,6 +263,22 @@ pad-hit. Do not name the compared
 RAM. Do not invent a 16-level
 algorithm.
 
+Already-owned leftover `DC2A:010A`
+(file `0x5C3AA`) after `0033`'s
+`0109 RETF`. `0033` `CALLF
+DC3A:000A` (file `0x5C382`) is
+this linear. `LES BX,[BP+6]`
+(file `0x5C3AE`);
+`MOV AL,ES:[BX+1]` (file
+`0x5C3B1`); `AND CL,0xF8` /
+`CMP CL,0xC0` (files `0x5C3BD` /
+`0x5C3C0`); `CALLN 013B` (file
+`0x5C3D0`). **PROVEN** as that
+leftover dest and status mask.
+Not a pad-hit. Do not name
+`0281` / `013B`. Do not invent
+`0xC0` meaning.
+
 `BE1A:0203` (file `0x3E3A3`, already owned): if
 `[81B3]==0`, `DX=4`. Else `AX=[BP+6]*0x18`;
 `LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`. `0002` passes the

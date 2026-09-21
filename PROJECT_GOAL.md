@@ -78,7 +78,11 @@ is the same `0xF0` /
 `CA45:0008` then loads
 `+11` `*0x18` `FD0D` into
 `[996B]` like `BE1A:0329`
-/ `0380`).
+/ `0380`. `DC2A:010A`
+leftover is `0033`'s
+`DC3A:000A` dest, `AND
+0xF8` / `CMP 0xC0` then
+`CALLN 013B`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

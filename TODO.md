@@ -277,7 +277,11 @@ bounds, evidence, unknowns).
       `CA45:0008` then loads
       `+11` `*0x18` `FD0D` into
       `[996B]` like `BE1A:0329`
-      / `0380`).
+      / `0380`; `DC2A:010A`
+      leftover is `0033`'s
+      `DC3A:000A` dest, `AND
+      0xF8` / `CMP 0xC0` then
+      `CALLN 013B`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
