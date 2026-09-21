@@ -183,6 +183,16 @@ this load after the `[E5F9]` store (files
 not a name table. Nearby `(TUNING)` / `(DECAY)`
 pool strings are not this consumer.
 
+After the pair display, `04BB`
+(file `0x3E65B`) `CMP [996B],2`
+and `04C2` (file `0x3E662`)
+`CMP [996B],1`. The `0380`
+store of that byte is file
+`0x3E53B` `A2 6B 99`. **PROVEN**
+as consumers of the named Param
+byte. Not a pad-hit. Do not name
+the `0CBF` dests.
+
 `03BA` (file `0x3E55A`): `MOV BX,[996B]`; `CMP BX,3`;
 `JBE` then `SHL BX,1`; `JMP CS:[BX+0641]`. The
 owned table at `BE1A:0641` (file `0x3E7E1`, already
