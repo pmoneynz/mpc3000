@@ -560,6 +560,16 @@
     "be1a_center_bytes": "6a006a0d6a046a021e6813e6",
     "be1a_center_str_file": "0x23EB9",
     "be1a_center_str_bytes": "43656e746572207061643a00",
+    "ead0_file": "0x6AD0B",
+    "ead0_bytes": "558bec83ec069a040037e9",
+    "ead0_cmp_file": "0x6AD16",
+    "ead0_cmp_bytes": "803e14e623724f",
+    "ead0_fd0d_file": "0x6AD27",
+    "ead0_fd0d_bytes": "c41ef9e503d8268a870dfd",
+    "ead0_add90_file": "0x6AD32",
+    "ead0_add90_bytes": "0490",
+    "ead0_plus11_file": "0x6AD45",
+    "ead0_plus11_bytes": "8b1ef9e5268a47113a0614e6",
     "midi90_file": "0x56D4A",
     "midi90_bytes": "558bec06c45e06268a0724f83c90"
   }

@@ -234,6 +234,16 @@ a 16-level algorithm from this. Do not BFS
 Also zeros `[E60E]` (the `Pgm` index). **PROVEN** as
 those defaults. Do not read `0x0D` as a pad-hit.
 
+Create-table task 3 `EAD0:000B` (file `0x6AD0B`, already
+owned) is a named consumer of `[E614]`. After
+`E937:0004`, `CMP [E614],0x23` / `JB 006C` skips the
+body when the byte is below the note floor. Else
+`AX=[E614]*0x18`; `LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`;
+`ADD AL,0x90`; also `CMP ES:[BX+11],[E614]`. Then
+`CALLF CFB3:0008`. **PROVEN** as that dataflow. Default
+`[E614]=0x23` takes the body. `ADD AL,0x90` as MIDI
+note-on **HYPOTHESIS**. Do not BFS `CFB3:0008`.
+
 ---
 
 ## 6. Owned writers of `[D6AC]` (not pad-hit)

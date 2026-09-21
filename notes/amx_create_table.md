@@ -114,10 +114,14 @@ of slot 2 is **UNDETERMINED** until a bit-0 writer before the first
 
 ### 3 — `EAD0:000B` — C far frame
 
-`PUSH BP` / `MOV BP,SP` / `SUB SP,6`; `CALL E937:0004`. If
-`[E614] >= 0x23`, skip to `006C`. Else build a 6-byte packet and
-`CALL CFB3:0008`. Both paths `LEAVE` / `RETF` at `006D` (file
-`0x6AD6D`). **PROVEN:** sole exit.
+`PUSH BP` / `MOV BP,SP` / `SUB SP,6`; `CALL E937:0004`.
+`CMP [E614],0x23` / `JB 006C` (file `0x6AD16` `72 4F`):
+if `[E614] < 0x23`, skip to `LEAVE` / `RETF`. Else index
+`[E5F9]` by `[E614]*0x18` and read `+FD0D` / `+11`
+([`pad_note.md`](pad_note.md)), then `CALL CFB3:0008`.
+Both paths `LEAVE` / `RETF` at `006D` (file `0x6AD6D`).
+**PROVEN:** sole exit. The old “`>= 0x23` skips” reading
+is retracted (`JB` is unsigned below).
 
 Later ready: `0396` `DL=3` at file `0x56112`.
 

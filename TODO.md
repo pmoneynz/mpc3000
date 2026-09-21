@@ -223,7 +223,9 @@ bounds, evidence, unknowns).
       `Note:` is `[D6AD]`; `[81B3]` selects
       `VELOCITY` / `NOTE VAR` (default `[81B3]=0`
       at `B21A:01E2`). `Center pad:` is `[E613]`
-      (default `0x0D` at `CF37:0325`). Owned `[D6AC]`
+      (default `0x0D` at `CF37:0325`). Task 3
+      `EAD0:000B` consumes `[E614]` (`JB` if `<0x23`).
+      Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
       pan ([`notes/pan_table.md`](notes/pan_table.md)).
