@@ -5,7 +5,7 @@
 
 This tree was a document-and-dump pack. It now has a project goal, an
 address model, a static reset-to-AMX-start slice, a seeded owner
-ledger (833 ranges, 360245 bytes), a consumer-established string
+ledger (840 ranges, 360379 bytes), a consumer-established string
 inventory, an entry inventory (143 unique `CS:IP`), and a
 local-exit inventory (128 bounded / 14 indirect / 1 idle loop).
 It does not have whole-image coverage, Ghidra exports, or a named
@@ -58,7 +58,7 @@ wake source for the AMX idle spin.
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
-- Owner ledger: 833 ranges, 360245 bytes, 117 gaps. Owners are
+- Owner ledger: 840 ranges, 360379 bytes, 116 gaps. Owners are
   `code` or `data` only. Every `0xFF` run of 4+ bytes is classified.
 - String scan (D14): 1096 C-string starts are text because a
   consumer points at them (directory 345 `8010` ptrs, 27 disk
@@ -100,7 +100,7 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Instruction bounds for CALL dests that are still indirect or
   have no named consumer. Jump-table *selection* (`BX` domain)
   at the six `CS:[BX+disp]` sites.
-- Whole-image ledger coverage (D17). 117 gaps remain. Later
+- Whole-image ledger coverage (D17). 116 gaps remain. Later
   `IVT[8]` is `FB93:0059` (file `0x7B989`). `F800:1906` is
   a 16×4-byte OUTSW table.   `D547:0561` is a 16-IP `DI` switch. `D547:053A` is 8 IPs
   (`AND BX,0x0E`); slot 7 is `054A`.
@@ -134,8 +134,14 @@ Validator: `python3 tools/verify_boot_slice.py`.
   and `D6D4:003F` still have no owned caller.
   INT 43 AX=1..7 dests were already owned extras;
   they are now seeded. D18 software contract is
-  closed. Further D17 growth needs a new named
-  consumer.
+  closed. `FB81:0008` (`CS:[003A]` slot 0, file
+  `0x7B818`) is seed-only: list header, jump-over
+  sled, `CS:[0032]`/`[0036]`, `003A`/`0061`.
+  `0061` `CALLF FB00:065B` with `ES=A850`, `AL=2`
+  is a named `065B` consumer; D11 stays gated.
+  Further D17 growth needs another named
+  consumer (including far dests a few bytes
+  into a gap).
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
   `065B` overlays.
 

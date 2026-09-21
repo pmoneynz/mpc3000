@@ -101,7 +101,7 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 360245 owned / 117 gaps. Owned seed and
+      Progress: 360379 owned / 116 gaps. Owned seed and
       extra-only walks reach no gap instruction bytes
       and no hole-start `CALLF`/`CALLN` dest. A
       real-modrm CS-relative pass owned `D5DD:0124`
@@ -117,13 +117,20 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       no owned caller. `0xC0xx` bit meaning is not
       claimed. Unentered app ROM remains. The 1-byte
       `CF` at `0x7ADA3` has no entry. 2026-09-21 09:20
-      hunt: far ptrs in owned data to hole starts = 0;
-      F800 `20FE`/`2106`/`210E`/`21A5`/`21C6` and
-      `D3A7:0005` / `D6D4:003F` still have no owned
-      caller; DS-default abs16 is DGROUP RAM, not ROM.
+      hunt: far ptrs in owned data to hole *starts* = 0.
+      Far dest `FB81:0008` sits 5 bytes into
+      `[0x7B813, 0x7B899)` (`FB00:0121` /
+      `CS:[003A]` slot 0). Seeded: list header
+      `FB76:00B4`, jump-over sled, `CS:[0032]`/`[0036]`,
+      `003A` through `RETF`, `0061` through `RET`
+      (`CALLF FB00:065B` `AL=2`, `ES=A850`). Isolated
+      `90` at `0x7B813` is auto-align. Do not BFS
+      `0008`. F800 `20FE`/`2106`/`210E`/`21A5`/`21C6`
+      and `D3A7:0005` / `D6D4:003F` still have no
+      owned caller; DS-default abs16 is DGROUP RAM.
       INT 43 AX=1..7 dests were already owned extras
-      (now seeded). Next D17 hunt needs a new named
-      consumer, not those passes.
+      (now seeded). Next D17 hunt: far dests a few
+      bytes into a gap, or another named consumer.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.

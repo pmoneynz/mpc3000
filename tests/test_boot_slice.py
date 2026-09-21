@@ -483,6 +483,24 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(self.image[0x6B0B6:0x6B0C2], bytes.fromhex("558bec2ea102002e8b160400"))
         self.assertEqual(self.image[0x6B0B2:0x6B0B6], bytes.fromhex("20bcbe00"))
         self.assertEqual(self.image[0x6B0CE], 0xCB)
+        self.assertEqual(self.image[0x7B813], 0x90)
+        self.assertEqual(self.image[0x7B814:0x7B818], bytes.fromhex("01000800"))
+        self.assertEqual(self.image[0x7B818:0x7B81A], bytes.fromhex("eb30"))
+        self.assertEqual(
+            self.image[0x7B81A:0x7B842],
+            bytes.fromhex("10" + "58" * 38 + "90"),
+        )
+        self.assertEqual(self.image[0x7B842:0x7B84A], bytes.fromhex("b40076fb040050a8"))
+        self.assertEqual(
+            self.image[0x7B84A:0x7B871],
+            bytes.fromhex("2ec53e36002ec4363200268b148915464647478bda03db03da03db03df424a7405e80300ebf8cb"),
+        )
+        self.assertEqual(
+            self.image[0x7B871:0x7B899],
+            bytes.fromhex("06b8ffff8905894502895d04268b0c8cd88ec0b0029a5b0600fb83c706464603c983c30803d907c3"),
+        )
+        self.assertEqual(self.image[0x7B7F6:0x7B7FE], bytes.fromhex("080081fb0a003bb0"))
+        self.assertEqual(self.image[0x7B886:0x7B88B], bytes.fromhex("9a5b0600fb"))
 
     def test_string_scan_consumers(self) -> None:
         scan = load_scan()

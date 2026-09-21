@@ -70,6 +70,56 @@ The sentinel alone would idle. Start is not finished yet.
 | 0 | `FB81:0008` | `0x7B818` | `0xFB818` | high ROM | list init at `A850:0004` from `FB76:00B4`; no TCB ready write |
 | 1 | `B03B:000A` | `0x303BA` | `0xB03BA` | `0x0B03BA` page 44 frame `0x2C` | app init; readies tasks 6 and 7 |
 
+### 2.1 `FB81:0008` — list init, file `0x7B818`
+
+Named dest of `CS:[003A]` slot 0. `0616` `RETF`s here. Seed-only;
+not a BFS CALL dest. Isolated `90` at `0x7B813` is auto-align
+between `FB76:00B2` `RETF` and this block.
+
+```
+FB81:0008  JMP  003A                 ; eb30; jumps the sled
+FB81:003A  LDS  DI, CS:[0036]        ; A850:0004
+           LES  SI, CS:[0032]        ; FB76:00B4
+           MOV  DX, ES:[SI]          ; count = 0001
+           MOV  [DI], DX
+           SI += 2, DI += 2
+           BX = DI + 6*DX            ; A850:000C on this list
+           INC  DX
+loop:      DEC  DX
+           JZ   RETF                 ; CALL 0061 DX times (original count)
+           CALL 0061
+           JMP  loop
+FB81:0060  RETF                      ; file 0x7B870
+```
+
+`FB81:0032` / `0036` (file `[0x7B842, 0x7B84A)`) are
+`b40076fb 040050a8`. `FB76:00B4` (file `[0x7B814, 0x7B818)`) is
+`01000800`. Jump-over `[0x7B81A, 0x7B842)` is `10` + 38×`58` +
+`90` — not walked; not `0xFF` padding.
+
+`0061` (file `[0x7B871, 0x7B899)`), one `CALLN` from `005B`:
+
+```
+PUSH ES
+MOV  AX, FFFF
+MOV  [DI], AX / [DI+2], AX / [DI+4], BX
+MOV  CX, ES:[SI]           ; 0008
+MOV  ES, DS                ; ES = A850
+MOV  AL, 2
+CALL FB00:065B             ; 9a5b0600fb at 0x7B886
+ADD  DI, 6
+SI += 2
+CX *= 2
+BX += 8 + CX
+POP  ES
+RET                        ; c3 at 0x7B898; exact to owned 0089
+```
+
+**PROVEN:** this-trace count is 1; one `065B` with `ES=A850`,
+`AL=2`. No TCB ready write. `065B` effect at `A850` stays
+`U-AMX-POOL` (D11). `A850:0004` is RAM, not the linear file
+at `0x28504` (that offset is ROM `0xFF`).
+
 `B03B:000A` through `01D9` `RETF` (file `0x30589`):
 
 - `DS=8010` (the `0x7C92` copy dest). `ES` walks `A90B` / `8010` / `D52A`…
@@ -200,6 +250,12 @@ exits are in [`amx_create_table.md`](amx_create_table.md).
 | `[0x7B762, 0x7B7F2)` | data — eight create records; terminator `FFFF:FFFF` at `0x7B7F2` |
 | `[0x7B7F6, 0x7B7FE)` | data — `CS:[003A]` two far pointers + terminator |
 | `[0x7B802, 0x7B80E)` | data — kernel far-ptr table `000A:0078` / `901C:1130` / `FB76:00B2` |
+| `[0x7B814, 0x7B818)` | data — `FB76:00B4` list header `01000800` |
+| `[0x7B818, 0x7B81A)` | code — `FB81:0008` `JMP 003A` |
+| `[0x7B81A, 0x7B842)` | data — jump-over sled; not walked |
+| `[0x7B842, 0x7B84A)` | data — `FB81` `CS:[0032]`/`[0036]` far ptrs |
+| `[0x7B84A, 0x7B871)` | code — `FB81:003A` through `0060 RETF` |
+| `[0x7B871, 0x7B899)` | code — `FB81:0061` through `0088 RET` |
 | `[0x303BA, 0x3058A)` | code — `B03B:000A` through `RETF` |
 | `[0x59BD9, 0x59C05)` | code — `D9BD:0009` through `JMP 000E` |
 

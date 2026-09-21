@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 360245,
+  "owned_bytes": 360379,
   "ranges": [
     {
       "start": "0x00000",
@@ -6591,6 +6591,62 @@
       "kind": "code",
       "source": "notes/amx_create_table.md",
       "why": "FB76:00B2 RETF stub"
+    },
+    {
+      "start": "0x7B813",
+      "end": "0x7B814",
+      "owner": "code",
+      "kind": "align",
+      "source": "notes/transfer_scan.md",
+      "why": "NOP between owned ranges"
+    },
+    {
+      "start": "0x7B814",
+      "end": "0x7B818",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/amx_first_dispatch.md",
+      "why": "FB76:00B4 list header count=1 word=0008"
+    },
+    {
+      "start": "0x7B818",
+      "end": "0x7B81A",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_first_dispatch.md",
+      "why": "FB81:0008 JMP 003A"
+    },
+    {
+      "start": "0x7B81A",
+      "end": "0x7B842",
+      "owner": "data",
+      "kind": "jump_over",
+      "source": "notes/amx_first_dispatch.md",
+      "why": "FB81:000A jump-over 10 + 38x58 + 90; not walked"
+    },
+    {
+      "start": "0x7B842",
+      "end": "0x7B84A",
+      "owner": "data",
+      "kind": "table",
+      "source": "notes/amx_first_dispatch.md",
+      "why": "FB81 CS:[0032]=FB76:00B4 CS:[0036]=A850:0004"
+    },
+    {
+      "start": "0x7B84A",
+      "end": "0x7B871",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_first_dispatch.md",
+      "why": "FB81:003A list copy through RETF; CALLN 0061"
+    },
+    {
+      "start": "0x7B871",
+      "end": "0x7B899",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/amx_first_dispatch.md",
+      "why": "FB81:0061 PUSH ES / CALLF FB00:065B AL=2 through RET"
     },
     {
       "start": "0x7B899",

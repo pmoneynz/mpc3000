@@ -103,4 +103,5 @@ ranges as `data`/`padding`. That is the same pass as the 1-byte
 
 - Why the assembler or burner chose these gaps.
 - Code between a `RETF` and the start of a padding window
-  (for example `[0x7B813, 0x7BA01)`).
+  (for example the 1-byte `58` at `[0x7BA00, 0x7BA01)`).
+  `FB81:0008` now owns `[0x7B813, 0x7B899)`.
