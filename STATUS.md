@@ -5,7 +5,7 @@
 
 This tree was a document-and-dump pack. It now has a project goal, an
 address model, a static reset-to-AMX-start slice, a seeded owner
-ledger (829 ranges, 360245 bytes), a consumer-established string
+ledger (833 ranges, 360245 bytes), a consumer-established string
 inventory, an entry inventory (143 unique `CS:IP`), and a
 local-exit inventory (128 bounded / 14 indirect / 1 idle loop).
 It does not have whole-image coverage, Ghidra exports, or a named
@@ -58,7 +58,7 @@ wake source for the AMX idle spin.
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
-- Owner ledger: 829 ranges, 360245 bytes, 117 gaps. Owners are
+- Owner ledger: 833 ranges, 360245 bytes, 117 gaps. Owners are
   `code` or `data` only. Every `0xFF` run of 4+ bytes is classified.
 - String scan (D14): 1096 C-string starts are text because a
   consumer points at them (directory 345 `8010` ptrs, 27 disk
@@ -95,7 +95,7 @@ Validator: `python3 tools/verify_boot_slice.py`.
   sites exist, all FAC0.
 - First ready of create-table slots 0 and 2.
 - Word `+2` = `0x0100` and the `+0238` numeric-island *meaning*
-  (`copy_7c92.md`). Per-screen string meaning stays D18+.
+  (`copy_7c92.md`). Per-screen string meaning stays D25.
 - Panel ROM, PAL fusemaps, full schematics.
 - Instruction bounds for CALL dests that are still indirect or
   have no named consumer. Jump-table *selection* (`BX` domain)
@@ -129,8 +129,13 @@ Validator: `python3 tools/verify_boot_slice.py`.
   `EB0B:0002` data tables (plus two auto 1-byte
   `0xFF` aligns). `EB0D` / `EB5B` stay unowned
   (RAM `BX`/`DI`). Unentered app ROM stays debt.
-  Further D17 growth needs another boundable
-  CS-relative object or a new named CALL dest.
+  2026-09-21 09:20 UTC: far ptrs in owned data to
+  hole starts = 0. F800 alternate `590e51` entries
+  and `D6D4:003F` still have no owned caller.
+  INT 43 AX=1..7 dests were already owned extras;
+  they are now seeded. D18 software contract is
+  closed. Further D17 growth needs a new named
+  consumer.
 - RAM object lifetime past the `8010` DGROUP / BSS split and the
   `065B` overlays.
 

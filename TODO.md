@@ -74,7 +74,7 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       only `FAC0:0074`. `065B` overlays `125C`.. when `ES=8010`.
       `A000` is the ROM source under the first PGR only.
 - [ ] **D11.** Find allocators / resource interpreters only when a
-      named slice needs them. Gated on D18+ (or another named
+      named slice needs them. Gated on D19+ (or another named
       consumer of `065B` / `U-AMX-POOL`). No whole-image leaf hunt.
 
 ---
@@ -116,10 +116,14 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       `D3A7:0005` / `DC5B:001A` / `DC5B:0123` have
       no owned caller. `0xC0xx` bit meaning is not
       claimed. Unentered app ROM remains. The 1-byte
-      `CF` at `0x7ADA3` has no entry. Next D17 hunt
-      needs another boundable CS-relative object or
-      a new named CALL dest, not another pass over
-      the same CALL set.
+      `CF` at `0x7ADA3` has no entry. 2026-09-21 09:20
+      hunt: far ptrs in owned data to hole starts = 0;
+      F800 `20FE`/`2106`/`210E`/`21A5`/`21C6` and
+      `D3A7:0005` / `D6D4:003F` still have no owned
+      caller; DS-default abs16 is DGROUP RAM, not ROM.
+      INT 43 AX=1..7 dests were already owned extras
+      (now seeded). Next D17 hunt needs a new named
+      consumer, not those passes.
 
 Ghidra is navigation, not evidence. Validate `0F E0` / `0F F0` at
 `0x7AC1C` as `BRKXA 0x11` before trusting a processor spec.
@@ -132,7 +136,9 @@ Do these after the dispatcher and address map for that slice are stable.
 Each slice needs the contract in `PROJECT_GOAL.md` (purpose, IO, state,
 bounds, evidence, unknowns).
 
-- [ ] **D18.** Boot / banner / LCD init (close D2–D3).
+- [x] **D18.** Boot / banner / LCD init (close D2–D3). INT 43
+      AX=0..7 software contracts are in `int43_ax4.md`. Glass
+      stays D3-glass.
 - [ ] **D19.** Front-panel navigation (blocked on panel traffic if the
       ROM is absent — then PARTIAL).
 - [ ] **D20.** Pad / note entry.

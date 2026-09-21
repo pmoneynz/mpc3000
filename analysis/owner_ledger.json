@@ -5994,11 +5994,27 @@
     },
     {
       "start": "0x7971D",
+      "end": "0x79734",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/int43_ax4.md",
+      "why": "INT 43 AX=1 fill 0x140 spaces; CALLN F800:1843/17CC"
+    },
+    {
+      "start": "0x79734",
+      "end": "0x79744",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/int43_ax4.md",
+      "why": "INT 43 AX=2 LCD_put AX=((BX&3)<<2)+0x30; CALLN F800:185A"
+    },
+    {
+      "start": "0x79744",
       "end": "0x79752",
       "owner": "code",
       "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "D16 local-walk instruction bytes"
+      "source": "notes/int43_ax4.md",
+      "why": "INT 43 AX=3 cursor BH*40+40; CALLN F800:1843"
     },
     {
       "start": "0x79752",
@@ -6034,11 +6050,27 @@
     },
     {
       "start": "0x79808",
+      "end": "0x7981B",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/int43_ax4.md",
+      "why": "INT 43 AX=5 copy shadow 662B to 676B"
+    },
+    {
+      "start": "0x7981B",
+      "end": "0x79839",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/int43_ax4.md",
+      "why": "INT 43 AX=6 replay 676B via 17CC; CALLN F800:1843/17CC"
+    },
+    {
+      "start": "0x79839",
       "end": "0x79843",
       "owner": "code",
       "kind": "code",
-      "source": "notes/transfer_scan.md",
-      "why": "D16 local-walk instruction bytes"
+      "source": "notes/int43_ax4.md",
+      "why": "INT 43 AX=7 cursor /40 -> AH=row AL=col"
     },
     {
       "start": "0x79843",

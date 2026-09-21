@@ -19,7 +19,7 @@ Reproduction: `python3 tools/string_scan.py --write` then
 | Observable | 1096 established starts; 886 `PUSH DS` / `PUSH off` / `CALL FAR`; put-string `B1B1:005B` |
 | Inputs | Linear image; DGROUP directory (D10); walker `F800:1875` (D8) |
 | Outputs | `analysis/string_scan.json`; put-string bounds |
-| Confidence | Consumer classes and put-string body **PROVEN**. Per-screen meaning of each string **UNDETERMINED** (D18+). App-ROM printable runs **UNDETERMINED** (lookalikes) |
+| Confidence | Consumer classes and put-string body **PROVEN**. Per-screen meaning of each string **UNDETERMINED** (D25). App-ROM printable runs **UNDETERMINED** (lookalikes) |
 | Hardware deferred | None. Glass pixels stay D3-glass |
 
 ---
@@ -62,7 +62,7 @@ check).
 27 consecutive `xxxx:8010` after the `???????????` at `+05C8`.
 First `FLOPPY DISK`, then `SCSI PART A` .. `SCSI PART Z`. All
 C-strings. **PROVEN** as a pointer table by format and bounds.
-Other `xxxx:8010` runs deeper in the DGROUP stay suspects (D18+).
+Other `xxxx:8010` runs deeper in the DGROUP stay suspects (D25).
 
 ### BIOS walker — `F800:1875`, file `0x79875`
 
@@ -109,7 +109,7 @@ B1B1:005B  PUSH BP / MOV BP, SP / PUSH DS / PUSH DI
 stays `U-LC7981`. Glass stays D3-glass.
 
 The other 14 callees (format/`printf`-shaped `B1BC:01EE`, and the
-rest) are named only as CS:IP immediates. Their bodies stay D18+.
+rest) are named only as CS:IP immediates. Their bodies stay D19+.
 
 ---
 
@@ -156,7 +156,7 @@ BIOS ranges already opened.
 
 ## What this note does *not* prove
 
-- Meaning of each established string on a screen (D18+).
+- Meaning of each established string on a screen (D25).
 - The 14 non-`B1B1:005B` PUSH callees.
 - A consumer for the 355 leftover DGROUP C-strings.
 - That an app-ROM printable run is a string.

@@ -6,7 +6,7 @@
 
 Closes D10 / `U-COPY-7C92`. Consumer *classes* for the string pool
 are in [`string_scan.md`](string_scan.md). Per-screen meaning stays
-D18+. Mailbox record *meaning* at the `065B` overlays stays D11 /
+D25. Mailbox record *meaning* at the `065B` overlays stays D11 /
 `U-AMX-POOL`.
 
 Reproduction: `python3 tools/verify_boot_slice.py`.
@@ -167,5 +167,5 @@ No second segment is proven to address `20-bit 0x80100`. After
 - A runtime reader of `8010:0000` = `55AA` (none found).
 - Meaning of `+0002` = `0x0100`.
 - A consumer of the `+0238` numeric island.
-- Every string's screen meaning (D18+). Consumer classes are D14.
+- Every string's screen meaning (D25). Consumer classes are D14.
 - `065B` header fields past the eight-byte zero (`U-AMX-POOL`).
