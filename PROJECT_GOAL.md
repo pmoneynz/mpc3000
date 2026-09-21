@@ -145,7 +145,9 @@ via `+4F0C` `PROGRAM` /
 `MASTER`; `C44E:017A`
 `Pad:` `B354:01C6` of
 `[D6AC]` via `+0264`
-`A01`..`D16`).
+`A01`..`D16`; `BE1A:0488`
+/ `04B3` `B354:02BB`
+`[BP-4]` / `[BP-6]`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

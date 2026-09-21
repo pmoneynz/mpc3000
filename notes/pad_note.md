@@ -276,8 +276,15 @@ the `0CBF` dests.
 owned table at `BE1A:0641` (file `0x3E7E1`, already
 `jump_table`) is `03C9` / `03F1` / `0418` / `043F`.
 Those IPs load signed pairs into `Low range:` /
-`High range:` temps (`[BP-4]` / `[BP-6]`, then
-`B354:02BB`):
+`High range:` temps (`[BP-4]` / `[BP-6]`). Then
+`LEA [BP-4]` (file `0x3E620`); `PUSH +3E62`
+(file `0x3E625`); `CALLF B354:02BB` (file
+`0x3E628`); `LEA [BP-6]` (file `0x3E64B`);
+`PUSH +3E62` (file `0x3E650`); `CALLF B354:02BB`
+(file `0x3E653`). **PROVEN** as the pair-temp
+printers after the named `0641` load. Title
+`+3E62` is the NUL after `VELOCITY`, not a
+name table. Not a pad-hit.
 
 | `[996B]` | Name | Fields | IP | File |
 |----------|------|--------|----|------|
