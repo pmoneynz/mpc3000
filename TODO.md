@@ -230,6 +230,8 @@ bounds, evidence, unknowns).
       `0xC0` `CALLF C887:1BE8` is `CA45:0008`;
       `0xF0` gates `+2==0x47` / `+5` in
       `{0x45,0x46}` then `CALLF D0AE:0002`;
+      leftover after that `RETF` paints
+      matching `D9F2:000C` slots;
       `0x80` via `FCF6`;
       `0x90` → `CFC6:0007`, note `+2` in
       `0x23`..`0x62`, `02D6` note-to-slot,

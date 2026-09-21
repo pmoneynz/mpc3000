@@ -348,6 +348,21 @@ same pair gated on `[E610]`. Do not name
 `[920A]` or the `+0x0D` field. Do not
 seed unowned `LES [920A]` at `0x669B8`.
 
+Leftover after `D0AE:0002` `RETF` (file
+`0x50BC6`, already owned). `CALLF
+D9F2:000C` on `[BP+0A]` (file `0x50BCF`);
+then slot `0..0x3F` (file `0x50C00`
+`80 7E 0A 40`) calling `000C` again
+(file `0x50BE2`). On note match,
+`MOV ES:[BX+slot],[BP+0C]` (file
+`0x50BFA`). **PROVEN** as a 64-slot
+note-match store through the named
+accessor. Not a pad-hit. Do not name
+`D0AE`. `0002` itself also writes
+`[D6AB]=0x50` (files `0x50B3D` /
+`0x50B7E` / `0x50BBF`), same as the
+`0xB0` arm.
+
 ---
 
 ## 6. Owned writers of `[D6AC]` (not pad-hit)
