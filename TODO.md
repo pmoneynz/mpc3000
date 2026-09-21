@@ -74,7 +74,8 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       only `FAC0:0074`. `065B` overlays `125C`.. when `ES=8010`.
       `A000` is the ROM source under the first PGR only.
 - [ ] **D11.** Find allocators / resource interpreters only when a
-      named slice needs them. No whole-image leaf hunt first.
+      named slice needs them. Gated on D18+ (or another named
+      consumer of `065B` / `U-AMX-POOL`). No whole-image leaf hunt.
 
 ---
 
