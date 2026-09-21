@@ -231,6 +231,23 @@ Those IPs load signed pairs into `Low range:` /
 **PROVEN** as that map. `0x3EA41` is `BE40:0641`
 (wrong CS) and sits in a gap. Do not seed it.
 
+Already-owned `0592` (file `0x3E732`)
+`MOV AL,[996B]`; `CMP BX,3` (file
+`0x3E738`); `SHL BX,1`; `JMP
+CS:[BX+062F]` (file `0x3E73F`).
+Table at file `0x3E7CF` (already
+`jump_table`) is `05A4` / `05B8` /
+`05CC` / `05E0`. Those dests
+`LES [E5F9]` and store `[BP-4]` /
+`[BP-6]` to `+12`/`+13`, `+14`/
+`+15`, `+16`/`+17`, `+18`/`+19`
+(files `0x3E74B` / `0x3E75F` /
+`0x3E773` / `0x3E787`). **PROVEN**
+as the write inverse of the
+named `0641` pair map. Not a
+pad-hit. Do not name the `0637`
+dests.
+
 Already-owned `D9C0:0006` (file `0x59C06`)
 takes `[BP+8]`, rejects `>3` (file
 `0x59C0F`), and `JMP CS:[BX+0095]`

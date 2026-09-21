@@ -114,7 +114,11 @@ the `0380` store.
 `[E5F9]+073E`. `C44E`
 copies `[D6AC]` to
 `[BP-1]` then extra
-`000C`/`0072`).
+`000C`/`0072`.
+`BE1A:0592` `JMP
+CS:[BX+062F]` stores
+`Low`/`High` temps to
+`+12`..`+19`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

@@ -313,7 +313,11 @@ bounds, evidence, unknowns).
       `[E5F9]+073E`; `C44E`
       copies `[D6AC]` to
       `[BP-1]` then extra
-      `000C`/`0072`).
+      `000C`/`0072`;
+      `BE1A:0592` `JMP
+      CS:[BX+062F]` stores
+      `Low`/`High` temps to
+      `+12`..`+19`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
