@@ -69,7 +69,9 @@ Directory groups that resolve (DS=`8010`):
 - `+0014` `NO` / `YES` / NULL
 - `+0020` `OFF` / `ON` / NULL
 - `+002C` / `+0038` `MASTER` / `SEQUENCE` / (`PROGRAM`) / NULL
-- `+0054` .. `+01E4` pad labels `50L` .. `16R`, then NULL
+- `+0054` .. `+01E4` pan names `50L` .. ` C ` .. `50R` (101
+  slots), then NULL. Printer is `B354:01C6` with title `Pan:`.
+  Not drum-pad labels. See [`pan_table.md`](pan_table.md).
 - `+01EC` `MIDI` / `DRUM`; SMPTE rate strings; `EARLIER` / `LATER`; `TUNING` / `DECAY` / `ATTACK` / `FILTER`
 
 `+05C8` is `???????????` then more far ptrs and `ALL EVENTS` at

@@ -410,5 +410,30 @@
     "d9b5_es_bytes": "b800f48ec0",
     "d9b5_sig_file": "0x59BC4",
     "d9b5_sig_bytes": "b800f48ec026803efe03aa"
+  },
+  "pan_table": {
+    "dir_first_file": "0x20054",
+    "dir_first_bytes": "c5061080",
+    "dir_center_file": "0x2011C",
+    "dir_center_bytes": "8d071080",
+    "dir_last_file": "0x201E4",
+    "dir_last_bytes": "55081080",
+    "dir_null_file": "0x201E8",
+    "dir_null_bytes": "00000000",
+    "slot_count": 101,
+    "str_50l_file": "0x206C5",
+    "str_50l_bytes": "35304c00",
+    "str_c_file": "0x2078D",
+    "str_c_bytes": "20432000",
+    "str_50r_file": "0x20855",
+    "str_50r_bytes": "35305200",
+    "title_file": "0x254A1",
+    "title_bytes": "50616e3a00",
+    "b354_file": "0x33706",
+    "b354_bytes": "558bec83ec0c56ff7608ff76069a5b00b1b1",
+    "caller_push_file": "0x46094",
+    "caller_push_bytes": "1e685400",
+    "caller_callf_file": "0x460A1",
+    "caller_callf_bytes": "9ac60154b3"
   }
 }

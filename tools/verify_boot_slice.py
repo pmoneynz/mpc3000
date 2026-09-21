@@ -105,6 +105,29 @@ def verify(image: bytes, facts: dict) -> list[str]:
         raise AssertionError("unexpected MOV DX,0xFF7A")
     checks.append("P7/P8: PGR[61]=0x0140 -> 0x500000; D9B5 ES=0xF400 / ES:[03FE]=0x5003FE")
 
+    pan = facts["pan_table"]
+    _expect_hex(image, int(pan["dir_first_file"], 16), pan["dir_first_bytes"], "pan dir +0054")
+    _expect_hex(image, int(pan["dir_center_file"], 16), pan["dir_center_bytes"], "pan dir +011C")
+    _expect_hex(image, int(pan["dir_last_file"], 16), pan["dir_last_bytes"], "pan dir +01E4")
+    _expect_hex(image, int(pan["dir_null_file"], 16), pan["dir_null_bytes"], "pan dir NULL")
+    _expect_hex(image, int(pan["str_50l_file"], 16), pan["str_50l_bytes"], "50L")
+    _expect_hex(image, int(pan["str_c_file"], 16), pan["str_c_bytes"], " C ")
+    _expect_hex(image, int(pan["str_50r_file"], 16), pan["str_50r_bytes"], "50R")
+    _expect_hex(image, int(pan["title_file"], 16), pan["title_bytes"], "Pan:")
+    _expect_hex(image, int(pan["b354_file"], 16), pan["b354_bytes"], "B354:01C6")
+    _expect_hex(image, int(pan["caller_push_file"], 16), pan["caller_push_bytes"], "PUSH DS/0054")
+    _expect_hex(image, int(pan["caller_callf_file"], 16), pan["caller_callf_bytes"], "CALLF B354:01C6")
+    slots = 0
+    off = int(pan["dir_first_file"], 16)
+    while image[off : off + 4] != bytes(4):
+        slots += 1
+        off += 4
+    if slots != int(pan["slot_count"]):
+        raise AssertionError(f"pan table slots {slots} != {pan['slot_count']}")
+    if off != int(pan["dir_null_file"], 16):
+        raise AssertionError("pan table NULL is not at +01E8")
+    checks.append("pan table: 101 names 50L..C..50R; B354:01C6 / Pan:")
+
     if image[0x7AC1C:0x7AC1F] != bytes.fromhex("0fe011"):
         raise AssertionError("missing BRKXA 0x11 at FAC0:001C")
     checks.append("BRKXA 0x11")

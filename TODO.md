@@ -209,7 +209,11 @@ bounds, evidence, unknowns).
       are pinned; bit meaning and the wire path stay
       unnamed. See [`notes/front_panel.md`](notes/front_panel.md).
       Missing: the dump and one captured panel frame.
-- [ ] **D20.** Pad / note entry.
+- [ ] **D20.** Pad / note entry. The `+0054` directory block
+      is pan names (`50L`..` C `..`50R`), printed by
+      `B354:01C6` with title `Pan:`
+      ([`notes/pan_table.md`](notes/pan_table.md)).
+      The pad-hit / note-on path is still unnamed.
 - [ ] **D21.** Sequencer transport (play/stop/position).
 - [ ] **D22.** Sampling / DSP register path (`0x0060`, DMA3).
 - [ ] **D23.** Load / save (FDC `0xE8`, SCSI `0xA0`, IRQ3 demux).

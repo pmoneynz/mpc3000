@@ -32,9 +32,10 @@ The V53 linear image does not contain panel MCU code. That is a
 separate 32 KiB EPROM. File search under `07-rom/` for the MAME
 `ic602` / `op_v1` names is empty. **PROVEN.**
 
-DGROUP pad labels (`50L` .. `16R`) are string-pool text
-([`copy_7c92.md`](copy_7c92.md)). They are not a navigation
-state machine.
+DGROUP `+0054` .. `+01E4` is a 101-slot pan-name table
+(`50L` .. ` C ` .. `50R`), printed by `B354:01C6` with title
+`Pan:` ([`pan_table.md`](pan_table.md)). It is not a pad-hit
+path and not a navigation state machine.
 
 ---
 
@@ -74,8 +75,8 @@ this 8-bit range.
    event.
 
 Until those exist, front-panel navigation cannot be a complete
-slice. D20 (pad / note entry) stays open: pad *labels* are
-established text; the entry path is not.
+slice. D20 (pad / note entry) stays open: the `50L`..`50R`
+block is pan display, not pad entry. The hit path is not named.
 
 D11 stays gated. Mailbox/pool objects are not promoted from this
 boundary.
