@@ -421,7 +421,17 @@ flags. Not a pad-hit. Do not
 name the `0x98` / `0xF8` arms.
 Owned callers `DC85:0047` (file
 `0x5C94E`) and leftover `011A`
-(file `0x5CA0A`).
+(file `0x5CA0A`). The
+`[E60F]==1` / `[E610]==1`
+taken arms `JMP` to `00A4`
+(files `0x5CED0` `EB 12` /
+`0x5CEDE` `EB 04`) then
+`CALLF DC3A:000A` (file
+`0x5CEF3`). That dest is the
+already-named `DC2A:010A`
+linear (`0x5C3AA`). **PROVEN.**
+Not a leftover cdecl. Do not
+name the other copy dests.
 
 `CFC6:0007` (file `0x4FC67`, same owned span).
 `ES:[BX+2]` must be `0x23`..`0x62` else

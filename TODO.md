@@ -290,7 +290,11 @@ bounds, evidence, unknowns).
       `D9EA:0042` is `AX=[BP+6]`
       `SHL AX,1` / `SHR AL,1`,
       dest of `DC85:0047` /
-      `011A`).
+      `011A`; `DCE4:000C`
+      `[E60F]`/`[E610]==1`
+      taken arms `CALLF`
+      `DC3A:000A`, the named
+      `DC2A:010A` linear).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is
