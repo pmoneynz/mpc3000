@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 343688,
+  "owned_bytes": 344149,
   "ranges": [
     {
       "start": "0x00000",
@@ -575,6 +575,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "C2D0:000C cdecl through RETF; CALLF C425:012F"
+    },
+    {
+      "start": "0x42E67",
+      "end": "0x43034",
+      "owner": "code",
+      "kind": "code",
+      "source": "notes/transfer_scan.md",
+      "why": "C2E6:0007 cdecl through RETF; CALLF C425:019B"
     },
     {
       "start": "0x44259",

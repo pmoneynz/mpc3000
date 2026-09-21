@@ -167,6 +167,7 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x7A42D, 0x7A45B)` | code — `F800:242D` copy through `RET 8`; 6 `CALLN` from `24A5`.. |
 | `[0x33EDF, 0x33FD6)` | code — `B3ED:000F` cdecl through `RETF`; `CALLF` `C425:01B5` |
 | `[0x42D0C, 0x42E67)` | code — `C2D0:000C` cdecl through `RETF`; `CALLF` `C425:012F` |
+| `[0x42E67, 0x43034)` | code — `C2E6:0007` cdecl through `RETF`; `CALLF` `C425:019B` |
 | `[0x444E5, 0x44535)` | code — `C44E:0005` through `JMP CS:[BX+00B8]`; `CALLF` `C425:01BF` |
 | `[0x44535, 0x44598)` | code — `C44E` `00B8` dests `0055`..`0079` plus shared `RETF` `00B3` |
 | `[0x44598, 0x445A2)` | data — `C44E` `JMP CS:[BX+00B8]` 5 near IPs (`BX<=4` then `SHL 1`) |
