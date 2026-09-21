@@ -130,7 +130,11 @@ defaults `+11` /
 picker record; `BDF1:0014`
 / `0022` `CALLF B21A:000F`,
 which `CALLN`s the named
-`+0859` copy).
+`+0859` copy; `BE1A:0002`
+`00A5` `B354:03B1`
+`Center pad:` / `[E613]`
+then `CALLN 022B` with
+`[81B3]`).
 `CFB3` `0xC0` is `CA45:0008`; `0xF0`
 is `D0AE:0002`. Leftover after that
 `RETF` paints matching `D9F2:000C`

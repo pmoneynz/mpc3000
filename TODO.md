@@ -329,7 +329,11 @@ bounds, evidence, unknowns).
       picker record; `BDF1:0014`
       / `0022` `CALLF B21A:000F`,
       which `CALLN`s the named
-      `+0859` copy).
+      `+0859` copy; `BE1A:0002`
+      `00A5` `B354:03B1`
+      `Center pad:` / `[E613]`
+      then `CALLN 022B` with
+      `[81B3]`).
       Owned `[D6AC]`
       stores are remaps, not pad-hit. See
       [`notes/pad_note.md`](notes/pad_note.md). `+0054` is

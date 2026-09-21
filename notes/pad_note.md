@@ -447,9 +447,20 @@ of that Param byte and the same
 pad-hit. Do not invent a
 16-level algorithm.
 
-`00A5` (file `0x3E245`): `B354:03B1` with label
-`Center pad:` (`+3EB9`) and value `[E613]`, bounds
-`0` / `0x0D`. **PROVEN** as that display. `CF37:0305`
+`00A5` (file `0x3E245`): `PUSH [E613]`;
+`PUSH +3EB9` (file `0x3E249`);
+`CALLF B354:03B1` (file `0x3E24C`)
+with bounds `0` / `0x0D`. **PROVEN**
+as the `16 Levels` display of the
+named `Center pad:` value. Then
+`MOV AL,[81B3]` (file `0x3E258`);
+`CS: CALLN 022B` (file `0x3E25C`
+`90 0E E8 6A 01`). **PROVEN** as
+the main-screen caller of the
+named `022B` leftover, same
+`[81B3]` as `[BP+8]` as dests
+`0105` / `0131`. Not a pad-hit.
+Do not BFS `B77C:20C5`. `CF37:0305`
 (file `0x4F675`, leftover after `0304` `RETF`,
 `CALLN` from `0259`) stores `MOV [E613],0x0D` and
 `MOV [E614],0x23` (file `0x4F695` / `0x4F69A`).
