@@ -418,6 +418,17 @@ def emit_ledger(image: bytes | None = None) -> dict:
                     "NOP between owned ranges",
                 )
             )
+        elif end - start == 1 and image[start] == 0xFF:
+            seed.append(
+                (
+                    start,
+                    end,
+                    "data",
+                    "padding",
+                    "notes/padding.md",
+                    "0xFF align between owned ranges",
+                )
+            )
     seed.sort(key=lambda rec: rec[0])
     ranges = []
     prev_end = -1

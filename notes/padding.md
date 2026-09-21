@@ -5,9 +5,10 @@
 **Date:** 2026-09-21.
 
 Closes D13. Every maximal `0xFF` run of 4 or more bytes is classified.
-Shorter runs are immediates or data words (`MOV CX,0xFFFF`,
-`FFFF:FFFF` already owned inside a table, and the like). They are not
-padding windows.
+A 1-byte `0xFF` whose both neighbors are already owned is align
+padding (same emit pass as the 1-byte `NOP` rule). Other short runs
+are immediates or data words (`MOV CX,0xFFFF`, `FFFF:FFFF` already
+owned inside a table, and the like). They are not padding windows.
 
 Reproduction: `python3 tools/verify_boot_slice.py`.
 
@@ -21,7 +22,7 @@ Reproduction: `python3 tools/verify_boot_slice.py`.
 | Observable | 15 runs of length ? 4; 11 are padding; 3 are table terminators; 1 overlaps the reset vector |
 | Inputs | Linear image; owner ledger |
 | Outputs | Ledger `kind=padding` rows below |
-| Confidence | All-`0xFF` bounds **PROVEN**. Filler *intent* (unprogrammed ROM vs assembler align) **HYPOTHESIS**. Neighbors that are not yet owned stay gaps |
+| Confidence | All-`0xFF` bounds **PROVEN**. Isolated 1-byte `0xFF` between owned ranges **PROVEN** as padding. Filler *intent* (unprogrammed ROM vs assembler align) **HYPOTHESIS**. Neighbors that are not yet owned stay gaps |
 | Hardware deferred | None |
 
 ---
@@ -85,6 +86,16 @@ inventory.
 | `[0x7B7FE, 0x7B802)` | data / table terminator |
 | `[0x7B80E, 0x7B812)` | data / table terminator |
 | `[0x7BA01, 0x7FF00)` | data / padding |
+| `[0x31B11, 0x31B12)` | data / padding — specimen 1-byte `0xFF` after `RETF` |
+
+---
+
+## 3. Isolated 1-byte align
+
+`emit_ledger` owns every 1-byte `0xFF` gap between already-owned
+ranges as `data`/`padding`. That is the same pass as the 1-byte
+`NOP` rule. The 1-byte `CB` at `0x59C05`, `CF` at `0x7ADA3`, and
+`58` at `0x7BA00` are not `0xFF` and stay gaps.
 
 ---
 

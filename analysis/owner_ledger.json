@@ -6,7 +6,7 @@
     "excluded_workspace"
   ],
   "rule": "Gaps are debt. unresolved is not an owner. No excluded_workspace without a purpose.",
-  "owned_bytes": 342774,
+  "owned_bytes": 342802,
   "ranges": [
     {
       "start": "0x00000",
@@ -263,6 +263,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x31B11",
+      "end": "0x31B12",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
     },
     {
       "start": "0x31B12",
@@ -665,6 +673,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x4F0C5",
+      "end": "0x4F0C6",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x4F0C6",
       "end": "0x4F0DC",
       "owner": "code",
@@ -711,6 +727,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x4F179",
+      "end": "0x4F17A",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
     },
     {
       "start": "0x4F17A",
@@ -881,6 +905,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5218F",
+      "end": "0x52190",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x52190",
       "end": "0x521C9",
       "owner": "code",
@@ -919,6 +951,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x521F7",
+      "end": "0x521F8",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
     },
     {
       "start": "0x521F8",
@@ -1521,6 +1561,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x561A9",
+      "end": "0x561AA",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x561AA",
       "end": "0x561C3",
       "owner": "code",
@@ -1953,6 +2001,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x56D49",
+      "end": "0x56D4A",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x56D4A",
       "end": "0x56D7F",
       "owner": "code",
@@ -2041,6 +2097,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x56F7B",
+      "end": "0x56F7C",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x56F7C",
       "end": "0x57379",
       "owner": "code",
@@ -2055,6 +2119,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x58B59",
+      "end": "0x58B5A",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
     },
     {
       "start": "0x58B5A",
@@ -2353,6 +2425,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x59B4F",
+      "end": "0x59B50",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x59B50",
       "end": "0x59B95",
       "owner": "code",
@@ -2489,6 +2569,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5A08F",
+      "end": "0x5A090",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x5A090",
       "end": "0x5A0B6",
       "owner": "code",
@@ -2529,6 +2617,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5A0FD",
+      "end": "0x5A0FE",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x5A0FE",
       "end": "0x5A20C",
       "owner": "code",
@@ -2561,12 +2657,28 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5A665",
+      "end": "0x5A666",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x5A666",
       "end": "0x5A9B1",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x5A9B1",
+      "end": "0x5A9B2",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
     },
     {
       "start": "0x5A9B2",
@@ -2929,6 +3041,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5C053",
+      "end": "0x5C054",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x5C054",
       "end": "0x5C08E",
       "owner": "code",
@@ -3193,6 +3313,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5C853",
+      "end": "0x5C854",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x5C854",
       "end": "0x5CA24",
       "owner": "code",
@@ -3385,6 +3513,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5CE4B",
+      "end": "0x5CE4C",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x5CE4C",
       "end": "0x5CE9C",
       "owner": "code",
@@ -3471,6 +3607,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x5CF05",
+      "end": "0x5CF06",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
     },
     {
       "start": "0x5CF06",
@@ -3569,6 +3713,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5D709",
+      "end": "0x5D70A",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x5D70A",
       "end": "0x5D721",
       "owner": "code",
@@ -3657,12 +3809,28 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5D8AD",
+      "end": "0x5D8AE",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x5D8AE",
       "end": "0x5D953",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x5D953",
+      "end": "0x5D954",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
     },
     {
       "start": "0x5D954",
@@ -3889,6 +4057,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5DDDD",
+      "end": "0x5DDDE",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x5DDDE",
       "end": "0x5DDFD",
       "owner": "code",
@@ -3929,6 +4105,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5DE6F",
+      "end": "0x5DE70",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x5DE70",
       "end": "0x5DE95",
       "owner": "code",
@@ -3937,12 +4121,28 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x5DE95",
+      "end": "0x5DE96",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x5DE96",
       "end": "0x5DF19",
       "owner": "code",
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
+    },
+    {
+      "start": "0x5DF19",
+      "end": "0x5DF1A",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
     },
     {
       "start": "0x5DF1A",
@@ -4369,6 +4569,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x656F7",
+      "end": "0x656F8",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x656F8",
       "end": "0x6572A",
       "owner": "code",
@@ -4609,6 +4817,14 @@
       "why": "bounded CALL dest reachable from a D16 entry or switch-table dest"
     },
     {
+      "start": "0x69373",
+      "end": "0x69374",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
+    },
+    {
       "start": "0x69374",
       "end": "0x6937C",
       "owner": "code",
@@ -4695,6 +4911,14 @@
       "kind": "code",
       "source": "notes/transfer_scan.md",
       "why": "D16 local-walk instruction bytes"
+    },
+    {
+      "start": "0x6B693",
+      "end": "0x6B694",
+      "owner": "data",
+      "kind": "padding",
+      "source": "notes/padding.md",
+      "why": "0xFF align between owned ranges"
     },
     {
       "start": "0x6B694",

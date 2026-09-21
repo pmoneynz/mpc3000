@@ -18,9 +18,9 @@ Reproduction: `python3 tools/owner_ledger.py --write` then
 | Field | Value |
 |-------|-------|
 | Purpose | Machine-readable owner map for proven file ranges |
-| Observable | `analysis/owner_ledger.json`; 720 ranges; 342774 owned bytes |
+| Observable | `analysis/owner_ledger.json`; 748 ranges; 342802 owned bytes |
 | Inputs | Byte-ownership tables in the notes; D16 walks; bounded CALL dests to fixpoint from D15 and switch-table IPs |
-| Outputs | Owner `code` or `data` only. 161 gaps left as debt |
+| Outputs | Owner `code` or `data` only. 133 gaps left as debt |
 | Confidence | Seed spans **PROVEN** as the union of those tables. Gaps are **UNDETERMINED**, not owners |
 | Hardware deferred | None |
 
@@ -38,6 +38,9 @@ G2 notes already opened more ranges. The seed is the union, not
 the two files alone. Adjacent same-owner spans are merged only
 when they form one proven block (AMX `0x7B04E-0x7B5E9`, BIOS
 ladder through `1AD4`).
+
+Isolated 1-byte `0xFF` between owned ranges is `data`/`padding`
+(28 sites). The 1-byte `NOP` rule is unchanged.
 
 `E937:0004` is `[0x69374, 0x6937C)` (8 bytes through `RETF`). The
 create-table note’s exclusive end `0x6937B` is a subset.

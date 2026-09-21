@@ -248,6 +248,15 @@ class BootSliceTests(unittest.TestCase):
         self.assertGreaterEqual(
             sum(1 for rec in ledger["ranges"] if rec.get("kind") == "align"), 26
         )
+        self.assertEqual(self.image[0x31B11], 0xFF)
+        self.assertEqual(
+            sum(
+                1
+                for rec in ledger["ranges"]
+                if rec.get("kind") == "padding" and int(rec["end"], 16) - int(rec["start"], 16) == 1
+            ),
+            28,
+        )
 
     def test_string_scan_consumers(self) -> None:
         scan = load_scan()

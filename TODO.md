@@ -101,9 +101,9 @@ G1 is complete only when D1 and D3 are `[x]` (D3-glass may stay PARTIAL).
       all established.
 - [ ] **D17.** No gap and no overlap in the ledger. `unresolved` is
       debt. Regenerating the ledger must match the notes.
-      Progress: 342774 owned / 161 gaps. `B1BC:0040` is hole-exact
-      `LES DI`/`SCASB` count through `RETF` (`CALLN` `B1BC:0382`).
-      `DCA2:0154` is `MOV AL,0x59` / `JMP 0016` (`CALLF` `DE5C:055B`).
+      Progress: 342802 owned / 133 gaps. Isolated 1-byte `0xFF`
+      between owned ranges is align padding (28 bytes). `D3A7:0005`
+      `INT 40` and `8CD8CB` at `0x59EA5` still have no owned caller.
       `20FE`/`2106`/`210E` and `DB28:0A07` have no owned caller.
       `0xC0xx` bit meaning is not claimed. Unentered app ROM
       remains. The 1-byte `CF` at `0x7ADA3` has no entry.
