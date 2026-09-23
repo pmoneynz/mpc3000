@@ -41,8 +41,11 @@ P7/P8: `D9B5` consumes page 61 (`ES=0xF400`) at 24-bit
 DGROUP `+0054` is a 101-slot pan-name table (`Pan:` /
 `B354:01C6`), not pad labels ([`notes/pan_table.md`](notes/pan_table.md)).
 D20 pad/note assign UI is in [`notes/pad_note.md`](notes/pad_note.md).
-Pad-hit writer of `[D6AC]` is still open. Owned `[D6AC]` stores are
-note-to-slot remaps, not pad-hit.
+Owned `[D6AC]` stores are note-to-slot remaps. The only other
+store, `D52A:0328`, has no static entry and no reached computed
+near entry (D20). D510’s callers and
+task 7’s two-level walks do not write the PGR window
+([`notes/pgr_live_after_amx.md`](notes/pgr_live_after_amx.md)).
 
 Physical hardware qualification is deferred. Continue software-verifiable
 work. Record any fact that cannot be distinguished without hardware as an
@@ -89,7 +92,7 @@ Current slice (2026-09-21): reset through the FAC0 boot stub, first and
 second PGR, LC7981 init and BIOS banner via `INT 43`, and AMX dispatch
 through task 6 create and task 7 select. The `0x7C92` copy is the `8010`
 DGROUP; the owner ledger and entry/string/transfer inventories are seeded
-(365870 owned bytes; gaps stay unowned). Glass pixels stay open.
+(379868 owned bytes, 132 gaps). Glass pixels stay open.
 U-AMX-WAIT is closed by IVT[8] `D52A:0008`
 ([`notes/amx_wait.md`](notes/amx_wait.md)). Evidence:
 [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md),

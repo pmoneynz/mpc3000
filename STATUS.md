@@ -5,10 +5,11 @@
 
 This tree was a document-and-dump pack. It now has a project goal, an
 address model, a static reset-to-AMX-start slice, a seeded owner
-ledger (864 ranges, 365870 bytes), a consumer-established string
+ledger (986 ranges, 379868 bytes), a consumer-established string
 inventory, an entry inventory (143 unique `CS:IP`), and a
 local-exit inventory (128 bounded / 14 indirect / 1 idle loop).
 It does not have whole-image coverage or Ghidra exports.
+R3 is closed: `0x7AC1C` is pinned `BRKXA 0x11` and checked by the verifier and unit tests.
 U-AMX-WAIT is closed by IVT[8] `D52A:0008`
 ([`notes/amx_wait.md`](notes/amx_wait.md)).
 
@@ -59,7 +60,7 @@ U-AMX-WAIT is closed by IVT[8] `D52A:0008`
   shadow live at `0040:68AB` / `0040:662B`.
 - File `[0x00054, 0x20000)` is `0xFF` padding. Three IVT template slots
   sit in the 128 KiB prefix.
-- Owner ledger: 865 ranges, 365870 bytes, 116 gaps. Owners are
+- Owner ledger: 986 ranges, 379868 bytes, 132 gaps. Owners are
   `code` or `data` only. Every `0xFF` run of 4+ bytes is classified.
 - String scan (D14): 1096 C-string starts are text because a
   consumer points at them (directory 345 `8010` ptrs, 27 disk
@@ -93,8 +94,10 @@ Validator: `python3 tools/verify_boot_slice.py`.
   is closed; see [`notes/amx_first_dispatch.md`](notes/amx_first_dispatch.md).
 - LC7981 glass pixels (`D3-glass`). Software banner path is closed.
 - PGR after task 7 runs (`U-XA-LIVE`). Second table is live through
-  task 6’s first wait and task 7 select. Only three full-table `OUTSW`
-  sites exist, all FAC0.
+  task 6’s first wait, task 7 select, `D9DD:005D`, and `DDC0:0031`
+  (`RETF` files `0x5DCEE` / `0x5DD11`; no `MOV DX`/`OUT` into
+  `0xFF00-0xFF7E`). Next unwalked third-level is `DDC0:000F`.
+  Only three full-table `OUTSW` sites exist, all FAC0.
 - First ready of create-table slot 2. Slot 0 is the IVT[8] tick
   ([`notes/amx_wait.md`](notes/amx_wait.md)).
 - Word `+2` = `0x0100` and the `+0238` numeric-island *meaning*
@@ -105,9 +108,9 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - DGROUP `+0054`..`+01E4` is 101 pan names (`50L`..` C `..`50R`),
   not drum-pad labels. Owned printer `B354:01C6` is called with
   title `Pan:` ([`notes/pan_table.md`](notes/pan_table.md)).
-- D20 pad/note assign UI and owned `[D6AC]` remap stores are documented in
-  [`notes/pad_note.md`](notes/pad_note.md). Pad-hit writer of `[D6AC]` is
-  still unnamed.
+- D20 is closed: reachable `[D6AC]` writers are clamps and note-to-slot
+  remaps. `D52A:0328` has no static or computed near entry. A pad hit on
+  the wire stays D19.
 - PGR page 61 word `0x0140` maps to 24-bit `0x500000`
   (full-word `v33_translate`). Consumer is `D9B5`
   `ES=0xF400`; `ES:[03FE]` is `0x5003FE` inside the
@@ -117,7 +120,7 @@ Validator: `python3 tools/verify_boot_slice.py`.
 - Instruction bounds for CALL dests that are still indirect or
   have no named consumer. Jump-table *selection* (`BX` domain)
   at the six `CS:[BX+disp]` sites.
-- Whole-image ledger coverage (D17). 116 gaps remain (365870 owned). Later
+- Whole-image ledger coverage (D17). Reached `D52A:0312` stores `[7626]=0x0492`; `D52A:0492` through `JMP 06A0` is owned. 132 gaps remain (379868 owned). Later
   `IVT[8]` is `FB93:0059` (file `0x7B989`). `F800:1906` is
   a 16×4-byte OUTSW table.   `D547:0561` is a 16-IP `DI` switch. `D547:053A` is 8 IPs
   (`AND BX,0x0E`); slot 7 is `054A`.

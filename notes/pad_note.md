@@ -2,7 +2,7 @@
 
 **Image:** Vailixi 3.50 linear
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
-**Date:** 2026-09-21.
+**Date:** 2026-09-22.
 
 Names the owned assign screen, the 64-slot note table
 accessors, and the owned writers of `[D6AC]`. Those writers
@@ -23,7 +23,7 @@ Reproduction: `python3 tools/verify_boot_slice.py`.
 | Observable | `C44E:0005` `MIDI` menu dest 0 `CALLN` `0119`; `C44E:0119` title `Assign Pads to Note Numbers`; `C44E:00C2` `(Gen MIDI:` of the `000C` note; `D9F2:000C` / `003D` / `0072`; `[E5F9]` via `CA45:0008` / `DA04:002B`; `BE1A:026C` `Pgm`; `BE1A:0002` `16 Levels` |
 | Inputs | `[D6AC]` 0..0x3F; `D9F2` `[BP+6]` index or note; `0072` `[BP+8]` note |
 | Outputs | `000C` returns a byte; `003D` returns a slot or `-1`; `0072` stores a byte clamped `0x22`..`0x62` |
-| Confidence | Screen strings, `[D6AC]` 0..0x3F, `D9F2` encodings, remap stores, `+0859` `0x23`..`0x62`, and `BE1A` Param `TUNING`..`FILTER` **PROVEN**. That `+11` is a MIDI note **HYPOTHESIS** (range + `Note:`). Pad-hit writer of `[D6AC]` **UNDETERMINED** |
+| Confidence | Screen strings, `[D6AC]` 0..0x3F, `D9F2` encodings, remap stores, `+0859` `0x23`..`0x62`, and `BE1A` Param `TUNING`..`FILTER` **PROVEN**. That `+11` is a MIDI note **HYPOTHESIS** (range + `Note:`). No static entry and no reached computed near entry to `D52A:0328` **PROVEN** |
 | Hardware deferred | Pad scan on the wire (D19 / P1 / P4) |
 
 ---
@@ -114,10 +114,10 @@ Already-owned `C44E:00C2` (file `0x445A2`,
 `0x445B7`). The assign screen `CALLN`s
 it at `01C5` / `022F` / `02AC` with
 `[BP-2]` (the named `000C` return).
-`01C5` (file `0x4469B`) is
+`01BB` (file `0x4469B`) is
 `PUSH 0x12` / `PUSH 2` / `MOV AL,[BP-2]`
 / `CBW` / `PUSH AX` / `PUSH CS` /
-`E8 FA FE`. When `SI>0x22`: `PUSH +5010`
+`CALLN` at `01C5` (file `0x446A5`, `E8 FA FE`). When `SI>0x22`: `PUSH +5010`
 `(Gen MIDI:` (file `0x445BD` /
 `0x25010`); `SHL BX,2`; `PUSH
 [BX+03EE]` / `[BX+03EC]` (file
@@ -196,8 +196,8 @@ ROM default into the `8010:8376` overlay. `B21A:000F`
 `0x321AF` `90 0E E8 1F 00`). Already-owned
 `BDF1:0014` / `0022` (files `0x3DF24` /
 `0x3DF32`) `CALLF` that wrapper. Same
-`BDF1` path as the named `00E1`
-`000C(0)` ? `[D6AD]` store. **PROVEN.**
+`BDF1` path as the named `00E1` store of
+`000C(0)` into `[D6AD]`. **PROVEN.**
 Gap `CALLF B21A:0033` at file `0x48722`
 stays unseeded.
 
@@ -206,24 +206,28 @@ stays unseeded.
 store sets `[8375]` nonzero. The `000C` overlay-read arm
 is encoded; who selects it is **UNDETERMINED**.
 
-`CF37:04AD` (file `0x4F81D`, leftover after `044F` `RETF`,
-already owned). `CALLF DA04:002B` (file `0x4F828`);
+`CF37:044F` is `PUSH BP` (file `0x4F7BF`), not a
+`RETF`. Its `RETF` is `04AC` (file `0x4F81C`).
+`CF37:04AD` (file `0x4F81D`) is the next byte.
+`CALLF DA04:002B` (file `0x4F828`);
 `MOV [BP-2],DX`; `MOV [BP-4],AX` (file
-`0x4F830`). `LES BX,[BP-4]` (file
-`0x4F864`) then stores the named
-`Pgm` fields: `ES:[BX+11]=0x22`
-(file `0x4F867`); `+12`/`+13`,
-`+14`/`+15`, `+16`/`+17`,
-`+18`/`+19` (files `0x4F86C` /
-`0x4F876` / `0x4F880` /
-`0x4F88A`). **PROVEN** as defaults
-on the picker record, the same
-`+11` / Param pairs `BE1A:0641`
-reads. Do not name the other
-`+1A`.. stores. At `056A` (file
-`0x4F8DA`): `ADD DI,0x073E`;
-`MOV AL,[SI+8376]`; `MOV ES,[BP-2]`; `MOV ES:[DI],AL`;
-loop `SI<0x40`. **PROVEN** as overlay to far-`+073E`
+`0x4F830`). `OR AX,DX` / `75 03` at file
+`0x4F838` reaches the stores only when that
+pointer is nonzero. Otherwise `JMP 05B8`
+(file `0x4F83A`) and `RETF` at `05BB`.
+`LES BX,[BP-4]` (file `0x4F864`) then
+`ES:[BX+11]=0x22` (file `0x4F867`);
+`+12`/`+13`, `+14`/`+15`, `+16`/`+17`,
+`+18`/`+19` (files `0x4F86C` / `0x4F876` /
+`0x4F880` / `0x4F88A`). **PROVEN** on that
+nonzero arm, the same `+11` / Param pairs
+`BE1A:0641` reads. Do not name the other
+`+1A`.. stores. `ADD DI,0x073E` at `056A` (file
+`0x4F8DA`) runs once. The loop is `056E`: `MOV
+AL,[SI+8376]`; `MOV ES,[BP-2]`; `MOV ES:[DI],AL`;
+`INC DI`; `INC SI`. `7C EF` at file `0x4F8ED` is
+signed `JL 056E` while `SI<0x40`. **PROVEN** as
+overlay to far-`+073E`
 (the live table `000C` reads when `[8375]==0`).
 `CALLF CF37:0002` at file `0x507AC` pins CS `CF37`.
 
@@ -240,16 +244,19 @@ loop `SI<0x40`. **PROVEN** as overlay to far-`+073E`
 `0x17700` is `0xFF` padding, not the live table.
 
 `DA04:002B` (file `0x5A06B`, already owned). `CX=[BP+6]`;
-`DS=0x9770`. If `CX>=[0002]`, `DX:AX=0`. Else
-`AX=[0000]*CX+4`, `DX=0x9770`. **PROVEN:** word `+0` is
-record size, word `+2` is count, records start at `+4`.
+`DS=0x9770`. `7D 0B` at file `0x5A07F` is signed `JGE`.
+If `CX` is signed `>= [0002]`, `DX:AX=0`. Else `MUL CX`
+writes `DX:AX`, `ADD AX,4` does not carry into `DX`, and
+`MOV DX,0x9770` replaces that high half. **PROVEN:**
+word `+0` is the stride, word `+2` is the signed limit,
+records start at `+4`.
 
 `CA45:0008` (file `0x4A458`, already owned). Index
 `[BP+6]` must be `0..0x17`. `PUSH [BP+6]`;
 `CALLF DA04:002B` (file `0x4A46A`
 `9A 2B 00 04 DA`); `ADD SP,2`;
-`MOV [E5FB],DX`; `MOV [E5F9],AX`
-(file `0x4A472`, already pinned).
+`MOV [E5FB],DX` (file `0x4A472`);
+`MOV [E5F9],AX` (file `0x4A476`).
 Then `MOV AL,[BP+6]` (file
 `0x4A479` `8A 46 06`); `MOV
 [E60E],AL` (file `0x4A47C`
@@ -262,7 +269,8 @@ the picker pointer. Then
 `CALLF C4C8:1D83` / `1C57` (mid-hole; do not BFS).
 After that store: `LES BX,[E5F9]` (file
 `0x4A4AC`); `MOV AL,ES:[BX+11]` (file
-`0x4A4B0`); `MOV DX,0x18` / `IMUL DX`
+`0x4A4B0`); `MOV [996C],AL` (file `0x4A4B4`); `CBW`;
+`MOV DX,0x18` / `IMUL DX`
 (file `0x4A4B8`); `ADD BX,AX`;
 `MOV AL,ES:[BX+FD0D]` (file `0x4A4BF`);
 `MOV [996B],AL` (file `0x4A4C4`); then
@@ -302,10 +310,11 @@ The screen title already carries `Pgm:`. Sibling
 of `0508` `CA45`. Not a pad-hit.
 Already-owned `0637` dest `0508`
 (file `0x3E6A8`, table word
-`0x3E7D7`) does `MOV AL,[BP-9]`;
+`0x3E7D6`) does `MOV AL,[BP-9]`;
 `DEC AX`; `CALLF C887:1BE8`
-(file `0x3E6AE`). That dest is
-the named `CA45:0008` linear.
+(file `0x3E6AE`). That `DEC AX` restores
+the `0..0x17` index. It does not enter
+`CA45:0008`.
 **PROVEN** as the 1-based
 `[E60E]` converted back to
 `CA45`'s `0..0x17`. Not a
@@ -320,8 +329,8 @@ At `0329` (file `0x3E4C9`): `LES BX,[E5F9]`;
 `0x3E4E4`). **PROVEN** as the Slider printer of
 the named `+11` `Note:` byte. Title `+3E62` is
 the NUL after `VELOCITY` (same as `0315` /
-`03AC`). Bounds match the named `D9F2:0072`
-clamp `0x22`..`0x62`. Not a pad-hit. That `+11`
+`03AC`). `0x22` and `0x62` are the `D9F2:0072` clamp
+ends. The third push, `0x18`, is not that clamp. Not a pad-hit. That `+11`
 is a MIDI note remains **HYPOTHESIS**. `0523`
 (file `0x3E6C3`) writes that temp back to
 `ES:[BX+11]`. **PROVEN** as that store. Do not
@@ -331,10 +340,11 @@ newly name the temp. Do not name `0637` dest
 At `037B` (file `0x3E51B`): `MOV [996B],0` before
 the `0380` load. **PROVEN** as the default of the
 named Param byte so `03AC` prints 0 when the named
-`+11` byte is `<0x23`. Not a pad-hit.
+`+11` byte is signed `< 0x23` (`7C`), including
+`0x80`..`0xFF`. Not a pad-hit.
 
 At `0380` (file `0x3E520`): if the named `+11` byte
-is `>=0x23`, `AX` is that byte `*0x18`; `LES BX,[E5F9]`;
+is signed `>= 0x23` (`0x23`..`0x7F`), `AX` is that byte `*0x18`; `LES BX,[E5F9]`;
 `ADD BX,AX`;
 `AL=ES:[BX+FD0D]`; `MOV [996B],AL`. **PROVEN** as
 the `Param:` index. `+FD0D` is a 16-bit disp
@@ -368,8 +378,11 @@ as consumers of the named Param
 byte. Not a pad-hit. Do not name
 the `0CBF` dests.
 
-`03BA` (file `0x3E55A`): `MOV BX,[996B]`; `CMP BX,3`;
-`JBE` then `SHL BX,1`; `JMP CS:[BX+0641]`. The
+`03B4` (file `0x3E554`) is `MOV AL,[996B]` /
+`CBW` / `MOV BX,AX`, not a word load of `[996B]`.
+`03BA` (file `0x3E55A`) is `CMP BX,3`. `76 03` is
+unsigned `JBE 03C2`; otherwise `JMP 0465`. Then
+`SHL BX,1` and `JMP CS:[BX+0641]`. The
 owned table at `BE1A:0641` (file `0x3E7E1`, already
 `jump_table`) is `03C9` / `03F1` / `0418` / `043F`.
 Those IPs load signed pairs into `Low range:` /
@@ -394,9 +407,12 @@ name table. Not a pad-hit.
 (wrong CS) and sits in a gap. Do not seed it.
 
 Already-owned `0592` (file `0x3E732`)
-`MOV AL,[996B]`; `CMP BX,3` (file
-`0x3E738`); `SHL BX,1`; `JMP
-CS:[BX+062F]` (file `0x3E73F`).
+`MOV AL,[996B]`; `CBW`; `MOV BX,AX`.
+`0598` (file `0x3E738`) is `CMP BX,3`.
+`77 57` at file `0x3E73B` is `JA 05F4`,
+taken when unsigned `BX>3`. The table
+path is the fall-through: `SHL BX,1`;
+`JMP CS:[BX+062F]` (file `0x3E73F`).
 Table at file `0x3E7CF` (already
 `jump_table`) is `05A4` / `05B8` /
 `05CC` / `05E0`. Those dests
@@ -411,29 +427,38 @@ pad-hit. Do not name the `0637`
 dests.
 
 Already-owned `D9C0:0006` (file `0x59C06`)
-takes `[BP+8]`, rejects `>3` (file
-`0x59C0F`), and `JMP CS:[BX+0095]`
-(file `0x59C16`). Table at file
-`0x59C95` is `001B` / `003F` /
-`0053` / `0067`. Those dests
-`LES [E5F9]` and load `+12`/`+13`,
-`+14`/`+15`, `+16`/`+17`,
-`+18`/`+19` (files `0x59C1B` /
-`0x59C3F` / `0x59C53` /
-`0x59C67`). **PROVEN** as the same
-Param `0..3` pair map. Shared tail
-`007F` is uninterpreted. Owned
-callers: `BE1A:026C` (file
-`0x3E79C`, pushes `[996B]`) and
-`CA45:0008` (file `0x4A4CC`).
-Gap `CALLF`s at `0x5564F` /
-`0x556DB` / `0x55C0E` stay
-unseeded.
+is `PUSH BP` / `MOV BP,SP`. `0009` (file `0x59C09`)
+is `MOV AL,[BP+8]` / `CBW` / `MOV BX,AX`.
+`000F` (file `0x59C0F`) is `CMP BX,3`.
+`77 6B` at file `0x59C12` is `JA 007F`,
+taken when unsigned `BX>3`. The table
+path is the fall-through: `SHL BX,1` and
+`JMP CS:[BX+0095]` (file `0x59C16`).
+Table at file `0x59C95` is `001B` /
+`003F` / `0053` / `0067`. Those dests
+`LES BX,[E5F9]` and load `+12`/`+13`,
+`+14`/`+15`, `+16`/`+17`, `+18`/`+19`
+(entries at files `0x59C1B` / `0x59C3F` /
+`0x59C53` / `0x59C67`). **PROVEN** as the
+same Param `0..3` pair map. Shared tail
+`007F` is uninterpreted. Owned callers
+are `BE1A:05FC` (file `0x3E79C`) and
+`CA45:007C` (file `0x4A4CC`). Before `05FC`,
+`05F4` (file `0x3E794`) loads `AL` from `[996B]`
+and pushes `AX`; `05F8` (file `0x3E798`) loads
+`AL` from `[9969]` and pushes `AX`. Before `007C`,
+`0074` (file `0x4A4C4`) stores `AL` to `[996B]`
+and pushes `AX`; `0078` (file `0x4A4C8`) loads
+`AL` from `[9969]` and pushes `AX`. In both,
+`[BP+8]` is the first of those words. Gap `CALLF`s at `0x5564F` and
+`0x556DB` stay unseeded. File `0x55C0E`
+is the same `9A 06 00 C0 D9`, but it is
+owned `[0x55BF0, 0x55C1F)`.
 
 Do not BFS `B77C:20C5`, `B77C:202D`, or `C887:09AC`.
 
 `CF37:04AD` also `CALLF DA04:002B` (file `0x4F828`)
-and writes `+11` / `+12`..`+19` on
+and writes `+11` / `+12`..`+1A` on
 that picker pointer before the
 overlay-to-`+073E` copy. Not
 `[E5F9]` / `[E60E]`.
@@ -448,7 +473,7 @@ Sole `9A` consumer is `C425:01F6` (file `0x44446`
 via `B509:2289`. **PROVEN.**
 
 `0015` (file `0x3E1B5`): `MOV AL,[D6AD]`; copy to
-`[BP-1]`; bounds `0x23` / `0x62` (file `0x3E1BB`
+`[BP-1]`; bounds `0x18` / `0x62` / `0x23` (file `0x3E1BB`
 `6A 18 6A 62 6A 23`); `PUSH +3EAA` (file `0x3E1C9`);
 `CALLF B354:03B1` (file `0x3E1CC`). **PROVEN** this
 screen shows the selected note already held in
@@ -459,7 +484,7 @@ screen shows the selected note already held in
 `CALLF B354:01C6` (file `0x3E201`). Directory
 `+3E22` / `+3E26` is `VELOCITY` / `NOTE VAR` plus
 a NULL. **PROVEN** as the `Param:` names. Then
-`PUSH [BP-1]`; `CS: CALLN 0203` (file `0x3E20E`
+`MOV AL,[BP-1]` / `CBW` / `PUSH AX`; `CS: CALLN 0203` (file `0x3E20E`
 `90 0E E8 90 01`). **PROVEN** as the main-screen
 caller of the named `0203` FD0D helper with that
 `[D6AD]` note. Not a pad-hit. Do not invent a
@@ -471,21 +496,39 @@ init as `01DD` `MOV [8375],0`): `MOV [81B3],0`.
 `A2 B3 81` at file `0x5771E` is mid-gap. Do not seed it.
 
 Already-owned leftover `DC2A:0033` (file
-`0x5C2D3`) branches to `0067`: `CMP
-ES:[BX],0x90` (file `0x5C30A`); if
-`[81B3]==0` (file `0x5C317`) it loads
-event `+2` (file `0x5C321`). Sibling
-`DC85:0047` (file `0x5C897`) starts a
-loop at `0x23` (file `0x5C89F`) and
-uses the same `[81B3]==0` gate (file
-`0x5C8C4`). **PROVEN** as consumers
-of the named VELOCITY default. Not a
-pad-hit. Do not name the compared
+`0x5C2D3`, 20/24 `0xDC2D3`/`0x0DC2D3`,
+`PGR[55]=0x0037`) reaches `0067` when
+`[A7B4]==0` and `[A7B5]==0` (`74 1C` at
+file `0x5C2E9`). `006A` (file `0x5C30A`)
+is `CMP byte ES:[BX],0x90`; `75 30` at
+file `0x5C30E` skips the load when the
+byte is not `0x90`. Then `CMP [D698],0`
+(`74 07` at file `0x5C315`) jumps to the
+load when that byte is zero, so
+`[81B3]` is not tested. Only the other
+arm reads `[81B3]` (file `0x5C317`);
+`75 22` at file `0x5C31C` skips when it
+is nonzero. The load is `MOV AL,ES:[BX+2]`
+at file `0x5C321`. Sibling `DC85:0047`
+(file `0x5C897`) starts a loop at `0x23`
+(file `0x5C89F`) and uses the same
+`[D698]` bypass (`74 07` at file
+`0x5C8C2`) around `CMP [81B3],0` (file
+`0x5C8C4`). `[81B3]==0` falls into `007B`
+(file `0x5C8CB`), the `[996C]` compare.
+`[D698]==0` jumps there without reading
+`[81B3]`. There is no `MOV AL,ES:[BX+2]`
+on that path. Not a pad-hit. Do not name the compared
 RAM. Do not invent a 16-level
-algorithm. On that same
-`[81B3]==0` arm both leftovers
-then `MOV AL,[996B]` (files
-`0x5C333` / `0x5C8D9`).
+algorithm. Both leftovers then compare
+sign-extended `[996C]` with `[BP-2]`
+and `JNZ` over `MOV AL,[996B]`. The `DC2A`
+`JNZ` at file `0x5C331` falls into that
+move at `0x5C333`. The `DC85` `JNZ` at
+file `0x5C8D2` falls into `MOV AL,[996A]`
+at `0x5C8D4`, then `MOV AL,[996B]` at
+`0x5C8D9`. The move is not the whole
+`[81B3]==0` arm.
 **PROVEN** as consumers of the
 named Param byte `CA45` /
 `BE1A:0380` write. Do not name
@@ -500,8 +543,8 @@ this linear. `LES BX,[BP+6]`
 `MOV AL,ES:[BX+1]` (file
 `0x5C3B1`); `AND CL,0xF8` /
 `CMP CL,0xC0` (files `0x5C3BD` /
-`0x5C3C0`); `CALLN 013B` (file
-`0x5C3D0`). **PROVEN** as that
+`0x5C3C0`); `PUSH CS` / `CALLN 013B` (file
+`0x5C3D1`). **PROVEN** as that
 leftover dest and status mask.
 Not a pad-hit. Do not name
 `0281` / `013B`. Do not invent
@@ -527,19 +570,28 @@ Do not name the transform.
 Gap leftovers after `004D RETF`
 at `0x59EEE` stay unseeded.
 
-`BE1A:0203` (file `0x3E3A3`, already owned): if
-`[81B3]==0`, `DX=4`. Else `AX=[BP+6]*0x18`;
-`LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`. `0002` `0070`
-(file `0x3E20E`) passes the `[D6AD]` note.
-**PROVEN:** `NOTE VAR` reuses the same
-Param byte as `026C`; `VELOCITY` is the other arm
-(return 4 indexes the empty `+3E2E` slot). Do not name
+`BE1A:0203` (file `0x3E3A3`, already owned):
+`MOV DX,4` at `0206`. `74 17` at file `0x3E3AE`
+jumps to `MOV AX,DX` / `RETF` when `[81B3]==0`,
+so that arm returns 4. The other arm is
+`AX=[BP+6]*0x18`, `LES BX,[E5F9]`,
+`AL=ES:[BX+FD0D]`. `CALLN 0203` is at `0070`
+file `0x3E210` (the `90 0E` prefix is file
+`0x3E20E`) and passes `[BP-1]`. **PROVEN:**
+The nonzero arm is the same `*0x18` /
+`ES:[BX+FD0D]` lookup `026C` stores into
+`[996B]`. It returns that byte and does not
+read `[996B]`. The zero arm returns 4. The NULL directory slot
+is `+3E2A` file `0x23E2A`. `+3E2E` file `0x23E2E`
+is `8010:3E6C` `(TUNING)`. The caller pushes
+immediate `0x3E2E` at file `0x3E21C` and passes
+a pointer to the returned byte. Do not name
 a 16-level algorithm from this. Do not BFS
 `B77C:202D` / `20C5`.
 
 Already-owned `0002` switch dest
 `0105` (file `0x3E2A5`, table word
-`0x3E39D`). `PUSH [BP-1]`;
+`0x3E39D`). `MOV AL,[BP-1]` / `CBW` / `PUSH AX`;
 `CS: CALLN 0203` (file `0x3E2AA`
 `90 0E E8 F4 00`);
 `MOV [BP-2],AL` (file `0x3E2B2`);
@@ -549,7 +601,10 @@ read side that calls the named
 `0203` FD0D helper with the
 note. Then `CS: CALLN 022B`
 (file `0x3E2C7` `90 0E E8 FF 00`)
-with `[81B3]` as `[BP+8]`.
+`[BP+6]` is `[81B3]` and `[BP+8]` is the
+`0203` return previously stored in `[BP-2]`
+(push the return, then push `[81B3]`, then
+`PUSH CS` / `CALLN`).
 **PROVEN.** Not a pad-hit. Do
 not invent a 16-level algorithm.
 
@@ -560,9 +615,13 @@ Already-owned leftover `BE1A:022B`
 / `0x3E3E0`); on match `PUSH
 +3EB9` / `CALLF B1B1:005B`
 (files `0x3E3E7` / `0x3E3EA`).
-**PROVEN** as the named
-`Center pad:` string on the
-`VELOCITY` (`[81B3]==0`) arm.
+`75 1E` at file `0x3E3DE` and `75 18` at
+file `0x3E3E4` both skip the put unless
+`[BP+6]==1` and `[BP+8]==0`. From the
+callers that is `[81B3]==1` and the
+`0203` return equal to 0, not the
+`[81B3]==0` arm. **PROVEN** as that
+`Center pad:` put.
 Not a pad-hit. Do not name the
 other string. Do not invent a
 16-level algorithm.
@@ -570,11 +629,16 @@ other string. Do not invent a
 Already-owned `0002` switch dest
 `0131` (file `0x3E2D1`, table word
 `0x3E39F`, span `[0x3E292, 0x3E335)`).
-`CMP [81B3],0` / `JZ` skips the
-store on the VELOCITY default.
-Else clamp `[BP-2]` to `0..3`
-(file `0x3E2D8`); `AX=[BP-1]*0x18`;
-`LES [E5F9]`; `MOV ES:[BX+FD0D],AL`
+`CMP [81B3],0` / `74 21` at file
+`0x3E2D6` skips the store when the
+byte is zero. The other arm compares
+`[BP-2]` with 3 (`80 7E FE 03` at file
+`0x3E2D8`); `7E 04` is signed `JLE`,
+so only a value greater than 3 is
+forced to 3. There is no lower clamp.
+`AX=[BP-1]*0x18`;
+`LES [E5F9]`; `MOV AL,[BP-2]`;
+`MOV ES:[BX+FD0D],AL`
 (file `0x3E2F4`). Then
 `MOV AL,[81B3]` (file `0x3E317`)
 and `CS: CALLN 022B` (file
@@ -585,7 +649,9 @@ of that Param byte and the same
 pad-hit. Do not invent a
 16-level algorithm.
 
-`00A5` (file `0x3E245`): `PUSH [E613]`;
+`PUSH DS` (file `0x3E244`) then
+`PUSH 0xE613` (file `0x3E245`, the offset, not a load of
+`[E613]`);
 `PUSH +3EB9` (file `0x3E249`);
 `CALLF B354:03B1` (file `0x3E24C`)
 with bounds `0` / `0x0D`. **PROVEN**
@@ -595,17 +661,17 @@ named `Center pad:` value. Then
 `CS: CALLN 022B` (file `0x3E25C`
 `90 0E E8 6A 01`). **PROVEN** as
 the main-screen caller of the
-named `022B` leftover, same
-`[81B3]` as `[BP+8]` as dests
-`0105` / `0131`. Not a pad-hit.
+named `022B` leftover. Same push order as
+`0105` / `0131`: `[BP+6]` is `[81B3]`,
+`[BP+8]` is the byte from `[BP-2]`. Not a pad-hit.
 Do not BFS `B77C:20C5`. `CF37:0305`
 (file `0x4F675`, leftover after `0304` `RETF`,
 `CALLN` from `0259`) stores `MOV [E613],0x0D` and
 `MOV [E614],0x23` (file `0x4F695` / `0x4F69A`).
 Also zeros `[E60E]` (the `Pgm` index) and writes
 `[E60F]=2` / `[E610]=2` (file `0x4F681` / `0x4F686`).
-Then a 64-slot loop (`INC` / `CMP 0x40` at
-`0x4F6C3`) stores `64 32 00 09` at `[E639]+i*4`
+Then a 64-slot loop (`INC` at
+`0x4F6C3`, `CMP 0x40` at `0x4F6C6`) stores `64 32 00 09` at `[E639]+i*4`
 (file `0x4F6AF` `C6 87 39 E6 64`). **PROVEN** as
 those defaults. Do not name the dword bytes.
 Do not read `0x0D` as a pad-hit.
@@ -614,12 +680,13 @@ Create-table task 3 `EAD0:000B` (file `0x6AD0B`, already
 owned) is a named consumer of `[E614]`. After
 `E937:0004`, `CMP [E614],0x23` / `JB 006C` skips the
 body when the byte is below the note floor. Else
-`MOV AL,[E614]` (file `0x6AD1D`); `IMUL AX,0x18`
-(file `0x6AD22`); `LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`;
+`MOV AL,[E614]` (file `0x6AD1D`); `MOV AH,0`;
+`MOV DX,0x18` (file `0x6AD22`); `IMUL DX` (file
+`0x6AD25`); `LES BX,[E5F9]`; `AL=ES:[BX+FD0D]`;
 `ADD AL,0x90`. A second `MOV AL,[E614]` (file
 `0x6AD3B`) then `CMP ES:[BX+11],[E614]`. Then
-`PUSH SS` / `LEA [BP-6]` (file `0x6AD5F`)
-/ `CALLF CFB3:0008` (file `0x6AD64`).
+`PUSH SS` (file `0x6AD5F`) / `LEA [BP-6]` (file
+`0x6AD60`) / `CALLF CFB3:0008` (file `0x6AD64`).
 **PROVEN** as that dataflow. Default
 `[E614]=0x23` takes the body. `ADD AL,0x90` as MIDI
 note-on **HYPOTHESIS**. Do not name `[996A]`. Not a
@@ -627,7 +694,7 @@ pad-hit.
 
 `CFB3:0008` (file `0x4FB38`, already owned in
 `[0x4FAEB, 0x4FFFE)`). `LES BX,[BP+6]`;
-`AX=ES:[BX] & 0xF8`; switch `0xB0` / `0x80` /
+`MOV AL,ES:[BX]` / `MOV AH,0` / `AND AX,0xF8`; switch `0xB0` / `0x80` /
 `0x90` / `0xC0` / `0xF0`. The `0x90` arm
 (`009D`, file `0x4FBCD`) `CALLF CFC6:0007`
 (already owned, same span). The `0xB0`
@@ -636,7 +703,8 @@ arm (file `0x4FBDD`) requires
 `[E739]`, and `MOV [D6AB],0x50` (file
 `0x4FBEE`). **PROVEN.** Not `[D6AC]`.
 Do not name `[D6AB]` / `[E739]`. The `0xC0`
-arm (file `0x4FBF5`) pushes `ES:[BX+2]`
+arm (file `0x4FBF5`) does `MOV AL,ES:[BX+2]` /
+`MOV AH,0` / `PUSH AX`
 and `CALLF C887:1BE8` (file `0x4FBFF`
 `9A E8 1B 87 C8`). That linear file is
 `CA45:0008` (`0x4A458`), the already-named
@@ -654,7 +722,7 @@ already owned (`[0x509F3, 0x50E79)`).
 **PROVEN** as that gate and call. Do
 not name `D0AE`. The `0x80` arm
 requires `ES:[BX+2]` in `0x23`..`0x62` and
-indexes `[E5F9]` by that note via
+indexes `[E5F9]` by that note times `0x18`, then
 `ADD BX,0xFCF6` (file `0x4FBA3`). Then
 `CMP ES:[BX],0xFF` (file `0x4FBB0`) and
 `CMP ES:[BX+6],2` (file `0x4FBB9`).
@@ -668,24 +736,27 @@ Do not name `+0` / `+6`. Task 3's first packet byte is
 Already-owned `DCE4:000C` (file
 `0x5CE4C`). `AND AL,0xF8` (file
 `0x5CE8A`); `CMP 0x98` / `0xF8` /
-`0xF0`. The `0xF0` arm (file
-`0x5CEA4`) requires `ES:[SI+2]==0x47`
+`0xF0`. `CMP AL,0xF0` is file `0x5CEA4`.
+Not equal jumps to `00A4` and
+still calls. Equal falls into
+`ES:[SI+2]==0x47` (file `0x5CEA8`)
 and `ES:[SI+5]` in `{0x45,0x46}`
-(files `0x5CEA8` / `0x5CEAF` /
-`0x5CEB6`), then `CMP [E60F],1`
-or `CMP [E610],1` (files
-`0x5CEC9` / `0x5CED7`). **PROVEN**
-as the same `0xF0` gate as
-`CFB3` plus the named overlay
-flags. Not a pad-hit. Do not
+(files `0x5CEAF` / `0x5CEB6`).
+Failing either also jumps to `00A4`.
+Only that match tests `ES:[SI+6]`:
+`1` or `2` tests `[E60F]==1` (file
+`0x5CEC9`); `3` tests `[E610]==1`
+(file `0x5CED7`). Equal jumps to
+`00A4` (`EB 12` at `0x5CED0`, `EB 04`
+at `0x5CEDE`). Not equal jumps to
+`00BB` and skips the call. **PROVEN**
+as those tests. The byte values match
+`CFB3`; failing them here does not
+skip the call. Not a pad-hit. Do not
 name the `0x98` / `0xF8` arms.
 Owned callers `DC85:0047` (file
 `0x5C94E`) and leftover `011A`
-(file `0x5CA0A`). The
-`[E60F]==1` / `[E610]==1`
-taken arms `JMP` to `00A4`
-(files `0x5CED0` `EB 12` /
-`0x5CEDE` `EB 04`) then
+(file `0x5CA0A`). `00A4` reaches
 `CALLF DC3A:000A` (file
 `0x5CEF3`). That dest is the
 already-named `DC2A:010A`
@@ -696,7 +767,7 @@ name the other copy dests.
 `CFC6:0007` (file `0x4FC67`, same owned span).
 `ES:[BX+2]` must be `0x23`..`0x62` else
 `02D2` `POP`/`LEAVE`/`RETF`. Else
-`AX=note*0x18`; `LES BX,[E5F9]`;
+`AX=note*0x18`; `BX=[E5F9]`; `ES=[E5FB]`;
 `ADD BX,0xFCF6`; `AL=ES:[BX+0x0D]`.
 **PROVEN** as that index (effective
 `[E5F9]+note*0x18+FD03`, not `+FD0D`).
@@ -713,8 +784,11 @@ both pass the event note. **PROVEN.**
 cdecl at file `0x4FFFE`
 (`[0x4FFFE, 0x500CE)`). If event
 `[BP+0C]+0` is `0xFF` (file
-`0x5000F`) it `RETF`s. Else event
-`+7` / `+8` must be `>=0x23` (files
+`0x5000F`) it `RETF`s. Otherwise a
+computed byte of 0 also `RETF`s
+(`CMP ES:[BX],0` at file `0x50031`).
+Only then event `+7` / `+8` must be
+`>=0x23` (files
 `0x50046` / `0x50069`); then
 `note*0x18+[E5F9]+FCF6` (files
 `0x50058` / `0x5005E` and
@@ -724,33 +798,61 @@ index of that table. Do not name
 the loaded `FCF6+0` byte. Ends at
 `JMP CS:[BX+0B25]` (file `0x500C9`).
 Do not walk that dest. After the
-`02D6`/`033A` calls, `AL=ES:[BX+1]` (file `0x4FCED`)
-is compared to `2` and `3`. When `+1==2`
-and event `+3` is above `+4`, `+5` must
-be `>=0x23` (file `0x4FD16`) and then
-indexes the same table (`+5*0x18+FCF6`,
-file `0x4FD23`). When event `+3` is at
-or below `+4`, `+3` is the note
-(`CMP 0x23` file `0x4FD54`; load file
-`0x4FD61`). When `+1==3` (file `0x4FD92`)
-the compare key is `+0C` (file `0x4FD95`),
-or event `+4` if event status `& 3 == 1`
-(file `0x4FDA5` / `0x4FDAD`). Then the
-same `+5` / `+3` note-floor arms.
-**PROVEN** as note-floor
-bytes. When `+1==1` (file `0x4FE59`)
-`+3` is the note if `>=0x23` (file
-`0x4FE63` / `0x4FE6A`); else `+5`
-(file `0x4FECC` / `0x4FED3`).
-**PROVEN.** Do not name `+1` / `+2` / `+4` /
-`+0C`.
+`02D6`/`033A` calls, `LES BX,[BP-4]`
+(file `0x4FCEA`) reloads that table
+pointer. `AL=ES:[BX+1]` (file `0x4FCED`)
+is compared to `2` and `3`. When table
+`+1==2`, `LES BX,[BP-14]` at file `0x4FD03`
+loads the event and `MOV AL,ES:[BX+3]` at
+file `0x4FD06` is event `+3`. That byte is
+compared unsigned with table `+4` (`76` at
+file `0x4FD14`). Above table `+4`: the compare
+with `0x23` is at file `0x4FD16`, and `73` at
+file `0x4FD1B` is `JAE`. Table `+5` must be
+`>=0x23` or the routine jumps to `02D2`. The
+index is table `+5` `*0x18+FCF6`
+(load file `0x4FD23`). At or below
+table `+4`: event `+3` at or below
+table `+2` (`76` at file `0x4FD52`)
+keeps the existing pointer. Above
+table `+2`, table `+3` must be
+`>=0x23` (file `0x4FD54`) and the
+index is table `+3` (load file
+`0x4FD61`), not event `+3`. When
+table `+1==3` (file `0x4FD92`) the
+key is zero-extended table `+0C`
+(file `0x4FD95`), or event `+4` when
+event byte 0 `& 3 == 1` (files
+`0x4FDA5` / `0x4FDAD`). `7D` at file
+`0x4FDC0` is signed: table `+4` below
+that key takes table `+5` (floor file
+`0x4FDC2`, load file `0x4FDCF`).
+Table `+4` at or above the key takes
+table `+3`, unless table `+2` is
+signed `>=` the key (`7D` at file
+`0x4FDFF`), in which case the pointer
+is kept. **PROVEN.** When table
+`+1==1` (`LES [BP-4]` at file
+`0x4FE56`; compare file `0x4FE59`)
+table `+3` is the note if unsigned
+`>=0x23` (files `0x4FE63` / `0x4FE6A`);
+else table `+5` if that byte is unsigned
+`>=0x23` (compare file `0x4FECC`, load
+file `0x4FED3`). Below that jumps to
+`02D2`. **PROVEN.** Do not name
+`+1` / `+2` / `+4` / `+0C`.
 Leftover `02D6`
 (file `0x4FF36`, `CALLN` from `0066`):
-`DX=[BP+6]-0x23`; clamp
-`0`..`0x3F`. **PROVEN** note-to-slot
+`DX=[BP+6]-0x23` (`83 C2 DD`); signed
+clamp `0`..`0x3F` (`7D` then `7C` /
+`MOV DX,0x3F`). **PROVEN** note-to-slot
 on that arm. Not a pad-hit. If
-`[E60F]==2` (CF37 default), `AX=slot<<2`;
-`DX:AX = [E5F9] + AX + 0x063E`. **PROVEN.**
+`[E60F]==2` (CF37 default, `75` at file
+`0x4FF52`), `AX=slot<<2` (`C1 E0 02`).
+`DX` is `[E5FB]`. `AX` is `[E5F9]` plus
+that shift plus `0x063E` (`A1 F9 E5` /
+`03 C3` / `05 3E 06` at file `0x4FF5E`).
+No carry into `DX`. **PROVEN.**
 `+063E + 0x40*4 = +073E`, so `+063E` is
 64 dwords immediately before the note
 table. Do not name those dwords.
@@ -781,7 +883,8 @@ pad-hit. Sibling leftover `0874`
 `INC [BP-8]`; `CMP [BP-8],0x18`
 (file `0x429B5`); `JL` back to
 that `CA45`. Then `PUSH 0` /
-`CALLF CA45` (file `0x429BD`).
+`CALLF C887:1BE8` (file `0x429BD`),
+the same `CA45:0008` alias.
 **PROVEN** as a 24-program
 `CA45` select wrapping the
 named `0874` walk, then
@@ -799,7 +902,8 @@ Already-owned `C20F:0BBF` (file
 Else `CALLF C887:1BE8` (file
 `0x42CC7`) is `CA45:0008`;
 `CMP AX,[BP+6]` (file `0x42CE1`);
-on match `MOV ES:[SI+3E],[BP+8]`
+on match `MOV AL,[BP+8]` /
+`MOV ES:[SI+3E],AL`
 (file `0x42CE9`). Outer
 `CMP DI,0x18` (file `0x42CF8`)
 then restore `CA45` (file
@@ -824,7 +928,13 @@ is `CA45:0008`. Inner loop
 `0x23*0x18=0x348`;
 `0x62*0x18=0x930`;
 `(FCF6+0x348)&0xFFFF=+3E`.
-**PROVEN** as that index. Outer
+**PROVEN** as that index. The loaded
+byte times `0x24` selects
+`A2AE:(byte*0x24+4800)`. When that
+byte is 0 (`26 80 BF 00 48 00` at
+file `0x518DD`), the loop stores
+`0xFF` through `ES:[SI+FCF6]` (file
+`0x518E9`). **PROVEN.** Outer
 bound `CMP [BP-4],0x18` (file
 `0x518FC`) is the named `CA45`
 `0..0x17` domain. Not a pad-hit.
@@ -832,25 +942,36 @@ Do not name `D0C0`. Do not name
 the `+3E` byte.
 `033A` (file `0x4FF9A`) is the same map
 gated on `[E610]==2` (also default 2).
-If `[E60F]==1` and `[920A]:[920C]` is
-nonzero (`0309`, file `0x4FF69`),
-`DX:AX = [920A]:[920C] + slot*4 + 0x002A`.
-**PROVEN** as that far index. Else
-`DX:AX = DS:E639 + slot*4` (file `0x4FF8E`).
-**PROVEN** as the fallback; it is the
-table `CF37:0305` fills. `036D` is the
+`0309` (file `0x4FF69`) is the `02D6`
+path where `[E60F]!=2`. If `[E60F]==1`
+and `[920A]` or `[920C]` is nonzero,
+`DX` becomes `[920C]`
+(`8B 16 0C 92` at file `0x4FF7E`).
+`POP BX` reloads `slot<<2`, so `AX` is
+`[920A] + (slot<<2) + 0x002A` (`03 C3` /
+`05 2A 00` at files `0x4FF87` /
+`0x4FF89`).
+No carry into `DX`. **PROVEN.** Else
+`DX` is `DS` and `AX` is `slot*4 + 0xE639`
+(`8C DA` at file `0x4FF93`, `05 39 E6` at
+file `0x4FF95`).
+No carry into `DX`. **PROVEN** as the
+fallback; `E639` is the table
+`CF37:0305` fills. `036D` is the
 same pair gated on `[E610]`. Do not name
 `[920A]` or the `+0x0D` field. Do not
 seed unowned `LES [920A]` at `0x669B8`.
 
-Leftover after `D0AE:0002` `RETF` (file
-`0x50BC6`, already owned). `CALLF
+Leftover after `D0AE:0002` `RETF` at file
+`0x50BC5` (`CB`). The next byte, file
+`0x50BC6`, is `PUSH BP` (`55`). `CALLF
 D9F2:000C` on `[BP+0A]` (file `0x50BCF`);
 then slot `0..0x3F` (file `0x50C00`
 `80 7E 0A 40`) calling `000C` again
-(file `0x50BE2`). On note match,
-`MOV ES:[BX+slot],[BP+0C]` (file
-`0x50BFA`). **PROVEN** as a 64-slot
+(file `0x50BE2`). On note match, `AX` is the slot from
+`[BP+0A]`; `LES BX,[BP+6]` / `ADD BX,AX`;
+then `MOV AL,[BP+0C]` / `MOV ES:[BX],AL`
+(file `0x50BFA`). **PROVEN** as a 64-slot
 note-match store through the named
 accessor. Not a pad-hit. Do not name
 `D0AE`. `0002` itself also writes
@@ -858,27 +979,37 @@ accessor. Not a pad-hit. Do not name
 `0x50B7E` / `0x50BBF`), same as the
 `0xB0` arm.
 
-Leftover cdecl at file `0x50A07` (same
-owned span, after the 32-loop `RETF`)
-clamps event `+2` to `0x23`..`0x62`,
-indexes `[E5F9]+FCF6` (file `0x50A41`),
-and returns `+5` or `+3` from the same
-`+1==2` / `+1==3` note-floor arms as
-`CFC6:0007` (files `0x50A4E` / `0x50A73`
-/ `0x50A8C`). **PROVEN** as a second
-consumer of that table. Do not name
+Leftover cdecl `CFC6:0DA7` (file `0x50A07`,
+same owned span, after the 32-loop `RETF`).
+Event `+2` must be unsigned `0x23`..`0x62`
+(`80 F9 23` / `72` and `80 F9 62` / `76`
+at file `0x50A20`); otherwise `AL` returns
+that byte. In range it indexes
+`[E5F9]+note*0x18+FCF6` (file `0x50A41`).
+Table `+1==2` uses the same unsigned
+`JBE` tests as `CFC6:0007`. Table
+`+1==3` compares bytes with unsigned
+`JAE` (`73` at files `0x50ABB` /
+`0x50AD1`), not the signed `JGE` in
+`0007`. The passing arms return table
+`+5` or table `+3` in `AL` (`MOV CL` at files
+`0x50A7A` / `0x50A93`, `MOV AL,CL` at
+`0x50ADE`). **PROVEN.** Do not name
 `D0AE`.
 
 Already-owned `D9A2:0004` / `0031` /
 `005F` (files `0x59A24` / `0x59A51` /
 `0x59A7F`). `PUSH [BP+6]`; `CALLF
 D9F2:000C` (files `0x59A2D` /
-`0x59A5A` / `0x59A88`). If `AX>=0x23`
-(file `0x59A38`), `CALLF CFC6:02D6`
+`0x59A5A` / `0x59A88`). `CMP AX,0x23` then `7C` signed `JL` skips
+the store (files `0x59A3B` / `0x59A68` /
+`0x59A96`). The store runs when signed
+`AX>=0x23`. `CALLF CFC6:02D6`
 (`0004`/`0031`, files `0x59A3E` /
 `0x59A6B`) or `033A` (`005F`, file
-`0x59A99`). Then `MOV ES:[BX+0],
-[BP+8]` / `+1` / `+2` (files
+`0x59A99`). Then `MOV BL,[BP+8]` / `XCHG BX,AX` /
+`MOV ES:[BX],AL` / `ES:[BX+1],AL` /
+`ES:[BX+2],AL` (files
 `0x59A4C` / `0x59A79` / `0x59AA7`).
 **PROVEN** as stores through the
 named note-to-slot far pointer.
@@ -893,15 +1024,20 @@ side: `000C` then `02D6`
 (`010C`) then `MOV AL,ES:[BX+0]`
 / `+1` / `+2` (files `0x59B02` /
 `0x59B24` / `0x59B47`).
-**PROVEN.** No `CMP 0x23` on the
-readers. Gap leftover `D9A2:008D`
-at file `0x59AAD` is the same
-shape with `033A` and `+3`. Do
-not seed it.
+**PROVEN.** No `CMP 0x23` on those
+three readers. `D9A2:008D` (file
+`0x59AAD`) does have signed `JL`
+against `0x23` (file `0x59AC1`), then
+`033A`. It keeps bit 7 of `ES:[BX+3]`
+(`24 80` at file `0x59ADC`), ORs
+`[BP+8]` (`0A 46 08`), and stores that
+byte back (`26 88 47 03` at file
+`0x59AE1`). `RETF` at `00C6`. Not a
+plain `+3` store. **PROVEN.**
 
-`BDF1:00E1` (file `0x3DFEF`,
+`BDF1:00DF` (file `0x3DFEF`,
 already owned): `PUSH 0`; `CALLF
-D9F2:000C` (file `0x3DFF1`);
+D9F2:000C` at `00E1` (file `0x3DFF1`);
 `MOV [D6AD],AL` (file
 `0x3DFF9`). **PROVEN** as slot 0
 to `[D6AD]`.
@@ -926,54 +1062,124 @@ At `04F1` (file `0x30AF1`): `CMP [BP-1],0x4E`;
 
 `5A50:0039` (file `0x5A539`, leftover after `000E` `RETF`,
 already owned in `[0x5A50E, 0x5A665)`). `LES BX,[BP+6]`;
-`CMP ES:[BX],0xA0`; note at `ES:[BX+2]` is bounded
-`0x23`..`0x62`. Status switch includes `CMP AX,0x90` at
-`0071` (file `0x5A571`). The `0x90` arm (`0081`) pushes that
-note, `CALLF D9F2:003D`, `MOV [D6AC],AL`. **PROVEN** as
-MIDI note-on to slot. Not a pad scan.
+`CMP ES:[BX],0xA0`; when that byte is
+unsigned `<= 0xA0` (`77` at file
+`0x5A544` skips the test when it is
+above), the note at `ES:[BX+2]` must
+be `0x23`..`0x62` or the routine
+exits. Status switch includes `CMP AX,0x90` at
+`0071` (file `0x5A571`). The `0x90` arm (`0081`)
+pushes `ES:[BX+2]` and pops it into `BX`
+before a different store. The argument of
+`CALLF D9F2:003D` is the later push at file
+`0x5A5BC`. `MOV [D6AC],AL` is file `0x5A5C5`.
+**PROVEN** as that slot store. MIDI note-on
+for status `0x90` stays **HYPOTHESIS**. Not a pad scan.
 
-`56D4:000A` writes `[D6AD]`, not `[D6AC]`. After
-`AND ES:[BX],0xF8` / `CMP AL,0x90`, if `[7664]==0` it stores
-`ES:[BX+2]` to `[D6AD]` (file `0x56D6F` `A2 AD D6`).
-**PROVEN** on that arm. When `[7664]!=0`, `AL` is
-`CFC6:0DA7`'s return (**UNDETERMINED**).
+`56D4:000A` writes `[D6AD]`, not `[D6AC]`. `AL`
+is `ES:[BX]`; `AND AL,0xF8` (file `0x56D54`);
+`CMP AL,0x90` (file `0x56D56`). The memory byte is not
+modified. On that equal arm, if `[7664]==0`
+it stores `ES:[BX+2]` to `[D6AD]` (file
+`0x56D6F` `A2 AD D6`). **PROVEN.** When
+`[7664]!=0`, `AL` is `CFC6:0DA7`'s return
+and that `AL` is stored too
+(**UNDETERMINED**).
 
-`BDF1:00E1` (file `0x3DFF9` `A2 AD D6`)
-is the inverse store: `000C(0)` into
-`[D6AD]`. Same pair, opposite direction.
+`BDF1:00E9` (file `0x3DFF9` `A2 AD D6`)
+is the same `000C(0)` store into `[D6AD]`
+already cited at `00DF`. It is not a
+second site.
 
 No owned `IN` / `OUT` sits next to an `[D6AC]` store.
+
+Image-wide, the only store encodings are those three `A2 AC D6`
+sites and the two `C6 06 AC D6 00` clamps. There is no
+`88 06`, `89 06`, `A3`, `C7 06`, or `FE 06` form, and no
+`MOV r16,0xD6AC`.
+
+The unowned store is `D52A:0328`, file `0x555C8`, bytes
+`A2 AC D6`, 20-bit `0xD55C8`. Under the second PGR, slot 53
+is word `0x0035` at file `0x7AD1E`, so the 24-bit address is
+`0x0D55C8` while that table is installed. Whether it is still
+installed here is `U-XA-LIVE`. XA=1 after `BRKXA 0x11`.
+
+From `D52A:0318` (`CMP AL,0x10`,
+file `0x555B8`) then `JAE` (`73` at file
+`0x555BA`) skips the store when unsigned
+`AL>=0x10`. The store is on the
+not-taken path only. The byte before
+`0318` is `D52A:0315`
+`JMP 06A0` (file `0x555B5`, `E9 88 03`). CS `D52A` has no
+near or short branch to `0318` or `0328`, the words `18 03`
+and `28 03` do not occur in the segment, and the image has
+no `MOV BX,0318` / `MOV BX,0328` and no far pointer
+`xx xx 2A D5` for those IPs. **PROVEN:** no static transfer
+enters the store. The `CS:XLAT` at `031F` (file `0x555BF`,
+`2E D7`) uses `BX=0x0057`. Those bytes are the owned
+`OUT DX,AL` / `CALL FB00:0194` / `IRET` at `D52A:0057`
+(file `0x552F7`), not a pad map. Do not call this a pad-hit.
 
 ---
 
 ## 7. Related owned `0x90` sites (not pad-hit)
 
-`56D4:000A` (file `0x56D4A`): `LES BX,[BP+6]`; `AND ES:[BX],0xF8`;
-`CMP AL,0x90`; on match take `ES:[BX+2]` and `CALL DA09:0000`.
-That is a MIDI-status test on a far event, not a pad scan.
+`56D4:000A` (file `0x56D4A`): `LES BX,[BP+6]`;
+`AL=ES:[BX]`; `AND AL,0xF8`; `CMP AL,0x90`.
+On that equal arm it stores to `[D6AD]` and
+then `CALLF DA09:0000` (file `0x56D77`).
+The stored byte is `ES:[BX+2]` only when
+`[7664]==0`. The compare is with `0x90` after
+`AND AL,0xF8`. It is not a pad scan.
 
-`53B2:003A` `CMP AL,0x90` follows `IN 0xAC` (SCSI window). Do not
-read it as MIDI.
+`53B2:003A` (file `0x53B5A`) is `CMP AL,0x90` after
+`IN AL,0xAC` (file `0x53B56`) and `AND AL,0xF0`
+(file `0x53B58`). The compare sees the high
+nibble. Do not read it as MIDI.
 
 ---
 
 ## 8. Still open
 
-- Writer that sets `[D6AC]` from a pad hit. Missing observation:
-  a named consumer that stores a pad index from panel IPC or
-  `IN` in `0xC0-0xDF`. Gap store `A2 AC D6` at file `0x555C9`
-  is mid-gap after owned `[0x55575, 0x555B8)`. Gap start
-  `3C 10 73 21` is not hole-start cdecl. Do not seed it.
+- A pad hit on the wire is D19 (`U-PANEL-ROM`, `U-TE7774`).
+  It is not a reachable `[D6AC]` store in this image.
+  `D52A:0328` (file `0x555C8`) has no direct entry and no
+  reached computed near entry. The owned walk of CS `D52A`
+  finds 19 `JMP r/m16` / `CALL r/m16`: 17 are `CS:` memory
+  (bytes `18 03` and `28 03` do not occur in the segment,
+  including the wrap word `04 89`) and two are `JMP BX`
+  (`FF E3` at files `0x5558B` and `0x5598D`). `D52A:02D5`
+  (file `0x55575`, `8B 1E 26 76`) reads `[7626]`.
+  `D52A:02EB` is that `JMP BX`, not the read. The copied
+  ROM word at file `0x27626` is `0x011D` (source
+  `A000:7626`, inside `[0x20000, 0x27C92)`). The only
+  displacement store is `D52A:06A0` (`89 1E 26 76`, file
+  `0x55940`). Every `E9`/`EB` to `06A0` is preceded by
+  `MOV BX,imm16` in
+  `{011D,0148,0176,025D,0263,027C,029A,02D2,0492,049B}`.
+  `D52A:06D4` and `D52A:06E7` read `[SI+762E]`
+  (`8B 9C 2E 76` at files `0x55974` and `0x55987`).
+  `D52A:06ED` is the `JMP BX`. ROM words at file `0x2762E`
+  are `0x051F`,`0x051F`. The reached stores are
+  `D52A:071F` (file `0x559BF`, `89 9C 2E 76`) after
+  `MOV BX,0x051F` at file `0x559BA`, and `D52A:0AD9`
+  (file `0x55D79`) after `MOV BX,0x07E1` at file
+  `0x559F1` jumps to `0AD7`. Neither stored value is
+  `0x0318` or `0x0328`. Do not seed `0318`.
 - Third `CALLF D9F2:003D` at file `0x397B3` is in a gap. Do
   not seed it.
 - Writer that sets `[8375]` nonzero (overlay select).
 - Writer that sets `[81B3]` nonzero (gap `0x5771E`;
   do not seed).
-- Gap leftover `D9A2:008D` at file `0x59AAD`
-  (owned `9A` dest; leftover after `005F`
-  `RETF`). Do not seed.
-- Gap `CALLF D9C0:0006` at files `0x5564F` /
-  `0x556DB` / `0x55C0E`. Do not seed.
+- `D9A2:008D` at file `0x59AAD` is
+  owned. `C4C8:0CF1` and `C4C8:0D8B`
+  contain `CALLF D9A2:008D` at `0D77`
+  (file `0x459F7`) and `0E17` (file
+  `0x45A97`).
+- Gap `CALLF D9C0:0006` at files `0x5564F` and
+  `0x556DB` (gap `[0x555B8, 0x55732)`). Do not seed.
+  File `0x55C0E` is the same `9A 06 00 C0 D9`, but it is
+  owned `[0x55BF0, 0x55C1F)`.
 - Full `9770:` / `Pgm` record grammar past `+11` /
   `+12`..`+19` / `+063E` / `+073E` / `+FCF6` /
   `+FD0D`.

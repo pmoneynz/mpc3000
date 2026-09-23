@@ -44,12 +44,12 @@ Until `ES:[BP]` AND `ES:[BP+2]` INC wraps (`FFFF:FFFF` after record 7,
 file `0x7B7F2`):
 
 ```
+DX += 1
 CX = 0020h                 ; 32 words
 MOV [BX], AX               ; AX is 0 — not 0x0020
 BX += 2
 LOOP
 BP += 12h
-DX += 1
 ```
 
 Eight TCBs, each 0x40 bytes of zeros. `[DI+0Eh] = 8`. Then
@@ -248,7 +248,7 @@ exits are in [`amx_create_table.md`](amx_create_table.md).
 | `[0x7B396, 0x7B3B3)` | code — ready API `0396` |
 | `[0x7B347, 0x7B371)` | code — `0347` IVT plant (null ? `FB00:0311`) |
 | `[0x7B762, 0x7B7F2)` | data — eight create records; terminator `FFFF:FFFF` at `0x7B7F2` |
-| `[0x7B7F6, 0x7B7FE)` | data — `CS:[003A]` two far pointers + terminator |
+| `[0x7B7F6, 0x7B7FE)` | data — `CS:[003A]` two far pointers `FB81:0008` / `B03B:000A`. Terminator `FFFF:FFFF` is the next range `[0x7B7FE, 0x7B802)` |
 | `[0x7B802, 0x7B80E)` | data — kernel far-ptr table `000A:0078` / `901C:1130` / `FB76:00B2` |
 | `[0x7B814, 0x7B818)` | data — `FB76:00B4` list header `01000800` |
 | `[0x7B818, 0x7B81A)` | code — `FB81:0008` `JMP 003A` |
@@ -259,7 +259,8 @@ exits are in [`amx_create_table.md`](amx_create_table.md).
 | `[0x303BA, 0x3058A)` | code — `B03B:000A` through `RETF` |
 | `[0x59BD9, 0x59C05)` | code — `D9BD:0009` through `JMP 000E` |
 
-Callees `E937:0004`, `B060:0000`, `D9B5:0045` stay unowned until D3/D7.
+Callees `E937:0004`, `B060:0000`, and `D9B5:0045` are inside owned
+code ranges now. What they do stays D3 / D7.
 
 ---
 

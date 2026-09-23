@@ -36,8 +36,8 @@ No `EA xx xx 00 FB`. **PROVEN.**
 
 | IP | File | n | Class | Effect |
 |----|------|---|-------|--------|
-| `0157` | `0x7B157` | 6 | irq enter | Push regs; `DEC [DI+10h]`; save `SS:SP` at `[DI+16h]`; `RETF` into the ISR body |
-| `0194` | `0x7B194` | 6 | irq leave | `INC [DI+10h]`; if `[DI+0Ch] > [DI+11h]` then `01CF` `AX=2`; pop; `RETF` |
+| `0157` | `0x7B157` | 6 | irq enter | Push regs; `DEC` byte `[DI+10h]` (`FE 4D 10` at `0171`). `JS 0189` at `0174` (`78 13`) skips the save when that byte is `0x80`–`0xFF`. Otherwise `MOV [DI+16h],SP` and `MOV [DI+18h],SS`. `RETF` at `0193` |
+| `0194` | `0x7B194` | 6 | irq leave | `INC` byte `[DI+10h]` (`FE 45 10` at `019A`). `JLE 01B9` at `019D` (`7E 1A`) is taken when that byte is `0` or `0x81`–`0xFF`. Otherwise the bytes at `[DI+0Ch]` and `[DI+11h]` are compared, and `JBE 01B9` at `01AF` (`76 08`) skips the call unless `[DI+0Ch]` is unsigned greater. That arm is `MOV AX,2` / `CALLN 01CF` at `01B5`. Then pop; `RETF` `01CE` |
 | `0347` | `0x7B347` | 6 | IVT / hook plant | `IVT[DL]=ES:BX` unless `DL` is 0 or 4. Null `ES:BX` stores `FB00:0311`. `DL` 0/4 writes hook `[current TCB+18h+DX]` |
 | `038A` | `0x7B38A` | 1 | yield | `0157` then `0194` (forced enter/leave) |
 | `0396` | `0x7B396` | 8 | ready | `INC [SI+8]`; `OR [SI],1` |
@@ -47,10 +47,10 @@ No `EA xx xx 00 FB`. **PROVEN.**
 | `04AC` | `0x7B4AC` | 4 | wake if bit 2 | If `TEST [SI],4`: `[SI]=0002`, `[SI+0Ch]=4`, `[SI+0Ah]=0` |
 | `0552` | `0x7B552` | 2 | get index | `AX = [DI+0Ch]` |
 | `0586` | `0x7B586` | 1 | nest | `DEC [DI+12h]`; if zero, `0157` / `05A0` / `0194` |
-| `0624` | `0x7B624` | 1 | mailbox store 0 | `[BX + [DI+6] + DX] = 0` |
-| `0637` | `0x7B637` | 1 | mailbox store | `[BX + [DI+6] + DX] = CX` |
-| `0648` | `0x7B648` | 1 | mailbox load | `AX = [BX + [DI+6] + DX]`; `OR AX,AX` |
-| `065B` | `0x7B65B` | 16 | mailbox init | Zeros `ES:[BX]..+6` after packing flags into `[BX]` |
+| `0624` | `0x7B624` | 1 | mailbox store 0 | `LDS BX, CS:[0042]`; word at `([BX+6] + DX)` = 0 |
+| `0637` | `0x7B637` | 1 | mailbox store | same address; word = `CX` |
+| `0648` | `0x7B648` | 1 | mailbox load | `AX` = that word; `OR AX,AX` |
+| `065B` | `0x7B65B` | 16 | mailbox init | Packs flags into `ES:[BX]` (`26 89 07` at `0668`), then zeros `ES:[BX+2]`, `ES:[BX+4]`, and `ES:[BX+6]` |
 | `067C` | `0x7B67C` | 3 | mailbox | Alloc-side; calls `0743` |
 | `06B9` | `0x7B6B9` | 4 | mailbox | Free-side; calls `0743` |
 | `06E8` | `0x7B6E8` | 2 | mailbox | Pop-side; calls `0743` |
@@ -60,8 +60,9 @@ Sites fall in app ROM (`0x303xx`, `0x521xx`, `0x53xxx`, `0x55xxx`,
 `0x56xxx`, `0x5DExx`) and AMX-high (`0x7B8xx`–`0x7B9xx`). None in
 `[0,0x20000)` or the `0x7C92` copy. **PROVEN** as bytes.
 
-`065B`–`0725` and `0624`/`0637`/`0648` operate on `ES:[BX]` headers,
-not TCB `[SI]`. Their object grammar is D11.
+`065B`–`0725` operate on `ES:[BX]` headers. `0624`/`0637`/`0648`
+use `DS` from `CS:[0042]` and index `[BX+6] + DX`. None of them
+write TCB `[SI]`. Their object grammar is D11.
 
 ---
 
@@ -80,7 +81,7 @@ not TCB `[SI]`. Their object grammar is D11.
 | `04DC` | Post-create / priority gate; can `MOV [SI],2` if bit 3 |
 | `0537` | `DL` ? `SI` (stride `0x40`) |
 | `05B2` | Create-table record 0 (D7) |
-| `05E9` | Walks TCBs; `AND [SI],8004h` then maybe `MOV [SI],2` |
+| `05E9` | Walks TCBs. `MOV AX,[SI]` / `AND AX,0x8004` (`25 04 80` at `05EE`) tests the word and does not store the mask. `05FF` `MOV [SI],2` runs when bit 2 is set, bit 15 is clear, and `060B` decrements `[SI+0Ah]` to zero |
 | `0616` | `LDS AX,ES:[SI]` / `RETF` |
 
 Near `CALL 01CF` exists only at `01B5` (`AX=2`), `0461` (`AX=8`),
@@ -96,7 +97,7 @@ Near `CALL 01CF` exists only at `01B5` (`AX=2`), `0461` (`AX=8`),
 
 | Bit | Mask | Writer | Reader | Meaning |
 |-----|------|--------|--------|---------|
-| 0 | `0001` | `0396` / `044E` `OR [SI],1`; `0240` `MOV [SI],1` if `[SI+8]?0` | `01EA` `TEST 8003h` | Ready (never created, or re-ready after create) |
+| 0 | `0001` | `0396` / `044E` `OR [SI],1`; `0240` `MOV [SI],1` when `[SI+8]` is nonzero | `01EA` `TEST 8003h` | Ready (never created, or re-ready after create) |
 | 1 | `0002` | `01CF` `AX=2`; `04AC` / `04DC` / `05FF` `MOV [SI],0002` | `01EA` `TEST 0002h` ? resume vs create | Resumable: `SS:SP` at `+4/+6` is live |
 | 2 | `0004` | `01CF` `AX=4` (`0469` / `0484`) | `01EA` `TEST 000Ch`; `04AC` `TEST 4` | Blocked (ordinary wait) |
 | 3 | `0008` | `01CF` `AX=8` (`03B3` tail) | `01EA` `TEST 000Ch`; `04DC` `TEST 8` | Blocked (mailbox wait) |
@@ -111,8 +112,8 @@ MOV SI, [DI+0Ah]          ; current TCB
 CLI
 MOV DX, [SI]
 AND DX, 8001h             ; keep bits 15 and 0
-OR  DX, AX
-MOV [SI], DX
+OR  AX, DX                ; AX = caller value OR bits 15 and 0
+MOV [SI], AX
 JS  01EA                  ; bit 15: do not save stack
 MOV [SI+4], SP
 MOV [SI+6], SS
@@ -131,7 +132,7 @@ No `OR [SI],2/4/8` exists in `FB00`. Bits 1/2/3 are only written by
 | Off | Size | Writers | Role |
 |-----|------|---------|------|
 | `+2` | word | start zeros; `0284` `TEST [SI+2],2` | Flag consumed at first entry. Meaning **HYPOTHESIS** |
-| `+4` / `+6` | SP / SS | `01CF` save; `01EA` restore; `0240` from the create record | Live stack while bit 1 is set |
+| `+4` / `+6` | SP / SS | `01CF` save; `01EA` restore. `0240` loads CPU `SS:SP` from the create record and does not write these slots | Live stack while bit 1 is set |
 | `+8` | word | `0396`/`044B` `INC`; `0240` `DEC`; start 0 | Ready-count. Create leaves `[SI]=1` iff this stays non-zero |
 | `+0Ah` | word | `0484` `MOV [SI+0Ah],CX`; `04AC` zeros it; `0284` zeros it | Timed-wait argument. **Not** `+10h` (D4 wording retracted) |
 | `+0Ch` | word | `0484` zeros; `04AC` writes `0004`; `0284` zeros | Wait result (`0484` returns `FFFB` if non-zero on resume) |
@@ -152,10 +153,10 @@ is live (page 42 frame `0xEA`).
 | `+02` | Copied to `+0Ah` at the start of `01EA`, then overwritten with `SI` |
 | `+0A` | Current TCB (`SI`) |
 | `+0C` | Current `DL` (also the value `0552` returns) |
-| `+0E` | Slot count (8 after start) |
+| `+0E` | Record count. `004E` stores `DL` here after walking `ES:[BP]` by 18 until `FFFF:FFFF`. The table has 8 records, then that terminator at file `0x7B7F2`. `0072` is `LES BP,CS:[0036]` (`2E C4 2E 36 00`), so this entry sets `BP` |
 | `+10` | In-scheduler / irq-nest byte (`01EA` writes 1; `0157` `DEC`; `0194` `INC`) |
 | `+11` | Scan index (`0396` / `04AC` / `044E` may lower it) |
-| `+12` | Nest word (`0586` `DEC`) |
+| `+12` | Tick word (`0586` `DEC` word; `05A0` reloads it from `+14h`) |
 | `+16` / `+18` | Saved `SP` / `SS` in `0157` |
 
 ---

@@ -26,6 +26,8 @@ uncertainty or correct a proven error. Status of the project:
 | [`copy_7c92.md`](copy_7c92.md) | `8010` DGROUP grammar, consumers, writers |
 | [`owner_ledger.md`](owner_ledger.md) | Seeded file-range owners; gaps are debt |
 | [`padding.md`](padding.md) | Every `0xFF` window ≥ 4 bytes |
+| [`patch_space.md`](patch_space.md) | Patch-write banks: the two PGR-unselected `0xFF` ranges |
+| [`jev_unowned_gaps.md`](jev_unowned_gaps.md) | JEV class of the 132 unowned gaps; nothing owned |
 | [`string_scan.md`](string_scan.md) | Consumer-established text; put-string `B1B1:005B` |
 | [`entry_scan.md`](entry_scan.md) | Consumer-established entries; raw `9A`/`EA` are suspects |
 | [`transfer_scan.md`](transfer_scan.md) | Local exits from the 143 entries; new CALLs are candidates |

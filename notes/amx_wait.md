@@ -97,9 +97,9 @@ NOP × 4
 JMP 023A
 ```
 
-Sole `CALL 01EA`: `FB00:0143`. Sole other entry: `JMP 0281` after `0240`.
+Sole `CALL 01EA`: `FB00:0143`. `01CF` also enters it: `JS` at `01E2` and fallthrough at `01E7`. `JMP` at `0281`, after `0240`, is the other entry.
 
-`0240` uses create records at `CS:[0036]` = `FB76:0002`, 18 bytes each: far entry at +0, `SS:SP` at +4. Record 7 (file `0x7B7E0`) is `B000:00DF` / `9387:3E80` — the same CS:IP as `FAC0:019E`. That FAC0 jump is still not on the reset path. The AMX table is.
+`0240` uses create records at `CS:[0036]` = `FB76:0002`, 18 bytes each: far entry at +0, `SS:SP` at +4. Record 7 (file `0x7B7E0`) is `B000:00DF` / `9387:3E80`. `FAC0:019E` (file `0x7AD9E`) is `JMPF` to that same `B000:00DF`. That FAC0 jump is still not on the reset path. The AMX table is.
 
 ---
 
@@ -130,9 +130,9 @@ XA=1, second PGR (file `0x7ACB4`). Page 53 word `0x0035` (file `0x7AD1E`), same 
 
 Start writes `[DI+14h]` from `FB76:00A4` (file `0x7B804`) = word `0x000A`, then `011E` `CALL 055F` which `CALL`s `05AB`. `05AB` copies `[DI+14h]` to `[DI+12h]`. **PROVEN:** the tick word is 10 before the first `01EA`. Header `A850:0024` is page 42 frame `0xEA`, 24-bit `0x3A8524`. The tick word is `A850:0036` = 24-bit `0x3A8536`. The reload is `A850:0038` = 24-bit `0x3A8538`.
 
-`D52A:0008` is straight-line `CALL 0157`, work, `CALL 0586` (file `0x552CC`), `OUT 0xC010, 0x60` (file `0x552F2`), `CALL 0194` (file `0x552F8`), `IRET` (file `0x552FD`). The only far call of `0586` is that one. No near call of `0586` exists in `FB00`.
+`D52A:0008` calls `0157`, does the work, then calls `0586` (file `0x552CC`). Two `JZ`s (`0036`, `004A`) skip side work and rejoin. `MOV DX,0xC010` is file `0x552F2`; `OUT DX,AL` with `AL=0x60` is file `0x552F7`. Then `CALL 0194` (file `0x552F8`) and `IRET` (file `0x552FD`). The only far call of `0586` is that one. No near call of `0586` exists in `FB00`.
 
-`0586` decrements `[DI+12h]` on every IVT[8] entry, including while a task is running. An entry that does not hit zero returns: `0194` sees `[DI+0Ch]==[DI+11h]` (the scan stores both at file `0x7B22D`) and the `IRET` returns to the interrupted IP. While the idle is live, that IP is `023A`. The entry that decrements 1 to 0 calls `05A0`: `XOR DX,DX` / `CALL 0396` (file `0x7B5A0`). That is the only near call of `0396` in `FB00`. `DL=0` is below the sentinel index, so `[DI+11h]` becomes 0 and bit 0 is set on TCB 0. `05A0` then reloads `[DI+12h]` from `[DI+14h]` (10). The inner `0194` sees the nest byte wrap `0xFF` to `0` and does not reschedule. The outer `0194` increments the nest byte `0` to `1` and takes `CALL 01CF` with `AX=2` because `[DI+0Ch] > 0`.
+`0586` decrements `[DI+12h]` on every IVT[8] entry, including while a task is running. An entry that does not hit zero returns: `0194` sees `[DI+0Ch]==[DI+11h]` (the scan stores `DL` at `[DI+0Ch]` (file `0x7B22D`) and `[DI+11h]` (file `0x7B230`)) and the `IRET` returns to the interrupted IP. While the idle is live, that IP is `023A`. The entry that decrements 1 to 0 calls `05A0`: `XOR DX,DX` / `CALL 0396` (file `0x7B5A0`). That is the only near call of `0396` in `FB00`. `DL=0` is below the sentinel index, so `[DI+11h]` becomes 0 and bit 0 is set on TCB 0. `05A0` then reloads `[DI+12h]` from `[DI+14h]` (10). `01EA` writes `[DI+10h]=1` at `01F7` and does not write it again before the idle. The inner `0157` decrements that byte from 1 to 0, so its `JS` is not taken and the stack switch runs. The inner `0194` increments it from 0 to 1, so its `JLE` is not taken. `0396` has stored 0 at `[DI+11h]` while `[DI+0Ch]` still holds the idle index, so this inner `0194` takes `CALL 01CF` with `AX=2` when that index is greater than 0.
 
 On the idle path `[DI+0Ah]` is still `[DI+2]`, the bit-15 sentinel (`011A` `MOV word [SI],8000h` lands on that address). `01CF` ORs 2 into it (`8002h`) and `JS 01EA` (file `0x7B1E2`) without saving `SS:SP`. `01EA` reloads the kernel stack from `CS:[004A]` and creates task 0 (`FB00:05B2`) because bit 1 is clear. **PROVEN:** that `IRET` frame is abandoned. Control does not return to `023A`.
 

@@ -6,8 +6,9 @@
 
 Retracts the `copy_7c92.md` “pad labels `50L` .. `16R`” reading.
 The directory block is 101 far pointers `50L` .. ` C ` .. `50R`
-plus a NULL. The owned consumer `B354:01C6` is called with title
-`Pan:`. D20 (pad / note entry) stays open: this table is a pan
+plus a NULL. One unowned caller of `B354:01C6` passes the title
+`Pan:`. The other three pass a different title with the same table.
+D20 (pad / note entry) stays open: this table is a pan
 display object, not a pad-hit path.
 
 Reproduction: `python3 tools/verify_boot_slice.py`.
@@ -60,15 +61,16 @@ B354:01C6  55 8B EC 83 EC 0C 56
            RETF
 ```
 
-Four unowned sites pass `DS:0054` as that table and a title
-`Pan:` (`8010:54A1`, file `0x254A1`):
+Four unowned sites pass `DS:0054` as that table. Only
+`0x46094` also pushes the title `Pan:` (`8010:54A1`, file
+`0x254A1`). The other three push a different title:
 
 | File | Encoding | Dest |
 |------|----------|------|
-| `0x46094` / `0x460A1` | `1E 68 54 00` … `9A C6 01 54 B3` | `B354:01C6` |
-| `0x465E5` | same CALLF | `B354:01C6` |
-| `0x46AB3` | same CALLF | `B354:01C6` |
-| `0x4D46F` | same CALLF | `B354:01C6` |
+| `0x46094` / `0x460A1` | `1E 68 54 00` … `68 A1 54` … `9A C6 01 54 B3` | title `Pan:` |
+| `0x465E5` | `1E 68 54 00` … `68 16 53` … same `CALLF` | title at `8010:5316` is empty |
+| `0x46AB3` | `1E 68 54 00` … `68 01 56` … same `CALLF` | title at `8010:5601` is spaces |
+| `0x4D46F` | `1E 68 54 00` … `68 E5 69` … same `CALLF` | title `Val:` |
 
 Those callers sit in app-ROM gaps. They are not seeded. **PROVEN**
 as encodings and as `CALLF` dests.

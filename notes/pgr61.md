@@ -29,9 +29,9 @@ Reproduction: `python3 tools/verify_boot_slice.py`.
 | Field | Value |
 |-------|-------|
 | Purpose | Name the 24-bit object behind PGR page 61 and its software consumer |
-| Observable | `D9B5:0007` `MOV AX,0xF400` / `MOV ES,AX` (file `0x59B57`); `ES:[03FE]` at file `0x59BC4` |
+| Observable | `D9B5:0007` `MOV AX,0xF400` / `MOV ES,AX` (file `0x59B57`); `CMP ES:[03FE],0xAA` at file `0x59BC9` |
 | Inputs | First/second/third PGR words at file+122 = `40 01` |
-| Outputs | `ES=0xF400` under XA ? `0x500000`; `ES:[03FE]` ? `0x5003FE` |
+| Outputs | `ES=0xF400` under XA maps to `0x500000`; `ES:[03FE]` maps to `0x5003FE` |
 | Confidence | Table words, `ES=0xF400`, and `phys24 = word << 14` **PROVEN**. NVRAM window match **PROVEN** as this-tree MAME map. Chip LC3517 **HYPOTHESIS**. Record format / `CX` domain **UNDETERMINED** |
 | Hardware deferred | LC3517 pinout and battery path (`U-PHYS`). Contents on a live board |
 
@@ -57,7 +57,8 @@ coincides there and fails only here. **PROVEN.**
 
 Linear file `[0x74000, 0x78000)` (20-bit page 61 with XA=0) is 16 KiB
 of `0xFF`. That is the padding window before BIOS `F800:000A`. Under
-XA=1 those fetches do not use that file range. **PROVEN.**
+XA=1 those fetches do not use that file range. **PROVEN.** It is the
+second patch-write bank in [`patch_space.md`](patch_space.md).
 
 No `MOV DX,0xFF7A` exists in the image. Page 61 is only written as
 part of the three full-table `OUTSW`s. **PROVEN.**

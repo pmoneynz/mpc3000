@@ -222,6 +222,17 @@ those runs; do not treat a walk’s `[min, max)` as one range.
 | `[0x559AA, 0x559BA)` | data — `D547` `JMP CS:[BX+053A]` 8 near IPs (`(nibble<<1)&0xE`) |
 | `[0x559BA, 0x559C5)` | code — `D547:054A` slot-7 dest through fall into `0555` |
 | `[0x559D1, 0x559F1)` | data — `D547` `JMP CS:[DI+0561]` 16 near IPs (`(AX&0xF)<<1`) |
+| `[0x55ACD, 0x55AD3)` | code — `D547:065D` through `JMP 0907`; `JNS` target from `D547:063E` |
+| `[0x55AD3, 0x55ADD)` | code — `D547:0663` through `JMP 0907`; slot 2 stores `[SI+762E]` word `0663` |
+| `[0x55ADD, 0x55B03)` | code — `D547:066D` through `JMP` short `06A7`; reached `[SI+762E]` word `066D` |
+| `[0x55B04, 0x55B17)` | code — `D547:0694` through fall into `06A7`; slot 3 stores `[SI+762E]` word `0694` |
+| `[0x55B17, 0x55B43)` | code — `D547:06A7` through `JMP 0907`; stores `[SI+762E]` word `051F` |
+| `[0x55B43, 0x55B4D)` | code — `D547:06D3` through `JMP 0900`; slot 4 stores `[SI+762E]` word `06D3` |
+| `[0x55B4D, 0x55B5C)` | code — `D547:06DD` through `JMP 0907`; slot 1 stores `[SI+762E]` word `06DD` |
+| `[0x55B5C, 0x55B78)` | code — `D547:06EC` through `JMP` short `0716`; `06DD` stores `[SI+762E]` word `06EC` |
+| `[0x55B79, 0x55B8C)` | code — `D547:0709` through `JMP 0900`; join stores `[SI+762E]` word `06DD` |
+| `[0x55B8C, 0x55B96)` | code — `D547:071C` through `JMP 0907`; slot 0 stores `[SI+762E]` word `071C` |
+| `[0x5598F, 0x55996)` | code — `D547:051F` through `JMP 0907`; reached `[SI+762E]` word `051F` |
 | `[0x58BCA, 0x58BDC)` | data — `D8BC` `JMP CS:[BX+000A]` 9 near IPs |
 | `[0x59C95, 0x59C9D)` | data — `D9C0` `JMP CS:[BX+0095]` 4 near IPs |
 | `[0x5B24D, 0x5B25F)` | data — `DAF2` `JMP CS:[BX+032D]` 9 near IPs |

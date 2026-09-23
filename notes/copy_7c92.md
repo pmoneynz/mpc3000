@@ -70,8 +70,9 @@ Directory groups that resolve (DS=`8010`):
 - `+0020` `OFF` / `ON` / NULL
 - `+002C` / `+0038` `MASTER` / `SEQUENCE` / (`PROGRAM`) / NULL
 - `+0054` .. `+01E4` pan names `50L` .. ` C ` .. `50R` (101
-  slots), then NULL. Printer is `B354:01C6` with title `Pan:`.
-  Not drum-pad labels. See [`pan_table.md`](pan_table.md).
+  slots), then NULL. Printer is `B354:01C6`. One caller passes
+  title `Pan:`; three others pass a different title. Not drum-pad
+  labels. See [`pan_table.md`](pan_table.md).
 - `+01EC` `MIDI` / `DRUM`; SMPTE rate strings; `EARLIER` / `LATER`; `TUNING` / `DECAY` / `ATTACK` / `FILTER`
 
 `+05C8` is `???????????` then more far ptrs and `ALL EVENTS` at
@@ -101,7 +102,7 @@ the DGROUP base, not a far-pointer slot and not a checked magic.
 | `0x3041F` | `B03B:0065` | `ES=8010`; `065B` overlays at `BX=125C`.. |
 | `0x313A5` | — | `DS=8010`; `MOV [1D11],0` |
 | `0x538D9` | — | `ES=8010`; scan `DI=D6B0` (BSS) |
-| `0x5396A` | — | `DS=ES=0` after `XOR AX,AX` — loads 8010 then clears it |
+| `0x5396A` | — | `DS=8010`; `SUB AX,AX`; `MOV ES,AX` leaves `ES=0` |
 | `0x554DC` | — | `DS=8010`; `MOV [964F],0` (BSS) |
 | `0x55DE1` | — | `DS=8010`; `TEST [9628],2` (BSS) |
 | `0x55F04` | — | `ES=8010`; `0725` |
@@ -111,6 +112,7 @@ the DGROUP base, not a far-pointer slot and not a checked magic.
 | `0x56F3F` | — | `ES=8010`; `MOV AX,ES:[12BE]`; `RETF` |
 | `0x59068` / `0x590A5` | — | `DS=8010`; compare / store `92xx` (BSS) |
 | `0x68260` | — | `DS=8010`; `MOV byte [7934],1` (inside the copy) |
+| `0x6B5B7` | — | `ES=8010`; `MOV AL,[SI+3]` |
 
 After `E937`, tasks keep `DS=8010` as the application DGROUP.
 Offsets `? 0x7C92` (`[D6A9]`, `[A7AB]`, `[9757]`, `[FFA6]`, …) are

@@ -85,9 +85,10 @@ of `0x300000-0x3FFFFF`. Those tables are **PROVEN** as bytes and as
 `OUTSW` sources. On the reset path, BIOS, `F800:1AD4`, and AMX
 `004E`/`01EA`/`0537` do not write `0xFF00-0xFF7E`. The **second** table
 (`FAC0:00B4`) is live when AMX first selects a TCB and still live when
-task 6 first waits and task 7 is selected. See
-[`pgr_live_after_amx.md`](pgr_live_after_amx.md). After task 7 executes,
-the map is **UNDETERMINED**.
+task 6 first waits and task 7 is selected. D510’s eight
+callers and task 7’s 61 two-level walks do not `MOV DX` into
+`0xFF00-0xFF7E`. A deeper callee is still **UNDETERMINED**
+(`U-XA-LIVE`). See [`pgr_live_after_amx.md`](pgr_live_after_amx.md).
 
 ## Work RAM and NVRAM
 

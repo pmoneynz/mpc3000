@@ -35,7 +35,7 @@ Already seeded in D12:
 |------------|------:|---------|
 | `[0x00000, 0x00044)` | 68 | unused low IVT template |
 | `[0x0004C, 0x00050)` | 4 | `0xFF` between IVT[12] and IVT[14] |
-| `[0x00054, 0x20000)` | 130988 | unused low 128 KiB after the three IVT slots |
+| `[0x00054, 0x20000)` | 130988 | patch-write bank after IVT[0x14]; see [`patch_space.md`](patch_space.md) |
 | `[0x7FF44, 0x7FFF0)` | 172 | wait-stub tail through the reset vector |
 | `[0x7FFF5, 0x80000)` | 11 | after `EA FFF0:0000` |
 
@@ -46,7 +46,7 @@ Added this note:
 | `[0x27C92, 0x27CA0)` | 14 | after the DGROUP image; next 16 bytes are zeros, not padding |
 | `[0x27CB0, 0x3000E)` | 33630 | unprogrammed ROM; ends at a C prologue `55 8B EC` |
 | `[0x7079C, 0x707A4)` | 8 | after `LEAVE`/`RETF`; then the `F07A` init table |
-| `[0x707C8, 0x7800A)` | 30786 | unprogrammed ROM after the `F07A` tail zeros; BIOS `CLI` at `0x7800A` |
+| `[0x707C8, 0x7800A)` | 30786 | unprogrammed ROM after the `F07A` tail zeros; BIOS `CLI` at `0x7800A`. File `[0x74000, 0x78000)` inside this run is a patch-write bank ([`patch_space.md`](patch_space.md)); the bytes before `0x74000` and `[0x78000, 0x7800A)` are not |
 | `[0x7A78E, 0x7AC00)` | 1138 | after a `RETF`; FAC0 reset at `0x7AC00` |
 | `[0x7AF6A, 0x7B00C)` | 162 | between I/O tables and the AMX header `EB 40` |
 | `[0x7BA01, 0x7FF00)` | 17663 | after a `RETF`; wait-state stub at `0x7FF00` |

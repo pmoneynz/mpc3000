@@ -25,7 +25,7 @@ frame (page = frame). `CS:IP` = file `20-bit & 0x7FFFF` = 20-bit =
 | Inputs | `0240` `DL`; `SS:SP` from the record; `E937:0004` sets `DS=ES=8010` |
 | Outputs | Entry/exit table below |
 | Confidence | Record bytes, first instructions, and listed exits **PROVEN**. Ready-on-reset only for 6 and 7 **PROVEN**. Slot 0’s first ready is the IVT[8] tick ([`amx_wait.md`](amx_wait.md)). Slot 2’s first bit 0 stays **UNDETERMINED** |
-| Hardware deferred | `D213:0008` `OUT` `0x60`/`0x62` device effect (`U-PHYS`) |
+| Hardware deferred | `D213:0008` `OUT` `0x60`/`0x62`/`0x64` when `BX < 0x40` (`U-PHYS`) |
 
 ---
 
@@ -62,9 +62,11 @@ MOV DS, AX
 RETF
 ```
 
-**PROVEN.** Tasks 2, 3, 5, 6, 7 call it first (task 7 after `PUSH SI` /
-`XOR SI,SI`). Tasks 1 and 4 load `DS=8010` themselves (`MOV AX,8010` /
-`MOV DS,AX`) and do not call `E937`.
+**PROVEN.** Tasks 5 and 6 call it as their first instruction. Task 2
+calls it after the C frame and `SI=[BP+6]`. Task 3 calls it after the
+C frame and `SUB SP,6`. Task 7 calls it after `PUSH SI` / `XOR SI,SI`.
+Tasks 1 and 4 load `DS=8010` themselves (`MOV AX,8010` / `MOV DS,AX`)
+and do not call `E937`.
 
 `B060:0000` (file `0x30600`): `CX = [BP+6]`; `CALL FB00:0484`; `RETF`.
 Timed wait. Tasks 5 and 6 use it.
@@ -89,9 +91,14 @@ hit zero. **PROVEN.** See [`amx_wait.md`](amx_wait.md).
 
 ### 1 — `B259:0006` — `8010` walker
 
-`DS=8010`; `DX=1`; `CALL FB81:0089`. Loop at `001D` scans a word table
-at `[BX+E410]`. Hits call `D213:0008` (`OUT 0x60` / `OUT 0x62`; device
-**UNDETERMINED**). Sentinel path `0058` stores counts, `CALL FB81:00C7`,
+`DS=8010`; `DX=1`; `CALL FB81:0089`. Then `DX=[E40E]`, `CX=FFFF`,
+`BX=FFFE`. Loop `001D` adds 2 to `BX` and reads `[BX+E410]`. A zero
+word continues. `FFFF` jumps to `0058`. Otherwise `SUB AX,DX`. `JG`
+(`7F`) at `002F` stores that difference and keeps the unsigned minimum
+in `CX`. The other arm zeros the word and `CALLF D213:0008`. When that
+callee’s `BX < 0x40` it writes ports `0x60`, `0x62`, and `0x64`; device
+effect **UNDETERMINED**. `0058` writes `CX` to `[E40C]` and `[E40E]`
+(`CX=0` when it is still `FFFF`), then `DX=1` / `CALL FB81:00C7` /
 `RETF` at `006F` (file `0x325FF`). **PROVEN:** sole exit is that `RETF`.
 
 Later ready: `0396` `DL=1` at file `0x521A1`.
@@ -102,7 +109,7 @@ Later ready: `0396` `DL=1` at file `0x521A1`.
 
 | Path | Condition | Exit |
 |------|-----------|------|
-| `0020` | `[9757]?0` and `[A7AE]?0` | `INC [FFA6]`; `RETF` file `0x6C070` |
+| `0020` | `[9757]!=0` and `[A7AE]!=0` | `INC [FFA6]`; `RETF` file `0x6C070` |
 | `0042` | `[9757]=0` drain, or `[A7AE]=0` | `RETF` file `0x6C092` |
 
 The drain (`0021`/`002C`) `CALL`s near `0043` (more flag tests,
@@ -116,7 +123,7 @@ of slot 2 is **UNDETERMINED** until a bit-0 writer before the first
 ### 3 — `EAD0:000B` — C far frame
 
 `PUSH BP` / `MOV BP,SP` / `SUB SP,6`; `CALL E937:0004`.
-`CMP [E614],0x23` / `JB 006C` (file `0x6AD16` `72 4F`):
+`CMP [E614],0x23` at file `0x6AD16`; `JB 006C` at file `0x6AD1B` (`72 4F`):
 if `[E614] < 0x23`, skip to `LEAVE` / `RETF`. Else index
 `[E5F9]` by `[E614]*0x18` and read `+FD0D` / `+11`
 ([`pad_note.md`](pad_note.md)), then `CALL CFB3:0008`.
@@ -129,7 +136,7 @@ Later ready: `0396` `DL=3` at file `0x56112`.
 ### 4 — `DDF1:000A` — wait worker
 
 `DS=8010`; `CX=8`; `CALL FB00:0484` (block). Loop `0017`: if
-`[D6A9]?0` then `CALL DA09:0000` / `0484` `CX=1` / `jmp 0017`. If
+`[D6A9]!=0` then `CALL DA09:0000` / `0484` `CX=1` / `jmp 0017`. If
 `[D6A9]=0`, `RETF` at `0031` (file `0x5DF41`). **PROVEN:** wait-loop
 or that `RETF`.
 
@@ -139,10 +146,12 @@ Later ready: `0396` `DL=4` at file `0x55838`; `04AC` `DL=4` at
 ### 5 — `B14B:0002` — mode dispatch
 
 `CALL E937:0004`; `MOV [E73A],1`; jump `00B3`. If `[A7AB]=0`, `RETF`
-at `00BD` (file `0x3156D`). Else dispatch on `[A7B0] & 3Fh`
-(`8` ? `0023`, `0Ah` ? `004D`, other ? `0075`): many `D6FA:0001`,
-then `B060:0000` `CX=4` at `00A1`, then back to `00B3`. Path `0075`
-can `MOV [A7AB],0` and `RETF` at `009E` (file `0x3154E`).
+at `00BD` (file `0x3156D`). Else dispatch on `[A7B0] & 3Fh`: `JZ` to
+`0023` when the value is 8, `JZ` to `004D` when it is `0Ah`, else `JMP
+0075`. Paths `0023` and `004D` call `D6FA:0001`, then `JMP 009F`
+(`PUSH 4` / `B060:0000` / back to `00B3`). Path `0075` calls
+`D6FA:0001`, stores 0 at `[A7AB]`, and `RETF` at `009E` (file
+`0x3154E`). It does not reach `00A1`.
 
 **PROVEN:** exits are `009E` and `00BD`. The `00A1` wait is a
 suspension, not a task-body exit.
@@ -160,8 +169,9 @@ Reset-path first select. Ready: `B03B` `0396` `DL=6`.
 
 `PUSH SI` / `XOR SI,SI`; `E937`; then `DDF4:0002` / `0083`,
 `D9B5:0073`, `BDF1:0000`, `E521:0006`, `B03B:01DA` / `01F7`,
-`B1B1:*`, `CF0C:0006`, `D470:0948`, `D6E0:00F1`, `C425:0009`.
-`RETF` at `01A6` (file `0x301A6`). **PROVEN:** sole exit of the
+`B1B1:*`, `CF0C:0006`, `D470:0948`. `JZ` at `0194` (`74 0A`, file
+`0x30194`) skips `D6E0:00F1` when `[8623]` is 0. Both arms call
+`C425:0009`. `RETF` at `01A6` (file `0x301A6`). **PROVEN:** sole exit of the
 entry stream. Callee PGR/`OUT`s stay `U-XA-LIVE` / `U-PHYS`.
 
 Ready on reset: `B03B` `0396` `DL=7`. Selected after task 6’s first
@@ -197,18 +207,19 @@ wait.
 | `[0x314B2, 0x3156E)` | code — task 5 through `00BD RETF` |
 | `[0x59BD9, 0x59C05)` | code — task 6 loop (already opened) |
 | `[0x300DF, 0x301A7)` | code — task 7 through `01A6 RETF` |
-| `[0x69374, 0x6937B)` | code — `E937:0004` |
+| `[0x69374, 0x6937C)` | code — `E937:0004` through `000B RETF` |
 | `[0x30600, 0x3060D)` | code — `B060:0000` |
 
-`D213`, `D6FA`, `DA09`, `D9B5`, `B03B:01DA`, and the rest of the
-task-7 chain stay unowned until a named slice needs them.
+`D213:0008`, `D6FA:0001`, `DA09:0000`, `D9B5:0045` / `0073`,
+`B03B:01DA`, and the other task-7 callees named above are inside
+owned code ranges now. Their device effects stay `U-PHYS`.
 
 ---
 
 ## What this note does *not* prove
 
 - That tasks 0–5 run on reset (they do not; only 6 then 7).
-- First ready of slots 0 and 2.
+- First ready of slot 2. Slot 0’s first ready is the IVT[8] tick.
 - Purpose of `[9757]`, `[A7AE]`, `[A7AB]`, `[D6A9]`, `[D6A1]`.
 - `D213` DSP port meaning.
 - Calling convention as a whole-image rule (D8). Tasks 2/3 use a

@@ -146,8 +146,8 @@ F07A:0010  01 FF  0C 00 00 FB     ; AH=FF CALL FAR FB00:000C
 No record has `byte0=0`. The near-call site at `FAC0:0185` is unused by
 this table.
 
-**PROVEN:** BIOS `F800:000A` ends `POP DI/SI/ES/DS; RETF` at file
-`0x7813E`. **PROVEN:** `F800:1AD4` is a straight-line IVT/port init that
+**PROVEN:** BIOS `F800:000A` ends `POP DI/SI/ES/DS` at file
+`0x7813E` and `RETF` at file `0x78142`. **PROVEN:** `F800:1AD4` is a straight-line IVT/port init that
 `RETF`s at file `0x79B25`. **PROVEN:** `FB00:000C` is the KADAK header
 (`jmp FB00:004E` over the copyright). Its visible tail is the dispatcher
 spin at `FB00:013E` and does not `RETF`.
@@ -160,8 +160,9 @@ still a real instruction at `FAC0:019E` (file `0x7AD9E`).
 
 ## 7. BIOS `F800:000A` — file `0x7800A`
 
-Straight-line through relocated-timer writes, a `DS=0040` BSS clear
-(`CX=0x68B0`), IVT fill, `STI`, then:
+Relocated-timer writes through the `DS=0040` `REP STOSB`
+(`CX=0x68B0` at `0057`, file `0x78057`) are straight. The IVT fill
+at `007C` is a `LOOP` with compares. `STI` is at `00FA`. Then:
 
 ```
 F800:0113  AX=0
@@ -202,9 +203,34 @@ AX=0900; call LCD_put
 
 Ports match MAME (`0x00E0` data, `0x00E2` status/control). Bit 7 = busy
 matches HD61830-class behavior. **PROVEN:** this routine writes those
-ports. **UNDETERMINED:** the exact LC7981 register map for AH/AL pairs
-`00/3C`, `01/75`, … without the controller datasheet. The writes are the
-observable. Their glass-level effect is the hardware boundary.
+ports. The MAME HD61830 stand-in names the seven pairs below.
+That file is not an LC7981 manual. Glass pixels stay `U-PHYS`.
+
+MAME `hd61830_device::data_w` uses the byte written to `0xE2` as the
+instruction and the byte written to `0xE0` as its parameter. Applied
+to the seven `LCD_put` arguments above:
+
+| AH / AL | Instruction in that model | Parameter |
+|---------|---------------------------|-----------|
+| `00` / `3C` | 0, mode | `0x3C`: cursor, blink, master, display on. Character mode, internal CG |
+| `01` / `75` | 1, character pitch | horizontal 6, vertical 8 |
+| `02` / `27` | 2, characters per line | 40 |
+| `03` / `3F` | 3, time divisions | 64 |
+| `04` / `07` | 4, cursor position | 8 |
+| `08` / `00` | 8, display start low | 0 |
+| `09` / `00` | 9, display start high | 0 |
+
+`0x3C` bit tests are `MODE_CURSOR=0x04`, `MODE_BLINK=0x08`,
+`MODE_MASTER=0x10`, `MODE_DISPLAY_ON=0x20`. Pitch is
+`(data & 7) + 1` and `(data >> 4) + 1`. Character count is
+`(data & 0x7F) + 1`, forced even. **HYPOTHESIS.** Forty
+characters at pitch 6 is 240 pixels. Eight BIOS rows at
+vertical pitch 8 is 64 pixels. That matches the driver’s
+240×64 screen size. The time-division parameter is a separate
+register and is also 64.
+`set_busy_flag` leaves `m_bf = true` commented out, so this
+model’s status read stays ready. A captured frame is still
+absent (`D3-glass`, `P3`).
 
 ## 9. Banner string
 
@@ -228,7 +254,7 @@ IVT[0x42] = F800:205E
 IN  AL, 0xA2 / AND 0xFE / OUT 0xA2, AL
 IN  AL, DX=0xC011 / AND 0xF7 / OUT DX, AL
 POPF
-DS=06DD; [02]=20A8; zero [04]..[09]
+DS=06DD; [02]=20A8; zero [04], [05], [06], [07], and [09]
 POP DS; RETF
 ```
 
@@ -242,8 +268,9 @@ maps is `U-XA-LIVE`.
 ```
 FB00:000C  jmp short 004E
 FB00:000F  db "COPYRIGHT (C) 1983 KADAK PRODUCTS LTD."
-FB00:004E  CLI; load kernel pointers from CS:[0046]/[0042]/[0036]
+FB00:004E  CLI; `LDS BX, CS:[0046]`
            plant IVT[0]=FB00:02F8 and IVT[4]=FB00:02EF
+           then `LDS DI, CS:[0042]` and `LES BP, CS:[0036]`
            …
 FB00:013E  LDS DI, CS:[0042]
            CALL 01EA
@@ -270,7 +297,7 @@ the header bytes in this image has no `RETF` on that path. All-paths
 |-------|-------|-----|
 | Source | `DS=A000` = file `[0x20000, 0x27C92)` | **PROVEN** |
 | Dest | `ES=8010` = 24-bit `0x380100` under first *and* second PGR (page 32 frame `0xE0`) | **PROVEN** |
-| Length | `0x7C92` (31900) | **PROVEN** |
+| Length | `0x7C92` (31890) | **PROVEN** |
 | Boot writer | `FAC0:0074` `REP MOVSW`; only `MOV AX,A000` in the image | **PROVEN** |
 | Signature | `AA 55` then word `0x0100` at `8010:0000`; unique `AA 55` in the image | **PROVEN** as bytes |
 | Directory | `[+4, +0x5C8)`: 345 `xxxx:8010` far ptrs, 19 NULLs, 5 numeric dwords at `+0238` | **PROVEN** |
@@ -294,7 +321,7 @@ unresolved. Machine-readable seed: [`owner_ledger.md`](owner_ledger.md).
 | `[0x00044, 0x0004C)` | data / IVT template | vectors 0x11, 0x12 |
 | `[0x0004C, 0x00050)` | data / padding | `0xFF` |
 | `[0x00050, 0x00054)` | data / IVT template | vector 0x14 |
-| `[0x00054, 0x20000)` | data / padding | 131,020 `0xFF` bytes; no other non-`FF` in the window |
+| `[0x00054, 0x20000)` | data / padding | 130,988 `0xFF` bytes; no other non-`FF` in the window |
 | `[0x20000, 0x27C92)` | data | `DS=A000` DGROUP image; directory + strings + scalars |
 | `[0x707A4, 0x707B6)` | data | three 6-byte init records |
 | `[0x7AC00, 0x7ACB4)` | code | FAC0 reset body through `BRKXA 0x14` |
@@ -321,8 +348,9 @@ unresolved. Machine-readable seed: [`owner_ledger.md`](owner_ledger.md).
 | `[0x79875, 0x79896)` | code | inline-string walker |
 | `[0x798CA, 0x798D6)` | code | `18CA` issues `INT 43` AX=4 |
 
-`[0x7B04E, 0x7B148)` is the start-to-dispatcher span, not the whole AMX
-kernel. Helpers past `0148` stay unresolved.
+`[0x7B04E, 0x7B148)` is the start-to-dispatcher span this slice opened.
+The ledger now owns `[0x7B04E, 0x7BA00)`. File `0x7BA00` is still a
+one-byte gap, then padding runs to `0x7FF00`.
 
 ---
 

@@ -45,7 +45,7 @@ just written) and clears XA. Continue is `FAC0:01BD` (file `0x7ADBD`):
 CX = 40h
 SI = 01CF                     ; third PGR, file 0x7ADCF
 DX = FF00
-CS:OUTSW / INC DX / LOOP
+CS:OUTSW / INC DX / INC DX / LOOP
 BRKXA 0x12                    ; file 0x7ADCC  0F E0 12
 ```
 
@@ -113,7 +113,10 @@ is on the reset path through first `01EA`.
 
 ## 3. `FB00:0157` / `0194` — ISR enter / leave
 
-Six far callers, all `B03B` `0347` bodies (`9A 57 01 00 FB`).
+Six far callers of `9A 57 01 00 FB`, none in `B03B`:
+`D52A:0008` file `0x552A8`, `D547:0067` file `0x554D7`,
+`D5DD:000C` file `0x55DDC`, `D5DD:016E` file `0x55F3E`,
+`D61A:000A` file `0x561AA`, `D6A0:000E` file `0x56A0E`.
 
 `0157` (file `0x7B157`):
 
@@ -131,7 +134,7 @@ JS   0189                     ; skip switch if nest went negative
 MOV  [DI+16h], SP
 MOV  [DI+18h], SS
 LDS  BP, CS:[0046]            ; FB76:00A6
-LDS  SP, [BP+0]               ; SS:SP = 901C:1130 (bytes 30 11 1C 90)
+LDS  SP, DS:[BP+0]            ; 3E override. SS:SP = 901C:1130 (bytes 30 11 1C 90)
 MOV  SS, DS
 0189:
 MOV  BP, SP
@@ -140,9 +143,14 @@ MOV  DS, SS / MOV ES, SS
 RETF                          ; continue the ISR on the new stack
 ```
 
-`0194` (file `0x7B194`) reverses: `INC [DI+10h]`; if the result is
-positive, restore `SS:SP` from `[DI+16h]`; if `[DI+0Ch] > [DI+11h]`,
-`01CF` `AX=2`; `XCHG` the far-return slots back; pop; `RETF`.
+`0194` (file `0x7B194`) reloads `DI` from `CS:[0042]`,
+then `INC byte [DI+10h]`. `JLE` at `019D` skips the
+restore when the result is signed `<= 0`. The other
+arm pops `BX`/`ES`, then `SP=[DI+16h]` and
+`SS=[DI+18h]`. If unsigned `[DI+0Ch] > [DI+11h]`
+(`76` not taken at `01AF`), `AX=2` and `CALLN 01CF`.
+Then `XCHG` the far-return slots back, pop, and
+`RETF`.
 
 `038A` is `0157` then `0194` (forced yield). `0586` may take the same
 pair when `[DI+12h]` hits zero.
