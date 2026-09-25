@@ -7190,7 +7190,7 @@
       "owner": "code",
       "kind": "code",
       "source": "notes/int43_ax4.md",
-      "why": "INT 43 AX=3 cursor BH*40+40; CALLN F800:1843"
+      "why": "INT 43 AX=3 cursor row*40+col; CALLN F800:1843"
     },
     {
       "start": "0x79752",

@@ -333,7 +333,7 @@ SEED_RANGES: tuple[tuple[int, int, str, str, str, str], ...] = (
     (0x796E4, 0x7971D, "code", "code", "notes/boot_reset_to_bios_banner.md", "INT 43 AX=0 LCD init"),
     (0x7971D, 0x79734, "code", "code", "notes/int43_ax4.md", "INT 43 AX=1 fill 0x140 spaces; CALLN F800:1843/17CC"),
     (0x79734, 0x79744, "code", "code", "notes/int43_ax4.md", "INT 43 AX=2 LCD_put AX=((BX&3)<<2)+0x30; CALLN F800:185A"),
-    (0x79744, 0x79752, "code", "code", "notes/int43_ax4.md", "INT 43 AX=3 cursor BH*40+40; CALLN F800:1843"),
+    (0x79744, 0x79752, "code", "code", "notes/int43_ax4.md", "INT 43 AX=3 cursor row*40+col; CALLN F800:1843"),
     (0x79752, 0x7976E, "code", "code", "notes/int43_ax4.md", "INT 43 AX=4 class walk"),
     (0x7976E, 0x7977E, "data", "table", "notes/int43_ax4.md", "INT 43 AX=4 class table"),
     (0x7977E, 0x797CC, "code", "code", "notes/int43_ax4.md", "INT 43 AX=4 CR/LF/BS/DEL/FF"),

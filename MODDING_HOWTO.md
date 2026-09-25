@@ -157,7 +157,9 @@ Code cave (**HYPOTHESIS**): file `[0x707C8, 0x74000)` is 14,392 bytes of `FF`
 padding inside the relocated code range, at logical `0xF07C8–0xF3FFF`. In a
 Route A mod it is RAM and ships in the image, so you can put new code there
 and reach it with a patched `CALL FAR`/`JMP FAR`. Two things are open. No
-direct far transfer targets it, but all-paths "never read" is
+direct far transfer targets it. Two traced sessions (stock and Route A, with Edit
+Sound, both graphic Mixer pages, Disk and Other visited) read and fetched none of it
+([`notes/waveform_phase0.md`](notes/waveform_phase0.md) §5). All-paths "never read" is
 **UNDETERMINED**. The builder only supports same-length patches, so to fill
 the cave, write each chunk as a `FF…` → code patch.
 
@@ -362,7 +364,7 @@ steps, so such files on the mod disk should load on the second pass.
 | Route A guard on 3.12 | **PROVEN (trace)** |
 | Route B entry contract and MZ rules | **PROVEN (code)** |
 | Route B text output via `INT 43` AX=4 | **PROVEN (trace)** |
-| Code cave `[0x707C8, 0x74000)` unused | **HYPOTHESIS** |
+| Code cave `[0x707C8, 0x74000)` unused | **PROVEN (trace)** for two sessions, `emu/lua/cave_watch.lua`. All-paths **HYPOTHESIS** |
 | No single-word PGR write reverts pages 44–60 later | **PROVEN (trace)** for 67.5 s of one boot. All-paths **UNDETERMINED** ([`patch_space.md`](notes/patch_space.md) §4) |
 | Real hardware: drive density, timing, any mod boot | **UNDETERMINED** (`U-PHYS`) |
 | 720K / 800K disks | **UNDETERMINED** (not traced) |

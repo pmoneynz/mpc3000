@@ -219,18 +219,21 @@ LC7981 (`U-LC7981`). Do not invent a register name.
 ### AX=3 — `F800:1744`, file `0x79744`
 
 ```
-MOV AL, BH
-MOV BL, 28h
-MUL BL                     ; AX = BH * 40
-XOR BH, BH                 ; BX = 0028h (BL still 28h)
-ADD AX, BX                 ; AX = BH * 40 + 40
+MOV AL, BH                 ; row
+MOV BH, 28h
+MUL BH                     ; AX = row * 40
+XOR BH, BH                 ; BX = col (BL untouched)
+ADD AX, BX                 ; AX = row * 40 + col
 CALL 1843                  ; set cursor
 RET
 ```
 
-`e8f200` at `0x7974E` is `CALLN 1843`. **PROVEN:** cursor word becomes
-`BH*40+40`. Original `BL` is overwritten before the add, so this is
-not `row*40+col`. **UNDETERMINED:** why the extra `+40` (one row).
+Bytes `8ac7 b728 f6e7 32ff 03c3` at `0x79744`: `B7 28` is `MOV BH,28h` and
+`F6 E7` is `MUL BH`, so `BL` survives. `e8f200` at `0x7974E` is
+`CALLN 1843`. **PROVEN:** cursor word becomes `BH*40+BL` = `row*40+col`.
+The OS wrapper `B1B1:0026` (file `0x31B36`) passes `BH`=row, `BL`=col.
+Correction (2026-09-25): an earlier revision decoded `MOV BL,28h` / `MUL BL`
+and reported `BH*40+40`.
 
 ### AX=5 — `F800:1808`, file `0x79808`
 
@@ -292,7 +295,7 @@ RET
 | `[0x796D4, 0x796E4)` | data — eight near targets (already opened) |
 | `[0x7971D, 0x79734)` | code — AX=1 fill 0x140 spaces |
 | `[0x79734, 0x79744)` | code — AX=2 `LCD_put` `((BX&3)<<2)+30h` |
-| `[0x79744, 0x79752)` | code — AX=3 cursor `BH*40+40` |
+| `[0x79744, 0x79752)` | code — AX=3 cursor `row*40+col` |
 | `[0x79752, 0x7976E)` | code — AX=4 class walk |
 | `[0x7976E, 0x7977E)` | data — class bytes + terminator `00` |
 | `[0x7977E, 0x797CC)` | code — CR/LF/BS/DEL/FF |
@@ -311,5 +314,4 @@ RET
 - Glyph pixels (`D3-glass`).
 - That AH=`0x0C` is "write display RAM" on this chip (`U-LC7981`).
 - What AX=2's `((BX&3)<<2)+30h` programs on the controller.
-- Why AX=3 adds one extra row (`+40`).
 - First AMX task effect (`D9BD:0009` remains a second observable).

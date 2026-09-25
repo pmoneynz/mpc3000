@@ -9,6 +9,7 @@ missing: see emu/README.md for the pinned MAME build.
 from __future__ import annotations
 
 import shutil
+import struct
 import subprocess
 import sys
 import unittest
@@ -18,12 +19,14 @@ from pathlib import Path
 from emu.mpc3k import BUILD, M3K316, MAME, REPO, disk, run
 from emu.panel import dial, key_tap, write_smf
 from emu.seqmem import LAYOUT, offsets, parse, pool
+from emu.snd import disk as snd_disk, sine441, snd, stereo1
 
 RUNS = BUILD / "emu" / "tests"
 MODS = BUILD / "mods"
 CANARY = MODS / "vailixi350-canary.img"
 MOD350 = MODS / "MOD350.img"
 PETER = MODS / "PETER.img"
+LUA = REPO / "emu" / "lua"
 PHOTO_REF = REPO / "emu" / "font" / "photo_play_record.txt"
 
 MAIN_SCREEN = "============= Play/Record =============="
@@ -54,6 +57,17 @@ def loader_disks() -> dict[str, Path]:
     }
 
 
+def snd_disks() -> dict[str, Path]:
+    """One synthetic sound per disk: <Load> takes the first file (notes/waveform_phase0.md §3)."""
+    RUNS.mkdir(parents=True, exist_ok=True)
+    out = {}
+    for key, name, planes in (("snd_mono", "SINE441", sine441()), ("snd_stereo", "STEREO1", stereo1())):
+        src = RUNS / f"{name}.SND"
+        src.write_bytes(snd(name, planes))
+        out[key] = snd_disk(key, [(src, f"{name}.SND")])
+    return out
+
+
 def text(screen: dict) -> str:
     return "\n".join(screen["rows"])
 
@@ -82,6 +96,18 @@ CASES = {
                    press=[(65.0, "Y7", "Rec", 0.3), (65.1, "Y7", "Play", 0.1)]),
     "mod350_on312": dict(bios="default", times=[20], floppy=MOD350),
     "mod_peter": dict(bios="vailixi", times=[5, 17], floppy=PETER),
+    # Waveform phase 0: load a synthetic SND (Disk, 7, <Load>), open Edit Sound (6).
+    **{n: dict(bios="vailixi", times=[60], floppy=None, extra=["-autoboot_script", str(LUA / "snddump.lua")],
+               press=[(45.0, "Y0", "Disk", 0.1), (46.5, "Y0", "7", 0.1), (48.5, "Y3", "Soft Key 1", 0.1),
+                      (57.0, "Y0", "Program/Sounds", 0.1), (58.5, "Y1", "6", 0.1)])
+       for n in ("snd_mono", "snd_stereo")},
+    # Code cave: stock EPROM boot and Route A, each visiting Edit Sound, both graphic mixers, Disk, Other.
+    **{n: dict(bios="vailixi", times=[t + 22], floppy=f, extra=["-autoboot_script", str(LUA / "cave_watch.lua")],
+               press=[(t + 2 * i, port, key, 0.1) for i, (port, key) in enumerate((
+                   ("Y0", "Program/Sounds"), ("Y1", "6"), ("Y6", "Main Screen"), ("Y0", "Mixer/Effects"),
+                   ("Y2", "1"), ("Y6", "Main Screen"), ("Y0", "Mixer/Effects"), ("Y2", "2"),
+                   ("Y6", "Main Screen"), ("Y0", "Disk"), ("Y1", "Other")))])
+       for n, f, t in (("cave_stock", None, 46.0), ("cave_mod", MOD350, 62.0))},
     # Panel link, injected frames (midiin3) and the driver HLE (MAME input fields).
     "link_disk": dict(bios="vailixi", times=[46.5], panel=[key_tap("disk", 45)]),
     "link_dial": dict(bios="vailixi", times=[46.5], panel=[dial(2, 45), dial(-1, 45.5)]),
@@ -104,7 +130,7 @@ class Mpc3kBoot(unittest.TestCase):
         for args in (["build_mod_sys.py"], ["build_canary.py"], ["build_mod_sys.py", "@mods/PETER.args"]):
             subprocess.run([sys.executable, str(REPO / "mods" / args[0]), *args[1:]], cwd=REPO,
                            check=True, capture_output=True)
-        disks = {"os316": floppy_316(), **loader_disks()}
+        disks = {"os316": floppy_316(), **loader_disks(), **snd_disks()}
         for name in CASES:
             key = "os316" if name.startswith("os316") else name
             if key in disks:
@@ -177,6 +203,22 @@ class Mpc3kBoot(unittest.TestCase):
         self.assertEqual(eprom["rows"][3], ".......--------.--:.-------.--.-........")
         self.assertEqual(mod["rows"][2], ".......Vailixi.3.50.(---/--/----).......")
         self.assertEqual(mod["rows"][3], "..............Mod.by.Peter..............")
+
+    def test_synthetic_snd_loads_into_wave_ram(self) -> None:
+        for name, title, length, planes in (("snd_mono", "Edit Snd:SINE441", "001.250.00", sine441()),
+                                            ("snd_stereo", "Edit Snd:STEREO1", "000.750.00", stereo1())):
+            with self.subTest(name=name):
+                screen = text(self.results[name][-1]).replace(".", " ")
+                self.assertIn(title, screen)
+                self.assertIn(length.replace(".", " "), screen)
+                want = b"".join(struct.pack(f"<{len(p)}h", *p) for p in planes)
+                self.assertEqual((RUNS / name / "wave_60_idx0.bin").read_bytes(), want)
+
+    def test_code_cave_never_read(self) -> None:
+        for name, copied in (("cave_stock", 0), ("cave_mod", 0x3838 // 2)):
+            with self.subTest(name=name):
+                counts = dict(line.split() for line in (RUNS / name / "cave.txt").read_text().splitlines()[:4])
+                self.assertEqual(counts, {"RF07C8": "0", "WF07C8": "0", "R3F07C8": "0", "W3F07C8": str(copied)})
 
     def test_sequencer_pool_484k_eprom_439k_floppy_316(self) -> None:
         w350 = parse(RUNS / "seq_350" / "ram_words.log")

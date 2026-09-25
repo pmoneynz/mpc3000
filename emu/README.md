@@ -67,6 +67,8 @@ Extra probes in `emu/lua/`, passed as
 |--------|-------|
 | `pgr_watch.lua` | Page table words 44–60 on every change (RAM `0EC…` vs ROM `02C…`) |
 | `loader_bp.lua` | Which floppy-loader call sites fire (needs `-debug -debugger none -log`) |
+| `snddump.lua` | Sound records `A2AE:4800` and each sound's wave RAM words at every snapshot time (`snd_dir.log`, `wave_<t>_idx<i>.bin`) |
+| `cave_watch.lua` | Reads (including fetches) and writes of the code cave in EPROM and in the Route A RAM copy (`cave.txt`) |
 
 ## Front panel
 
@@ -91,6 +93,9 @@ run("vailixi", [47], BUILD / "emu" / "y", press=[(45.0, "Y0", "Disk", 0.1)])    
 ```
 
 `python3 -m emu.key_sweep` re-derives the key map.
+
+Test sounds: `emu/snd.py` writes `.SND` files (`snd`, `sine441`, `stereo1`) and
+floppy images that 3.50 can open (`disk`). Load: Disk, `7`, Soft Key 1 `<Load>`.
 
 ## Font pipeline
 
