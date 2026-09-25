@@ -15,7 +15,7 @@ Reproduction:
   refuses to decode across `BRKXA`/`RETXA`.
 - `analysis/floppy_loader.json` holds the byte-exact routine dumps.
 - `python3 tools/verify_boot_slice.py` runs the same check.
-- Emulator runs: `python3 -m unittest emu.test_mpc3k` in `MPC3000_builds/`
+- Emulator runs: `python3 -m unittest emu.test_mpc3k` from the repo root
   (tests `…boots_316_from_floppy`, `…file_selection`, canary).
 
 Mnemonics come from ndisasm. Every window was scanned for `0F E0`/`0F F0`.
@@ -309,12 +309,12 @@ BIOS mount (`F800:0F38`, file `0x78F38`):
 | `ZZMOD.SYS`, `AAA.SYS` (non-MZ) | 3.16 loads. The second SYS is never opened |
 | `AAA.SYS` (non-MZ), `M3K316.SYS` | `software bug of type 11h`, permanent. No fallback |
 | `README.TXT` only | `Searching SCSI…`, stays 3.50 |
-| `STARTUP.SYS` 288-byte canary (`tools/build_canary.py`) | prints `Vailixi 3.51` |
-| `MOD350.SYS` patched 3.50 relocated to RAM (`tools/build_mod_sys.py`) | `Vailixi 3.51` banner at 15 s, 484K, Play/Record, panel input. On 3.12: `Mod needs Vailixi 3.50 EPROMs`. See [`../MODDING_HOWTO.md`](../MODDING_HOWTO.md) §4 |
+| `STARTUP.SYS` 288-byte canary (`mods/build_canary.py`) | prints `Vailixi 3.51` |
+| `MOD350.SYS` patched 3.50 relocated to RAM (`mods/build_mod_sys.py`) | `Vailixi 3.51` banner at 15 s, 484K, Play/Record, panel input. On 3.12: `Mod needs Vailixi 3.50 EPROMs`. See [`../MODDING_HOWTO.md`](../MODDING_HOWTO.md) §4 |
 | none | `013B` → `0171`, no loader call |
 
 **PROVEN (trace)**. The rows are regression tests in
-`MPC3000_builds/emu/test_mpc3k.py`.
+[`emu/test_mpc3k.py`](../emu/test_mpc3k.py).
 
 ---
 

@@ -1,7 +1,7 @@
 # Panel link: OS-side protocol and key map
 
 **Image:** Vailixi 3.50 linear. **Date:** 2026-09-25.
-Emulator: `MPC3000_builds` (MAME branch `mpc3000-accuracy`), see
+Emulator: `emu/` harness (MAME fork branch `mpc3000-accuracy`), see
 [`emulator.md`](emulator.md).
 
 This note is about what the **V53 OS accepts** on the panel link. What
@@ -51,7 +51,7 @@ semantics. **PROVEN** (code).
 ## 3. Key map
 
 Method: boot 3.50 to Play/Record, tap one code at 45 s, read the LCD at
-47 s (`MPC3000_builds/emu/key_sweep.py`); codes with no text change were
+47 s (`emu/key_sweep.py`); codes with no text change were
 re-run in a context where the effect is visible (cursor address writes
 `IR 0A/0B`, recorded bars, tempo field, count-in). Button names come from
 the screen the OS opens. **PROVEN (trace)** unless tagged.

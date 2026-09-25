@@ -10,7 +10,8 @@ address below is pinned there and re-checked by
 
 Tags follow [`AGENTS.md`](AGENTS.md): **PROVEN** (code or trace, cited),
 **HYPOTHESIS**, **UNDETERMINED**. Every trace is MAME `mpc3000` (patched
-driver in `MPC3000_builds/mame`). **No mod has run on real hardware yet.**
+driver, pinned in [`emu/README.md`](emu/README.md)). **No mod has run on real
+hardware yet.**
 
 ---
 
@@ -53,7 +54,7 @@ Three consequences shape every mod:
 |--|--|--|
 | What ships | Stock 3.50 OS code + DGROUP with your byte patches, plus a relocation stub | Your own MZ executable |
 | EPROMs required | Vailixi 3.50 exactly (stub enforces it) | Any of 3.08 / 3.11 / 3.12 / 3.50 |
-| Tooling | `MPC3000_builds/tools/build_mod_sys.py` | nasm + an MZ header (template: `tools/build_canary.py`) |
+| Tooling | `mods/build_mod_sys.py` | nasm + an MZ header (template: `mods/build_canary.py`) |
 | Sequencer memory | 484K, same as EPROM boot (trace) | Yours to define |
 | Proven depth | Boots to Play/Record and accepts panel input (trace) | Prints text through the BIOS (trace). Nothing else proven |
 | Use for | Bug fixes, string changes, behaviour tweaks | A new OS; experiments with the BIOS services |
@@ -67,22 +68,23 @@ image sits in the pool. **PROVEN (trace)**.
 ## 3. Toolchain and layout
 
 Required on the build host: `python3`, `nasm`, `mtools` (`mformat`, `mcopy`),
-and the MAME build at `MPC3000_builds/mame/mpc3k` for testing.
+and, for testing, the pinned MAME build ([`emu/README.md`](emu/README.md);
+binary path in `MPC3K_MAME`). All paths below are relative to this repo.
 
 | Path | Role |
 |------|------|
-| `MPC3000_builds/tools/build_mod_sys.py` | Route A builder: patches, stub, MZ header, 1.44 MB image |
-| `MPC3000_builds/tools/mod_stub.asm` | Route A relocation stub (BIOS guard, copy, rejoin reset path) |
-| `MPC3000_builds/mods/*.args` | One file per mod: its name and patch list |
-| `MPC3000_builds/tools/build_canary.py` | Route B minimal example: 288-byte MZ that prints a line |
-| `MPC3000_builds/emu/mpc3k.py` | Headless MAME runner: screen capture, panel presses, RAM words |
-| `MPC3000_builds/emu/test_mpc3k.py` | Emulator regression tests (add one per mod) |
-| `MPC3000_builds/run/pgr_watch.lua` | Proves the relocated code is the code running (§6.3) |
-| `MPC3000_builds/out/` | Build output (`<NAME>.SYS`, `<NAME>.img`) |
-| `MPC3000/tools/floppy_loader.py` | Pins the loader in every EPROM OS (`--check`) |
-| `MPC3000/tools/v53_decode.py` | Instruction lengths, including `BRKXA`/`RETXA` |
+| `mods/build_mod_sys.py` | Route A builder: patches, stub, MZ header, 1.44 MB image |
+| `mods/mod_stub.asm` | Route A relocation stub (BIOS guard, copy, rejoin reset path) |
+| `mods/*.args` | One file per mod: its name and patch list |
+| `mods/build_canary.py` | Route B minimal example: 288-byte MZ that prints a line |
+| `emu/mpc3k.py` | Headless MAME runner: screen capture, panel presses, RAM words |
+| `emu/test_mpc3k.py` | Emulator regression tests (add one per mod) |
+| `emu/lua/pgr_watch.lua` | Proves the relocated code is the code running (§6.3) |
+| `build/mods/` | Build output (`<NAME>.SYS`, `<NAME>.img`), gitignored |
+| `tools/floppy_loader.py` | Pins the loader in every EPROM OS (`--check`) |
+| `tools/v53_decode.py` | Instruction lengths, including `BRKXA`/`RETXA` |
 
-Never write under `MPC3000/07-rom/`. The builders only read the chip pair.
+Never write under `07-rom/`. The builders only read the chip pair.
 
 ---
 
@@ -98,7 +100,7 @@ Never write under `MPC3000/07-rom/`. The builders only read the chip pair.
 | DGROUP | `[0x20000, 0x27C92)` | `8010:0000` (20-bit `0x80100`), as the reset copy does |
 | OS code | `[0x30000, 0x74000)` | logical `0xB0000–0xF3FFF` = RAM pages `0xEC–0xFC` under the third PGR |
 
-The stub, in order ([`mod_stub.asm`](../MPC3000_builds/tools/mod_stub.asm)):
+The stub, in order ([`mod_stub.asm`](mods/mod_stub.asm)):
 
 1. Sums the words of `F800:0000–7FFF` (file `0x78000–0x7FFFF`) and compares the result with the sum the builder took from the 3.50 chips.
    On a mismatch it prints `Mod needs Vailixi 3.50 EPROMs` through `INT 43`
@@ -119,7 +121,7 @@ always applies one mandatory patch to stop it loading the SYS a second time:
 |------|---------|-------|-----|--------|
 | `0x30207` | `B000:0207` | `75` (`JNZ 0239`) | `EB` (`JMP 0239`) | SYS step skipped. APS / PGM / ALL steps still run |
 
-**PROVEN (trace)** for 3.50, [`test_mpc3k.py`](../MPC3000_builds/emu/test_mpc3k.py)
+**PROVEN (trace)** for 3.50, [`test_mpc3k.py`](emu/test_mpc3k.py)
 `test_patched_350_boots_from_floppy_and_takes_input`:
 
 | Time (MAME) | Screen | Meaning |
@@ -174,7 +176,7 @@ the cave, write each chunk as a `FF…` → code patch.
 4. **Check every other consumer.** A DGROUP string or code path may have
    more than one reader. `tools/floppy_loader.py` shows the style: every
    string it pins has exactly one consumer.
-5. **Write the spec** in `MPC3000_builds/mods/<NAME>.args`, one argument
+5. **Write the spec** in `mods/<NAME>.args`, one argument
    per line, file offsets in hex:
 
    ```
@@ -186,9 +188,8 @@ the cave, write each chunk as a `FF…` → code patch.
 6. **Build:**
 
    ```sh
-   cd MPC3000_builds
-   python3 tools/build_mod_sys.py @mods/DEMO351.args
-   # → out/DEMO351.SYS (310,640 bytes), out/DEMO351.img (1.44 MB FAT12)
+   python3 mods/build_mod_sys.py @mods/DEMO351.args
+   # → build/mods/DEMO351.SYS (310,640 bytes), build/mods/DEMO351.img (1.44 MB FAT12)
    ```
 
    With no `--patch`, the builder applies the demo patch (`3.50` → `3.51`).
@@ -243,7 +244,7 @@ the cave, write each chunk as a `FF…` → code patch.
 
 ### 5.4 Minimal example
 
-`tools/build_canary.py` builds `STARTUP.SYS`: `CLI/CLD`, `DS=SS=CS`,
+`mods/build_canary.py` builds `STARTUP.SYS`: `CLI/CLD`, `DS=SS=CS`,
 `SP=0100`, `STI`, print a string through `INT 43` AX=4, spin. It shows
 `Vailixi 3.51 (---/--/----)` at 12 s (`test_floppy_canary_prints_351`,
 **PROVEN, trace**). Start new OS work from that shape.
@@ -268,8 +269,7 @@ match.
 ### 6.2 Boot in the emulator (headless)
 
 ```sh
-cd MPC3000_builds
-python3 -m emu.mpc3k --bios vailixi --floppy out/DEMO351.img --times 5,15,20,30,60
+python3 -m emu.mpc3k --bios vailixi --floppy build/mods/DEMO351.img --times 5,15,20,30,60
 ```
 
 The runner sets `-video none`, `SDL_VIDEO_DRIVER=dummy` and
@@ -284,7 +284,7 @@ also reaches it. Use at least one of:
 - A visible marker: a patched string that appears on screen (Route A demo:
   banner at 15–19 s).
 - RAM: pass `words=[…]` to `emu.mpc3k.run` and read DGROUP words at `8010:X`.
-- Page table: `extra=["-autoboot_script", "run/pgr_watch.lua"]` logs pages
+- Page table: `extra=["-autoboot_script", "emu/lua/pgr_watch.lua"]` logs pages
   44–60. `0EC…0FC` after the load means the OS pages are RAM (your copy).
   `02C…03C` means ROM.
 
@@ -297,12 +297,14 @@ frames). The Route A test presses Rec+Play at 65 s and expects
 ### 6.5 Lock it in
 
 Add a case and a test in `emu/test_mpc3k.py` (pattern: `mod350`,
-`mod350_on312`), then run:
+`mod350_on312`), then run the whole suite from the repo root:
 
 ```sh
-cd MPC3000_builds && python3 -m unittest emu.test_mpc3k
-cd ../MPC3000 && python3 tools/verify_boot_slice.py && python3 -m unittest tests.test_boot_slice
+python3 tools/verify_boot_slice.py && python3 -m unittest discover -v
 ```
+
+Without the MAME binary, `emu.test_mpc3k` reports as skipped. A skip is
+not a pass.
 
 ---
 
@@ -371,7 +373,7 @@ steps, so such files on the mod disk should load on the second pass.
 ## 10. Rules
 
 1. Floppy only. The SCSI loader never loads a SYS.
-2. Never write under `07-rom/`. Build output goes to `MPC3000_builds/out/`.
+2. Never write under `07-rom/`. Build output goes to `build/mods/`.
 3. Route A needs 3.50 EPROMs. The stub checks; do not remove the check.
 4. Patch only DGROUP and OS code. BIOS behaviour cannot be changed from floppy.
 5. Every patch states its file offset, `CS:IP` or `DS` offset, old bytes, new

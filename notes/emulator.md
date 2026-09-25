@@ -4,14 +4,16 @@
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 **Date:** 2026-09-25.
 
-The emulator lives outside this tree:
+The MAME driver lives in a fork; the harness lives in this tree
+([`../emu/README.md`](../emu/README.md)):
 
 | Path | Role |
 |------|------|
-| `MPC3000_builds/mame/` | Upstream MAME `9ede38cb` + branch `mpc3000-accuracy` |
-| `MPC3000_builds/emu/mpc3k.py` | Headless runner: fresh NVRAM/cfg per run, LCD text capture |
-| `MPC3000_builds/emu/probe.lua` | I/O first-access log, LC7981 register log, screen dump |
-| `MPC3000_builds/emu/test_mpc3k.py` | Boot regressions (16 boots, ~35 s) |
+| MAME fork `pmoneynz/mame` `mpc3000-accuracy` | Upstream MAME `9ede38cb` + driver commits, pinned `f4a72e1a` |
+| `emu/mpc3k.py` | Headless runner: fresh NVRAM/cfg per run, LCD text capture |
+| `emu/romset.py` | Romset from `07-rom/` + placeholders, in `build/roms/` |
+| `emu/probe.lua` | I/O first-access log, LC7981 register log, screen dump |
+| `emu/test_mpc3k.py` | Boot regressions (all cases in parallel) |
 
 A trace is one execution. Everything below marked **PROVEN (trace)** is
 what the emulator did on that run, under the MAME device models. It is
@@ -100,7 +102,7 @@ The OS only accepts board sizes of 1, 4 or 16 banks, which is why a flat
 
 ## 4. Other runtime facts
 
-- Floppy canary (`MPC3000_builds/out/vailixi350-canary.img`) prints
+- Floppy canary (`mods/build_canary.py` → `build/mods/vailixi350-canary.img`) prints
   `Vailixi 3.51 (---/--/----)` on row 7 about 10 s after reset.
   **PROVEN (trace)**. Physical run still deferred.
 - The full floppy loader routine, strings, memory map, MZ rules and
@@ -166,10 +168,10 @@ The OS only accepts board sizes of 1, 4 or 16 banks, which is why a flat
 ## 5. LC7981 character generator from a glass photo
 
 Source: one photo of a real MPC3000 on Play/Record (`IMG_4706`, copied to
-`MPC3000_builds/font/lcd_play_record.jpg`). Pipeline in
-`MPC3000_builds/font/`, run in order: `fit_grid.py`, `homog_fit.py`,
-`refine_fit.py`, `warp_fit.py`, `normalize.py`, `extract_glyphs.py`,
-`gen_cg.py`.
+`emu/font/lcd_play_record.jpg`). Pipeline in
+`emu/font/`, run in order: `fit_grid.py`, `homog_fit.py`,
+`refine_fit.py`, `warp_fit.py`, `normalize.py`, `extract_glyphs.py`;
+`emu/romset.py` then builds `hd61830.bin` from `glyphs.json`.
 
 Registration: homography + radial k1 from dot centres, refined so every
 cell's 6th column and 8th row sample dark (`IR1=75`: pitch 6x8), plus a
@@ -179,7 +181,7 @@ surfaces (background 0-85, lit 90-230 across the photo). Result: 5 of
 columns, 6 in gap rows (the cursor block).
 
 Pairing: display-RAM bytes from the emulated 3.50 boot at 45 s
-(`run/font_ref/screens_hex.txt`). Every cell matches the photo except
+(`build/emu/font_ref/screens_hex.txt`). Every cell matches the photo except
 row 1 cols 24-39, where the real machine showed `BPM: 80.4 (MAS)` and the
 cursor. Those cells are excluded from evidence.
 
