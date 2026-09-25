@@ -46,5 +46,18 @@ class CaveTests(unittest.TestCase):
             b.cave(self.asm("db 0x0f, 0xe0, 0x10\n"), self.img)
 
 
+class FontTests(unittest.TestCase):
+    def test_wave_font_include_is_generated(self) -> None:
+        import contextlib
+        import io
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from emu import lcd_font
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            lcd_font.main()
+        inc = Path(__file__).resolve().parents[1] / "mods" / "wave_font.inc"
+        self.assertEqual(inc.read_text(), out.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()

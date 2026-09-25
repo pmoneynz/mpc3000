@@ -1,0 +1,4 @@
+--name=WAVE
+--cave=mods/wave.asm
+--patch=30a22:807eff487531:ea{help_gate}90
+--patch=3a1fa:3d75007503e99102e9300d:ea{page_key}909090909090

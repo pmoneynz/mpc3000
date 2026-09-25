@@ -77,7 +77,8 @@ def cave(src: Path, img: bytes) -> tuple[tuple[int, str, str], dict[str, int]]:
     out, map_ = OUT / f"{src.stem}.cave.bin", OUT / f"{src.stem}.cave.map"
     pre = OUT / "cave_map.inc"
     pre.write_text(f"[map symbols {map_}]\n")
-    subprocess.run(["nasm", "-f", "bin", "-P", str(pre), "-o", str(out), str(src)], check=True)
+    subprocess.run(["nasm", "-f", "bin", "-I", f"{src.parent}/", "-P", str(pre), "-o", str(out), str(src)],
+                   check=True)
     code = out.read_bytes()
     if len(code) > CAVE[1] - CAVE[0]:
         raise ValueError(f"{src}: {len(code)} bytes; the cave holds {CAVE[1] - CAVE[0]}")

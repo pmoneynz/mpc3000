@@ -70,7 +70,7 @@ def snd_disks() -> dict[str, Path]:
         out[key] = snd_disk(key, [(src, f"{name}.SND")])
     src = RUNS / "WAVE.SND"
     src.write_bytes(snd("SINE441", sine441(), start=WAVE_START, end=WAVE_END))
-    out["wave_engine"] = snd_disk("wave_engine", [(MODS / "WAVETEST.SYS", "WAVETEST.SYS"), (src, "SINE441.SND")])
+    out["wave_view"] = snd_disk("wave_view", [(MODS / "WAVE.SYS", "WAVE.SYS"), (src, "SINE441.SND")])
     return out
 
 
@@ -109,12 +109,14 @@ CASES = {
                press=[(45.0, "Y0", "Disk", 0.1), (46.5, "Y0", "7", 0.1), (48.5, "Y3", "Soft Key 1", 0.1),
                       (57.0, "Y0", "Program/Sounds", 0.1), (58.5, "Y1", "6", 0.1)])
        for n in ("snd_mono", "snd_stereo")},
-    # Wave engine (mods/WAVETEST.args): Route A boot, load, Edit Sound, Best st -> wave view,
-    # Program/Sounds -> back to Edit Sound.
-    "wave_engine": dict(bios="vailixi", times=[77, 80, 84], floppy=None, press=[
+    # Wave view (mods/WAVE.args): load, Edit Sound, Help -> view, wheel +3 on Start, Soft Key 2
+    # -> End, wheel -2, Soft Key 4 -> Edit Sound; then Help on Play/Record is still Help.
+    "wave_view": dict(bios="vailixi", times=[77, 80, 82.5, 84, 86.5, 90, 93], floppy=None, press=[
         (62.0, "Y0", "Disk", 0.1), (63.5, "Y0", "7", 0.1), (65.5, "Y3", "Soft Key 1", 0.1),
-        (74.0, "Y0", "Program/Sounds", 0.1), (75.5, "Y1", "6", 0.1), (77.5, "Y3", "Soft Key 2", 0.1),
-        (82.0, "Y0", "Program/Sounds", 0.1)]),
+        (74.0, "Y0", "Program/Sounds", 0.1), (75.5, "Y1", "6", 0.1), (77.5, "Y6", "Help", 0.1),
+        (83.0, "Y3", "Soft Key 2", 0.1), (87.0, "Y4", "Soft Key 4", 0.1),
+        (91.0, "Y6", "Main Screen", 0.1), (92.0, "Y6", "Help", 2.0)],
+        panel=[dial(3, 81.0), dial(-2, 85.0)]),
     # Code cave: stock EPROM boot and Route A, each visiting Edit Sound, both graphic mixers, Disk, Other.
     **{n: dict(bios="vailixi", times=[t + 22], floppy=f, extra=["-autoboot_script", str(LUA / "cave_watch.lua")],
                press=[(t + 2 * i, port, key, 0.1) for i, (port, key) in enumerate((
@@ -142,7 +144,7 @@ class Mpc3kBoot(unittest.TestCase):
         if missing := missing_tools():
             raise unittest.SkipTest("emulator tests need: " + ", ".join(missing))
         for args in (["build_mod_sys.py"], ["build_canary.py"], ["build_mod_sys.py", "@mods/PETER.args"],
-                     ["build_mod_sys.py", "@mods/CAVEDEMO.args"], ["build_mod_sys.py", "@mods/WAVETEST.args"]):
+                     ["build_mod_sys.py", "@mods/CAVEDEMO.args"], ["build_mod_sys.py", "@mods/WAVE.args"]):
             subprocess.run([sys.executable, str(REPO / "mods" / args[0]), *args[1:]], cwd=REPO,
                            check=True, capture_output=True)
         disks = {"os316": floppy_316(), **loader_disks(), **snd_disks()}
@@ -227,14 +229,21 @@ class Mpc3kBoot(unittest.TestCase):
         self.assertGreater(int(counts["R3F07C8"]), 0)
         self.assertTrue(any(" F07D:" in line and "R3F07C8" in line for line in lines[4:]))
 
-    def test_wave_engine_pixels_match_reference(self) -> None:
-        before, _, after = self.results["wave_engine"]
-        blocks = (RUNS / "wave_engine" / "lcd_pixels.txt").read_text().split("@ ")[1:]
-        got = next(b.splitlines()[1:65] for b in blocks if b.startswith("80.000"))
-        self.assertEqual(got, wave_ref.pixels(sine441()[0], WAVE_START, WAVE_END))
-        for row in (0, 2):   # title; soft start handed back unchanged ('.' may stand for space)
-            self.assertEqual(after["rows"][row][:20].replace(".", " "), before["rows"][row][:20].replace(".", " "))
-        self.assertIn("Soft st :000.312.22", before["rows"][2])
+    def test_wave_view_edits_start_and_end(self) -> None:
+        text_before, *views, text_after, help_screen = self.results["wave_view"]
+        blocks = (RUNS / "wave_view" / "lcd_pixels.txt").read_text().split("@ ")[1:]
+        pixels = {b.split()[0]: b.splitlines()[1:65] for b in blocks}
+        wave = sine441()[0]
+        step = len(wave) // 240
+        start, end = WAVE_START + 3 * step, WAVE_END - 2 * step
+        for t, args in (("80.000", (WAVE_START, WAVE_END, 0)), ("82.500", (start, WAVE_END, 0)),
+                        ("84.000", (start, WAVE_END, 1)), ("86.500", (start, end, 1))):
+            with self.subTest(t=t):
+                self.assertEqual(pixels[t], wave_ref.screen(wave, "SINE441", *args))
+        self.assertIn("Soft st :000.312.22", text_before["rows"][2])
+        self.assertIn(f"Soft st :{wave_ref.fmt(start)}", text_after["rows"][2])
+        self.assertIn(f"Soft end:{wave_ref.fmt(end)}", text_after["rows"][3])
+        self.assertIn("Help", help_screen["rows"][0])
 
     def test_synthetic_snd_loads_into_wave_ram(self) -> None:
         for name, title, length, planes in (("snd_mono", "Edit Snd:SINE441", "001.250.00", sine441()),
