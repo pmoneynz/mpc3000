@@ -6,6 +6,7 @@ connected to that model.
 
 Current slice: [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_banner.md).
 Work queue: [`TODO.md`](TODO.md). Start here: [`GETTING_STARTED.md`](GETTING_STARTED.md).
+Building floppy mods: [`MODDING_HOWTO.md`](MODDING_HOWTO.md).
 
 Collected for Peter Wadams.
 

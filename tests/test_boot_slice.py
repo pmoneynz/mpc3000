@@ -6,6 +6,8 @@ import json
 import unittest
 from pathlib import Path
 
+from tools.floppy_loader import OUT_PATH as FLOPPY_PATH
+from tools.floppy_loader import check as check_floppy_loader
 from tools.linear_rom import LINEAR_SHA256, load_vailixi_linear, sha256_bytes
 from tools.owner_ledger import (
     gaps,
@@ -1116,6 +1118,21 @@ class BootSliceTests(unittest.TestCase):
         self.assertEqual(hx["digit_count"], 2)
         self.assertEqual(hx["pgr_slot"], 62)
         self.assertEqual(hx["xa"], 1)
+
+    def test_floppy_loader_every_eprom_os(self) -> None:
+        facts = json.loads(FLOPPY_PATH.read_text())
+        self.assertEqual(sorted(facts), ["3.08", "3.11", "3.12", "3.50"])
+        self.assertEqual(len(check_floppy_loader()), 4)
+        v = facts["3.50"]
+        self.assertEqual(v["linear_sha256"], LINEAR_SHA256)
+        self.assertEqual((v["os_entry"]["cs_ip"], v["loader"]["cs_ip"], v["floppy_test"]["target"]),
+                         ("B000:00DF", "B000:01A7", "E7F5:0440"))
+        self.assertEqual((v["sys_handoff"]["cs_ip"], v["load_segment"]), ("FB93:0066", "0x6900"))
+        self.assertEqual(v["strings"]["wild"]["file"], "0x2123B")
+        jmp = decode_one(self.image, 0xFAC0, 0x019E)
+        self.assertEqual((jmp.target_cs, jmp.target_ip), (0xB000, 0x00DF))
+        self.assertEqual({f["load_segment"] for f in facts.values()}, {"0x6900", "0x7000"})
+        self.assertEqual(len({f["int45_mz_loader"]["sha256"] for f in facts.values()}), 1)
 
     def test_v53_decode_brkxa_retxa(self) -> None:
         brk = decode_one(self.image, 0xFAC0, 0x001C)

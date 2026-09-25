@@ -10,6 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tools.floppy_loader import check as check_floppy_loader
 from tools.linear_rom import LINEAR_SHA256, load_vailixi_linear, sha256_bytes
 from tools.owner_ledger import (
     gaps,
@@ -10347,6 +10348,7 @@ def verify(image: bytes, facts: dict) -> list[str]:
         f"{transfers['status_counts']['loop']} loop"
     )
 
+    checks.extend(check_floppy_loader())
     return checks
 
 
