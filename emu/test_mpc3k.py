@@ -23,6 +23,7 @@ RUNS = BUILD / "emu" / "tests"
 MODS = BUILD / "mods"
 CANARY = MODS / "vailixi350-canary.img"
 MOD350 = MODS / "MOD350.img"
+PETER = MODS / "PETER.img"
 PHOTO_REF = REPO / "emu" / "font" / "photo_play_record.txt"
 
 MAIN_SCREEN = "============= Play/Record =============="
@@ -80,6 +81,7 @@ CASES = {
     "mod350": dict(bios="vailixi", times=[17, 67.5], floppy=MOD350,
                    press=[(65.0, "Y7", "Rec", 0.3), (65.1, "Y7", "Play", 0.1)]),
     "mod350_on312": dict(bios="default", times=[20], floppy=MOD350),
+    "mod_peter": dict(bios="vailixi", times=[5, 17], floppy=PETER),
     # Panel link, injected frames (midiin3) and the driver HLE (MAME input fields).
     "link_disk": dict(bios="vailixi", times=[46.5], panel=[key_tap("disk", 45)]),
     "link_dial": dict(bios="vailixi", times=[46.5], panel=[dial(2, 45), dial(-1, 45.5)]),
@@ -99,8 +101,9 @@ class Mpc3kBoot(unittest.TestCase):
     def setUpClass(cls) -> None:
         if missing := missing_tools():
             raise unittest.SkipTest("emulator tests need: " + ", ".join(missing))
-        for builder in ("build_mod_sys.py", "build_canary.py"):
-            subprocess.run([sys.executable, str(REPO / "mods" / builder)], check=True, capture_output=True)
+        for args in (["build_mod_sys.py"], ["build_canary.py"], ["build_mod_sys.py", "@mods/PETER.args"]):
+            subprocess.run([sys.executable, str(REPO / "mods" / args[0]), *args[1:]], cwd=REPO,
+                           check=True, capture_output=True)
         disks = {"os316": floppy_316(), **loader_disks()}
         for name in CASES:
             key = "os316" if name.startswith("os316") else name
@@ -168,6 +171,12 @@ class Mpc3kBoot(unittest.TestCase):
         self.assertIn("Vailixi.3.51.(---/--/----)", text(banner))
         self.assertEqual(main["rows"][0], "====== Play/Record (Record Ready) ======")
         self.assertIn("Mod needs Vailixi 3.50 EPROMs", text(self.results["mod350_on312"][-1]))
+
+    def test_peter_mod_credit_on_version_screen(self) -> None:
+        eprom, mod = self.results["mod_peter"]
+        self.assertEqual(eprom["rows"][3], ".......--------.--:.-------.--.-........")
+        self.assertEqual(mod["rows"][2], ".......Vailixi.3.50.(---/--/----).......")
+        self.assertEqual(mod["rows"][3], "..............Mod.by.Peter..............")
 
     def test_sequencer_pool_484k_eprom_439k_floppy_316(self) -> None:
         w350 = parse(RUNS / "seq_350" / "ram_words.log")

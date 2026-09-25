@@ -10,14 +10,14 @@ The driver lives in a MAME fork, outside this repo:
 | Item | Value |
 |------|-------|
 | Fork | <https://github.com/pmoneynz/mame>, branch `mpc3000-accuracy` |
-| Pinned commit | `f4a72e1adcb6b9c332e4f7b7c666cd9c93971fdb` (upstream base `9ede38cb`) |
-| Changed file | `src/mame/akai/mpc3000.cpp` |
+| Pinned commit | `87e2129c1aab1fdffca307a9cb5790a1c7ebc047` (upstream base `9ede38cb`) |
+| Changed files | `src/mame/akai/mpc3000.cpp`, `src/mame/layout/mpc3000.lay` |
 | Binary the harness runs | `$MPC3K_MAME`, default `../MPC3000_builds/mame/mpc3k` |
 
 ```bash
 git clone --depth 50 -b mpc3000-accuracy https://github.com/pmoneynz/mame.git ../MPC3000_builds/mame
 cd ../MPC3000_builds/mame
-git checkout f4a72e1adcb6b9c332e4f7b7c666cd9c93971fdb
+git checkout 87e2129c1aab1fdffca307a9cb5790a1c7ebc047
 make SUBTARGET=mpc3k SOURCES=src/mame/akai/mpc3000.cpp TOOLS=0 NOWERROR=1 -j14
 ```
 
@@ -74,6 +74,10 @@ Interactive: `../MPC3000_builds/mame/mpc3k mpc3000 -rompath build/roms`
 and use the keys MAME lists under Input (this Machine); pads are on the
 numeric keypad. Config "Front panel" selects the HLE (default) or a real
 panel ROM.
+
+Views (Tab → Video Options, or `-view "<name>"`): `Default Layout`,
+`Large Screen` (full panel, LCD enlarged over the knobs) and `LCD Only`.
+Snapshots use the first view unless `-snapview` names another.
 
 Scripted, two equivalent paths (grammar and key map:
 [`../notes/panel_link.md`](../notes/panel_link.md)):

@@ -9,7 +9,7 @@ The MAME driver lives in a fork; the harness lives in this tree
 
 | Path | Role |
 |------|------|
-| MAME fork `pmoneynz/mame` `mpc3000-accuracy` | Upstream MAME `9ede38cb` + driver commits, pinned `f4a72e1a` |
+| MAME fork `pmoneynz/mame` `mpc3000-accuracy` | Upstream MAME `9ede38cb` + driver commits, pinned `87e2129c` |
 | `emu/mpc3k.py` | Headless runner: fresh NVRAM/cfg per run, LCD text capture |
 | `emu/romset.py` | Romset from `07-rom/` + placeholders, in `build/roms/` |
 | `emu/probe.lua` | I/O first-access log, LC7981 register log, screen dump |
