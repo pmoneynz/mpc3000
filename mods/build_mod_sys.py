@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """Build a floppy mod: a patched Vailixi 3.50 OS that boots from `MOD350.SYS`.
 
-    python3 mods/build_mod_sys.py [--patch FILE:OLDHEX:NEWHEX ...] [--name NAME]
+    python3 mods/build_mod_sys.py [--patch FILE:OLDHEX:NEWHEX ...] [--cave SRC.asm] [--name NAME]
     python3 mods/build_mod_sys.py @mods/NAME.args
 
 FILE is a linear-image offset in hex. OLDHEX must match the stock bytes.
 An @file holds one argument per line (e.g. `--patch=21100:30:31`).
 Only DGROUP [0x20000, 0x27C92) and OS code [0x30000, 0x74000) can be
 patched: the BIOS pages stay EPROM after INT 10 (notes/floppy_loader.md §6).
+
+--cave assembles SRC.asm (NASM, org 0) into the code cave at CAVE_SEG:0000
+(file 0x707D0, the paragraph-aligned start of the FF run [0x707C8, 0x74000)).
+In NEWHEX, `{label}` stands for the 4-byte far pointer label:CAVE_SEG, e.g.
+`9a{entry}` is CALL FAR entry.
 
 Always applied: the loader's floppy SYS branch (file 0x30207, JNZ -> JMP),
 so the RAM copy does not load MOD350.SYS again. Default demo patch:
@@ -35,6 +40,8 @@ BIOS = (0x78000, 0x80000)
 LOAD_SEGMENTS = (0x6900, 0x7000)        # 3.12/3.50 and 3.08/3.11 loaders
 SKIP_SYS = (0x30207, "75", "eb")        # B000:0207 JNZ 0239 -> JMP 0239
 DEMO = (0x21100, "30", "31")            # '0' of "Vailixi 3.50"
+CAVE = (0x707D0, 0x74000)               # FF padding in the relocated code range
+CAVE_SEG = (CAVE[0] + 0x80000) >> 4     # F07D: file = (CS<<4)+IP - 0x80000
 
 
 def linear() -> bytes:
@@ -62,6 +69,34 @@ def stub() -> bytes:
     out = OUT / "mod_stub.bin"
     subprocess.run(["nasm", "-f", "bin", "-o", str(out), str(STUB_ASM)], check=True)
     return out.read_bytes()
+
+
+def cave(src: Path, img: bytes) -> tuple[tuple[int, str, str], dict[str, int]]:
+    """Assemble src for CAVE_SEG:0000; return its FF->code patch and its labels."""
+    OUT.mkdir(parents=True, exist_ok=True)
+    out, map_ = OUT / f"{src.stem}.cave.bin", OUT / f"{src.stem}.cave.map"
+    pre = OUT / "cave_map.inc"
+    pre.write_text(f"[map symbols {map_}]\n")
+    subprocess.run(["nasm", "-f", "bin", "-P", str(pre), "-o", str(out), str(src)], check=True)
+    code = out.read_bytes()
+    if len(code) > CAVE[1] - CAVE[0]:
+        raise ValueError(f"{src}: {len(code)} bytes; the cave holds {CAVE[1] - CAVE[0]}")
+    if re.search(rb"\x0f[\xe0\xf0]", code):
+        raise ValueError(f"{src}: contains 0F E0 / 0F F0 (BRKXA/RETXA)")
+    old = img[CAVE[0] : CAVE[0] + len(code)]
+    if old != b"\xff" * len(code):
+        raise ValueError("cave is not FF in the stock image")
+    labels = {m[3]: int(m[1], 16) for m in re.finditer(r"^\s*([0-9A-Fa-f]+)\s+([0-9A-Fa-f]+)\s+(\S+)$",
+                                                       map_.read_text(), re.M)}
+    return (CAVE[0], old.hex(), code.hex()), labels
+
+
+def far(new: str, labels: dict[str, int]) -> str:
+    def ptr(m: re.Match) -> str:
+        if m[1] not in labels:
+            raise ValueError(f"{{{m[1]}}}: no such cave label")
+        return struct.pack("<HH", labels[m[1]], CAVE_SEG).hex()
+    return re.sub(r"\{(\w+)\}", ptr, new)
 
 
 def para(n: int) -> int:
@@ -103,19 +138,22 @@ def floppy(sys_path: Path, img_path: Path) -> None:
 
 def parse_patch(text: str) -> tuple[int, str, str]:
     off, old, new = text.split(":")
-    return int(off, 16), old.lower(), new.lower()
+    return int(off, 16), old.lower(), new
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
                                  fromfile_prefix_chars="@")
     ap.add_argument("--patch", action="append", type=parse_patch, default=[])
+    ap.add_argument("--cave", type=Path)
     ap.add_argument("--name", default="MOD350")
     args = ap.parse_args()
     if not re.fullmatch(r"[A-Z0-9_]{1,8}", args.name):
         ap.error("--name must be 1-8 characters A-Z 0-9 _ (FAT 8.3 base name)")
     img = bytearray(linear())
-    apply(img, [SKIP_SYS] + (args.patch or [DEMO]))
+    code, labels = cave(args.cave, img) if args.cave else (None, {})
+    patches = [(off, old, far(new, labels).lower()) for off, old, new in args.patch]
+    apply(img, [SKIP_SYS] + (patches or [DEMO]) + ([code] if code else []))
     OUT.mkdir(parents=True, exist_ok=True)
     sys_path, img_path = OUT / f"{args.name}.SYS", OUT / f"{args.name}.img"
     sys_path.write_bytes(mz(image(bytes(img))))

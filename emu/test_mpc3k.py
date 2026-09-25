@@ -26,6 +26,7 @@ MODS = BUILD / "mods"
 CANARY = MODS / "vailixi350-canary.img"
 MOD350 = MODS / "MOD350.img"
 PETER = MODS / "PETER.img"
+CAVEDEMO = MODS / "CAVEDEMO.img"
 LUA = REPO / "emu" / "lua"
 PHOTO_REF = REPO / "emu" / "font" / "photo_play_record.txt"
 
@@ -96,6 +97,8 @@ CASES = {
                    press=[(65.0, "Y7", "Rec", 0.3), (65.1, "Y7", "Play", 0.1)]),
     "mod350_on312": dict(bios="default", times=[20], floppy=MOD350),
     "mod_peter": dict(bios="vailixi", times=[5, 17], floppy=PETER),
+    "mod_cavedemo": dict(bios="vailixi", times=[17], floppy=CAVEDEMO,
+                         extra=["-autoboot_script", str(LUA / "cave_watch.lua")]),
     # Waveform phase 0: load a synthetic SND (Disk, 7, <Load>), open Edit Sound (6).
     **{n: dict(bios="vailixi", times=[60], floppy=None, extra=["-autoboot_script", str(LUA / "snddump.lua")],
                press=[(45.0, "Y0", "Disk", 0.1), (46.5, "Y0", "7", 0.1), (48.5, "Y3", "Soft Key 1", 0.1),
@@ -127,7 +130,8 @@ class Mpc3kBoot(unittest.TestCase):
     def setUpClass(cls) -> None:
         if missing := missing_tools():
             raise unittest.SkipTest("emulator tests need: " + ", ".join(missing))
-        for args in (["build_mod_sys.py"], ["build_canary.py"], ["build_mod_sys.py", "@mods/PETER.args"]):
+        for args in (["build_mod_sys.py"], ["build_canary.py"], ["build_mod_sys.py", "@mods/PETER.args"],
+                     ["build_mod_sys.py", "@mods/CAVEDEMO.args"]):
             subprocess.run([sys.executable, str(REPO / "mods" / args[0]), *args[1:]], cwd=REPO,
                            check=True, capture_output=True)
         disks = {"os316": floppy_316(), **loader_disks(), **snd_disks()}
@@ -203,6 +207,14 @@ class Mpc3kBoot(unittest.TestCase):
         self.assertEqual(eprom["rows"][3], ".......--------.--:.-------.--.-........")
         self.assertEqual(mod["rows"][2], ".......Vailixi.3.50.(---/--/----).......")
         self.assertEqual(mod["rows"][3], "..............Mod.by.Peter..............")
+
+    def test_cave_code_runs_from_ram(self) -> None:
+        self.assertEqual(self.results["mod_cavedemo"][-1]["rows"][3], ".............Cave.code.ran..............")
+        lines = (RUNS / "mod_cavedemo" / "cave.txt").read_text().splitlines()
+        counts = dict(line.split() for line in lines[:4])
+        self.assertEqual((counts["RF07C8"], counts["WF07C8"]), ("0", "0"))   # EPROM copy never used
+        self.assertGreater(int(counts["R3F07C8"]), 0)
+        self.assertTrue(any(" F07D:" in line and "R3F07C8" in line for line in lines[4:]))
 
     def test_synthetic_snd_loads_into_wave_ram(self) -> None:
         for name, title, length, planes in (("snd_mono", "Edit Snd:SINE441", "001.250.00", sine441()),

@@ -1,0 +1,3 @@
+--name=CAVEDEMO
+--cave=mods/cavedemo.asm
+--patch=30038:1e6810119a0e0002b283c404:9a{cave_line}90909090909090

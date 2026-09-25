@@ -153,15 +153,25 @@ guard message is on screen from 12 s through 60 s. **PROVEN (trace)**.
 The builder enforces the ranges. It also checks that the old bytes match the
 stock image and that each patch keeps its length. **PROVEN (code)**.
 
-Code cave (**HYPOTHESIS**): file `[0x707C8, 0x74000)` is 14,392 bytes of `FF`
-padding inside the relocated code range, at logical `0xF07C8–0xF3FFF`. In a
-Route A mod it is RAM and ships in the image, so you can put new code there
-and reach it with a patched `CALL FAR`/`JMP FAR`. Two things are open. No
-direct far transfer targets it. Two traced sessions (stock and Route A, with Edit
-Sound, both graphic Mixer pages, Disk and Other visited) read and fetched none of it
-([`notes/waveform_phase0.md`](notes/waveform_phase0.md) §5). All-paths "never read" is
-**UNDETERMINED**. The builder only supports same-length patches, so to fill
-the cave, write each chunk as a `FF…` → code patch.
+Code cave: file `[0x707C8, 0x74000)` is 14,392 bytes of `FF` padding inside the
+relocated code range, at logical `0xF07C8–0xF3FFF`. In a Route A mod it is RAM
+and ships in the image. No direct far transfer targets it. Two traced sessions
+(stock and Route A, with Edit Sound, both graphic Mixer pages, Disk and Other
+visited) read and fetched none of it
+([`notes/waveform_phase0.md`](notes/waveform_phase0.md) §5). All-paths "never
+read" is **UNDETERMINED**, so each mod's test should rerun
+`emu/lua/cave_watch.lua` on the pages it exercises.
+
+`--cave=SRC.asm` assembles NASM source (`org 0`) at `F07D:0000` (file
+`0x707D0`, the paragraph-aligned start; 14,384 bytes). The builder rejects code
+that does not fit, a non-`FF` target, and `0F E0`/`0F F0` bytes. In a patch's new
+bytes, `{label}` is the far pointer `label:F07D`. Example
+[`mods/CAVEDEMO.args`](mods/CAVEDEMO.args) replaces the 12-byte
+`PUSH DS / PUSH 1110 / CALL FAR B202:000E / ADD SP,4` at `B000:0038` (file
+`0x30038`) with `9a{cave_line}` and seven `NOP`s. The cave routine in
+[`mods/cavedemo.asm`](mods/cavedemo.asm) prints `Cave code ran` in the banner's third
+row. **PROVEN (trace)**, `test_cave_code_runs_from_ram`: the first fetch is at
+`F07D:0000` (physical `0x3F07D0`) at 14.48 s, and the EPROM copy is never read.
 
 ### 4.3 Author a patch
 
@@ -251,9 +261,11 @@ the cave, write each chunk as a `FF…` → code patch.
 `Vailixi 3.51 (---/--/----)` at 12 s (`test_floppy_canary_prints_351`,
 **PROVEN, trace**). Start new OS work from that shape.
 
-Instruction set: the proven stubs use only 8086 forms. V33-core 80186
-instructions are **HYPOTHESIS** (NEC datasheet, not verified here). Never
-emit `0F E0`/`0F F0` unless you mean `BRKXA`/`RETXA`.
+Instruction set: the stubs use only 8086 forms. The stock OS itself uses the
+80186 `PUSH imm` (`68 iw` at `B000:0015`, file `0x30015`), so cave code may use
+that form (`cpu 186` in `cavedemo.asm`). Other 80186 instructions are
+**HYPOTHESIS** (NEC datasheet, not verified here). Never emit `0F E0`/`0F F0`
+unless you mean `BRKXA`/`RETXA`.
 
 ---
 
@@ -365,6 +377,7 @@ steps, so such files on the mod disk should load on the second pass.
 | Route B entry contract and MZ rules | **PROVEN (code)** |
 | Route B text output via `INT 43` AX=4 | **PROVEN (trace)** |
 | Code cave `[0x707C8, 0x74000)` unused | **PROVEN (trace)** for two sessions, `emu/lua/cave_watch.lua`. All-paths **HYPOTHESIS** |
+| Route A code in the cave (`--cave`) runs from RAM | **PROVEN (trace)**, `CAVEDEMO` |
 | No single-word PGR write reverts pages 44–60 later | **PROVEN (trace)** for 67.5 s of one boot. All-paths **UNDETERMINED** ([`patch_space.md`](notes/patch_space.md) §4) |
 | Real hardware: drive density, timing, any mod boot | **UNDETERMINED** (`U-PHYS`) |
 | 720K / 800K disks | **UNDETERMINED** (not traced) |
