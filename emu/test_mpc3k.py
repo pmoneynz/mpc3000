@@ -19,6 +19,7 @@ from pathlib import Path
 from emu.mpc3k import BUILD, M3K316, MAME, REPO, disk, run
 from emu.panel import dial, key_tap, write_smf
 from emu.seqmem import LAYOUT, offsets, parse, pool
+from emu import wave_ref
 from emu.snd import disk as snd_disk, sine441, snd, stereo1
 
 RUNS = BUILD / "emu" / "tests"
@@ -27,6 +28,7 @@ CANARY = MODS / "vailixi350-canary.img"
 MOD350 = MODS / "MOD350.img"
 PETER = MODS / "PETER.img"
 CAVEDEMO = MODS / "CAVEDEMO.img"
+WAVE_START, WAVE_END = 13781, 48000   # mid-sine .. mid-ramp of SINE441
 LUA = REPO / "emu" / "lua"
 PHOTO_REF = REPO / "emu" / "font" / "photo_play_record.txt"
 
@@ -66,6 +68,9 @@ def snd_disks() -> dict[str, Path]:
         src = RUNS / f"{name}.SND"
         src.write_bytes(snd(name, planes))
         out[key] = snd_disk(key, [(src, f"{name}.SND")])
+    src = RUNS / "WAVE.SND"
+    src.write_bytes(snd("SINE441", sine441(), start=WAVE_START, end=WAVE_END))
+    out["wave_engine"] = snd_disk("wave_engine", [(MODS / "WAVETEST.SYS", "WAVETEST.SYS"), (src, "SINE441.SND")])
     return out
 
 
@@ -104,6 +109,12 @@ CASES = {
                press=[(45.0, "Y0", "Disk", 0.1), (46.5, "Y0", "7", 0.1), (48.5, "Y3", "Soft Key 1", 0.1),
                       (57.0, "Y0", "Program/Sounds", 0.1), (58.5, "Y1", "6", 0.1)])
        for n in ("snd_mono", "snd_stereo")},
+    # Wave engine (mods/WAVETEST.args): Route A boot, load, Edit Sound, Best st -> wave view,
+    # Program/Sounds -> back to Edit Sound.
+    "wave_engine": dict(bios="vailixi", times=[77, 80, 84], floppy=None, press=[
+        (62.0, "Y0", "Disk", 0.1), (63.5, "Y0", "7", 0.1), (65.5, "Y3", "Soft Key 1", 0.1),
+        (74.0, "Y0", "Program/Sounds", 0.1), (75.5, "Y1", "6", 0.1), (77.5, "Y3", "Soft Key 2", 0.1),
+        (82.0, "Y0", "Program/Sounds", 0.1)]),
     # Code cave: stock EPROM boot and Route A, each visiting Edit Sound, both graphic mixers, Disk, Other.
     **{n: dict(bios="vailixi", times=[t + 22], floppy=f, extra=["-autoboot_script", str(LUA / "cave_watch.lua")],
                press=[(t + 2 * i, port, key, 0.1) for i, (port, key) in enumerate((
@@ -131,7 +142,7 @@ class Mpc3kBoot(unittest.TestCase):
         if missing := missing_tools():
             raise unittest.SkipTest("emulator tests need: " + ", ".join(missing))
         for args in (["build_mod_sys.py"], ["build_canary.py"], ["build_mod_sys.py", "@mods/PETER.args"],
-                     ["build_mod_sys.py", "@mods/CAVEDEMO.args"]):
+                     ["build_mod_sys.py", "@mods/CAVEDEMO.args"], ["build_mod_sys.py", "@mods/WAVETEST.args"]):
             subprocess.run([sys.executable, str(REPO / "mods" / args[0]), *args[1:]], cwd=REPO,
                            check=True, capture_output=True)
         disks = {"os316": floppy_316(), **loader_disks(), **snd_disks()}
@@ -215,6 +226,15 @@ class Mpc3kBoot(unittest.TestCase):
         self.assertEqual((counts["RF07C8"], counts["WF07C8"]), ("0", "0"))   # EPROM copy never used
         self.assertGreater(int(counts["R3F07C8"]), 0)
         self.assertTrue(any(" F07D:" in line and "R3F07C8" in line for line in lines[4:]))
+
+    def test_wave_engine_pixels_match_reference(self) -> None:
+        before, _, after = self.results["wave_engine"]
+        blocks = (RUNS / "wave_engine" / "lcd_pixels.txt").read_text().split("@ ")[1:]
+        got = next(b.splitlines()[1:65] for b in blocks if b.startswith("80.000"))
+        self.assertEqual(got, wave_ref.pixels(sine441()[0], WAVE_START, WAVE_END))
+        for row in (0, 2):   # title; soft start handed back unchanged ('.' may stand for space)
+            self.assertEqual(after["rows"][row][:20].replace(".", " "), before["rows"][row][:20].replace(".", " "))
+        self.assertIn("Soft st :000.312.22", before["rows"][2])
 
     def test_synthetic_snd_loads_into_wave_ram(self) -> None:
         for name, title, length, planes in (("snd_mono", "Edit Snd:SINE441", "001.250.00", sine441()),

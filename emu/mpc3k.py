@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -52,7 +53,7 @@ def disk(name: str, files: list[tuple[Path, str]]) -> Path:
 
 def parse_screens(text: str) -> list[dict]:
     screens = []
-    for block in text.split("@ ")[1:]:
+    for block in re.split(r"^@ ", text, flags=re.M)[1:]:
         head, *rows = block.rstrip("\n").split("\n")
         screens.append({"time": float(head.split()[0]), "head": head,
                         "rows": [r[1:-1] for r in rows]})

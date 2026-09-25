@@ -1,0 +1,3 @@
+--name=WAVETEST
+--cave=mods/wave.asm
+--patch=3a26f:900ee82520:9a{wave_test}
