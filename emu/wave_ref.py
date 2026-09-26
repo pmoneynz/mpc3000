@@ -1,42 +1,34 @@
 """Reference for the wave view pixels drawn by mods/wave.asm (240 x 64 LCD).
 
-screen() is the whole view. Text uses emu/lcd_font.py in 6 x 8 cells: row 0
-"Edit Snd:" + name, row 1 Start (col 6) and End (col 24) values, row 6 Length,
-row 7 soft keys. The selected value's ten cells are inverted.
+Columns: full view, column c starts at c*len//240; fine view, at
+center + (c - 120)*zoom. Column c covers [lo, max(hi, lo + 1)) where hi is
+the next column's start; samples outside [0, len) count as 0. Its line runs
+from row 31 - (max >> 11) to row 31 - (min >> 11) (rows 16..47). Columns
+overlapping the selected pair [a, b] are inverted over rows 16..47 (in the
+full view the last column reaches len). The fine view XORs column 120.
 
-Column c covers samples [c*len//240, max((c+1)*len//240, that + 1)). Its line
-runs from row 31 - (max >> 11) to row 31 - (min >> 11), so the wave fills
-rows 16..47 around the zero line (row 31). The columns holding soft start
-through soft end are inverted over rows 16..47.
+Text (emu/lcd_font.py, 6-pixel cells): glyph rows 0-6 "Edit Snd:" + name;
+rows 8-14 the pair's labels and values, the selected value's ten cells
+inverted over rows 7-14; rows 49-55 Length (and Zoom in the fine view);
+rows 57-63 soft keys. Rows 15 and 48 stay blank.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from emu.lcd_font import font
 
 COLS, ROWS, MID, TOP, BOT = 240, 64, 31, 16, 47
+PAIRS = ((("Start:", 0, 6), ("End:", 20, 24)), (("Zone st:", 0, 8), ("Zone end:", 19, 28)))
 
 
-def bound(c: int, length: int) -> int:
-    return c * length // COLS
-
-
-def column(pos: int, length: int) -> int:
-    return max(c for c in range(COLS) if bound(c, length) <= pos)
-
-
-def lines(samples: list[int]) -> list[tuple[int, int]]:
-    n = len(samples)
-    out = []
-    for c in range(COLS):
-        lo = bound(c, n)
-        hi = max(bound(c + 1, n), lo + 1)
-        part = samples[lo:hi]
-        out.append((MID - (max(part) >> 11), MID - (min(part) >> 11)))
-    return out
-
-
-KEYS = "<Start>   <End>                   <Exit>"
+@dataclass
+class View:
+    points: list[int]           # soft start, soft end, zone start, zone end
+    sel: int = 0                # 0..3
+    fine: bool = False
+    zoom: int = 16
 
 
 def fmt(frames: int) -> str:
@@ -46,44 +38,66 @@ def fmt(frames: int) -> str:
     return f"{s:03d}.{ms:03d}.{r - ms * 441 // 10:02d}"
 
 
-def _text(lit: list[list[bool]], row: int, col: int, s: str) -> None:
+def bound(c: int, n: int, v: View) -> int:
+    if v.fine:
+        return v.points[v.sel] + (c - COLS // 2) * v.zoom
+    return c * n // COLS
+
+
+def lines(samples: list[int], v: View) -> list[tuple[int, int]]:
+    n = len(samples)
+    out = []
+    for c in range(COLS):
+        lo = bound(c, n, v)
+        hi = max(bound(c + 1, n, v), lo + 1)
+        outside = not (0 <= lo <= n and 0 <= hi <= n)
+        part = samples[min(max(lo, 0), n):min(max(hi, 0), n)] + ([0] if outside else [])
+        out.append((MID - (max(part) >> 11), MID - (min(part) >> 11)))
+    return out
+
+
+def _text(lit: list[list[bool]], y: int, col: int, s: str) -> None:
     glyphs = font()
     for i, ch in enumerate(s):
-        for y, bits in enumerate(glyphs[ord(ch)]):
+        for r, bits in enumerate(glyphs[ord(ch)]):
             for x in range(5):
                 if bits & (0x10 >> x):
-                    lit[row * 8 + y][(col + i) * 6 + x] = True
+                    lit[y + r][(col + i) * 6 + x] = True
 
 
-def screen(samples: list[int], name: str, start: int, end: int, sel: int) -> list[str]:
-    """The whole wave view; sel 0 = Start selected, 1 = End."""
-    lit = _lit(samples, start, end)
-    _text(lit, 0, 0, "Edit Snd:")
-    _text(lit, 0, 9, name.ljust(16))
-    _text(lit, 1, 0, "Start:")
-    _text(lit, 1, 20, "End:")
-    _text(lit, 6, 0, "Length:")
-    _text(lit, 7, 0, KEYS)
-    _text(lit, 1, 6, fmt(start))
-    _text(lit, 1, 24, fmt(end))
-    _text(lit, 6, 7, fmt(len(samples)))
-    x0 = (6, 24)[sel] * 6
-    for y in range(8, 16):
-        for x in range(x0, x0 + 60):
+def _invert(lit: list[list[bool]], x0: int, w: int, y0: int, h: int) -> None:
+    for y in range(y0, y0 + h):
+        for x in range(x0, x0 + w):
             lit[y][x] = not lit[y][x]
-    return _rows(lit)
 
 
-def _rows(lit: list[list[bool]]) -> list[str]:
-    return ["".join("#" if p else "." for p in row) for row in lit]
-
-
-def _lit(samples: list[int], start: int, end: int) -> list[list[bool]]:
+def screen(samples: list[int], name: str, v: View) -> list[str]:
+    """The whole view, rows of '#' (lit) and '.' as emu/probe.lua writes them."""
+    n = len(samples)
     lit = [[False] * COLS for _ in range(ROWS)]
-    for x, (top, bot) in enumerate(lines(samples)):
+    for x, (top, bot) in enumerate(lines(samples, v)):
         for y in range(top, bot + 1):
             lit[y][x] = True
-    for x in range(column(start, len(samples)), column(end, len(samples)) + 1):
-        for y in range(TOP, BOT + 1):
-            lit[y][x] = not lit[y][x]
-    return lit
+    a, b = v.points[v.sel & 2], v.points[(v.sel & 2) + 1]
+    for c in range(COLS):
+        end = n + 1 if not v.fine and c == COLS - 1 else bound(c + 1, n, v)
+        if bound(c, n, v) <= b and end > a:
+            _invert(lit, c, 1, TOP, BOT - TOP + 1)
+    if v.fine:
+        _invert(lit, COLS // 2, 1, TOP, BOT - TOP + 1)
+    _text(lit, 0, 0, "Edit Snd:")
+    _text(lit, 0, 9, name.ljust(16))
+    pair = PAIRS[v.sel >> 1]
+    for i, (label, lcol, vcol) in enumerate(pair):
+        _text(lit, 8, lcol, label)
+        _text(lit, 8, vcol, fmt(v.points[(v.sel & 2) + i]))
+    _text(lit, 49, 0, "Length:")
+    _text(lit, 49, 7, fmt(n))
+    if v.fine:
+        _text(lit, 49, 33, f"Zoom:{v.zoom:02d}")
+    _text(lit, 57, 21, "<Full>" if v.fine else "<Fine>")
+    _text(lit, 57, 0, "<Trim>")
+    _text(lit, 57, 10, "<Zone>")
+    _text(lit, 57, 34, "<Exit>")
+    _invert(lit, pair[v.sel & 1][2] * 6, 60, 7, 8)
+    return ["".join("#" if p else "." for p in row) for row in lit]

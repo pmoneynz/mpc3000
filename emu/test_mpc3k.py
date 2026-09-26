@@ -109,14 +109,17 @@ CASES = {
                press=[(45.0, "Y0", "Disk", 0.1), (46.5, "Y0", "7", 0.1), (48.5, "Y3", "Soft Key 1", 0.1),
                       (57.0, "Y0", "Program/Sounds", 0.1), (58.5, "Y1", "6", 0.1)])
        for n in ("snd_mono", "snd_stereo")},
-    # Wave view (mods/WAVE.args): load, Edit Sound, Help -> view, wheel +3 on Start, Soft Key 2
-    # -> End, wheel -2, Soft Key 4 -> Edit Sound; then Help on Play/Record is still Help.
-    "wave_view": dict(bios="vailixi", times=[77, 80, 82.5, 84, 86.5, 90, 93], floppy=None, press=[
-        (62.0, "Y0", "Disk", 0.1), (63.5, "Y0", "7", 0.1), (65.5, "Y3", "Soft Key 1", 0.1),
-        (74.0, "Y0", "Program/Sounds", 0.1), (75.5, "Y1", "6", 0.1), (77.5, "Y6", "Help", 0.1),
-        (83.0, "Y3", "Soft Key 2", 0.1), (87.0, "Y4", "Soft Key 4", 0.1),
-        (91.0, "Y6", "Main Screen", 0.1), (92.0, "Y6", "Help", 2.0)],
-        panel=[dial(3, 81.0), dial(-2, 85.0)]),
+    # Wave view (mods/WAVE.args), SINE441 with soft start/end set: Help -> view; wheel +3 (Start);
+    # Soft Key 3 fine; wheel +2; Up (zoom 8); Soft Key 2 zone; Right (zone end); wheel +5;
+    # Soft Key 3 full; Soft Key 4 -> Edit Sound; then Help on Play/Record is still Help.
+    "wave_view": dict(bios="vailixi", times=[77, 80, 82.5, 84.5, 86.5, 88.5, 90.5, 92.5, 94.5, 96.5, 100, 103],
+                      floppy=None, press=[(t, port, key, 2.0 if t == 102 else 0.1) for t, port, key in (
+                          (62, "Y0", "Disk"), (63.5, "Y0", "7"), (65.5, "Y3", "Soft Key 1"),
+                          (74, "Y0", "Program/Sounds"), (75.5, "Y1", "6"), (77.5, "Y6", "Help"),
+                          (83, "Y4", "Soft Key 3"), (87, "Y5", "Up Arrow"), (89, "Y3", "Soft Key 2"),
+                          (91, "Y5", "Right Arrow"), (95, "Y4", "Soft Key 3"), (97, "Y4", "Soft Key 4"),
+                          (101, "Y6", "Main Screen"), (102, "Y6", "Help"))],
+                      panel=[dial(3, 81.0), dial(2, 85.0), dial(5, 93.0)]),
     # Code cave: stock EPROM boot and Route A, each visiting Edit Sound, both graphic mixers, Disk, Other.
     **{n: dict(bios="vailixi", times=[t + 22], floppy=f, extra=["-autoboot_script", str(LUA / "cave_watch.lua")],
                press=[(t + 2 * i, port, key, 0.1) for i, (port, key) in enumerate((
@@ -229,21 +232,29 @@ class Mpc3kBoot(unittest.TestCase):
         self.assertGreater(int(counts["R3F07C8"]), 0)
         self.assertTrue(any(" F07D:" in line and "R3F07C8" in line for line in lines[4:]))
 
-    def test_wave_view_edits_start_and_end(self) -> None:
-        text_before, *views, text_after, help_screen = self.results["wave_view"]
+    def test_wave_view_edits_trim_and_zone(self) -> None:
+        screens = self.results["wave_view"]
         blocks = (RUNS / "wave_view" / "lcd_pixels.txt").read_text().split("@ ")[1:]
         pixels = {b.split()[0]: b.splitlines()[1:65] for b in blocks}
         wave = sine441()[0]
-        step = len(wave) // 240
-        start, end = WAVE_START + 3 * step, WAVE_END - 2 * step
-        for t, args in (("80.000", (WAVE_START, WAVE_END, 0)), ("82.500", (start, WAVE_END, 0)),
-                        ("84.000", (start, WAVE_END, 1)), ("86.500", (start, end, 1))):
+        a3, b = WAVE_START + 3 * (len(wave) // 240), WAVE_END
+        View = wave_ref.View
+        for t, view in (("80.000", View([WAVE_START, b, 0, 0])), ("82.500", View([a3, b, 0, 0])),
+                        ("84.500", View([a3, b, 0, 0], fine=True)),
+                        ("86.500", View([a3 + 32, b, 0, 0], fine=True)),
+                        ("88.500", View([a3 + 32, b, 0, 0], fine=True, zoom=8)),
+                        ("90.500", View([a3 + 32, b, 0, 0], sel=2, fine=True, zoom=8)),
+                        ("92.500", View([a3 + 32, b, 0, 0], sel=3, fine=True, zoom=8)),
+                        ("94.500", View([a3 + 32, b, 0, 40], sel=3, fine=True, zoom=8)),
+                        ("96.500", View([a3 + 32, b, 0, 40], sel=3, zoom=8))):
             with self.subTest(t=t):
-                self.assertEqual(pixels[t], wave_ref.screen(wave, "SINE441", *args))
-        self.assertIn("Soft st :000.312.22", text_before["rows"][2])
-        self.assertIn(f"Soft st :{wave_ref.fmt(start)}", text_after["rows"][2])
-        self.assertIn(f"Soft end:{wave_ref.fmt(end)}", text_after["rows"][3])
-        self.assertIn("Help", help_screen["rows"][0])
+                self.assertEqual(pixels[t], wave_ref.screen(wave, "SINE441", view))
+        before, after, help_screen = screens[0]["rows"], screens[-2]["rows"], screens[-1]["rows"]
+        self.assertIn("Soft st :000.312.22", before[2])
+        self.assertIn(f"Soft st :{wave_ref.fmt(a3 + 32)}", after[2])
+        self.assertIn(f"Soft end:{wave_ref.fmt(b)}", after[3])
+        self.assertIn("Zone end:000.000.40", after[3])
+        self.assertIn("Help", help_screen[0])
 
     def test_synthetic_snd_loads_into_wave_ram(self) -> None:
         for name, title, length, planes in (("snd_mono", "Edit Snd:SINE441", "001.250.00", sine441()),

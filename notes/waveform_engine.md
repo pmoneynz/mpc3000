@@ -1,7 +1,7 @@
-# Waveform editor: the wave view (phases 2 and 3)
+# Waveform editor: the wave view (phases 2–4)
 
 **Image:** Vailixi 3.50 linear, Route A. **Date:** 2026-09-25.
-**Source:** [`../mods/wave.asm`](../mods/wave.asm) (2,846 bytes in the code cave at `F07D:0000`),
+**Source:** [`../mods/wave.asm`](../mods/wave.asm) (3,408 bytes in the code cave at `F07D:0000`),
 [`../mods/WAVE.args`](../mods/WAVE.args). Font: [`../emu/lcd_font.py`](../emu/lcd_font.py) → `mods/wave_font.inc`.
 **Pixel contract:** [`../emu/wave_ref.py`](../emu/wave_ref.py) `screen()`. Evidence it builds on:
 [`waveform_phase0.md`](waveform_phase0.md).
@@ -33,27 +33,51 @@ The view takes the sound index from the page frame, exactly as the Best st handl
 
 When the view closes, `page_key` stores the returned key in `[bp-1]`. For Soft Key 4 or Help it also calls `D6E0:0075('6')` before `B99A:1595`, which reopens Edit Sound as Best st does.
 
-### Screen and keys
+### Points
 
-The screen uses 6 × 8 text cells:
+| # | Point | Storage |
+|---|-------|---------|
+| 0 / 1 | soft start / soft end | sound record `+14` / `+18` |
+| 2 / 3 | zone start / zone end | `8010:EDBB` / `EDB7` (Edit Sound's zone fields) |
+
+- **Clamps:** the first point of a pair stays in `[0, second]`, the second in `[first, len]`.
+- **Zone points survive reopening Edit Sound.** On entry the page only clamps them: zone start to `[0, len]`, zone end to `[zone start, len]` (`B99A:017A`–`01B0`, `02B0`–`0300`). **PROVEN** (code).
+
+### Full and fine views
+
+- **Full:** column `c` starts at `c·len/240`. It is scanned once per open, and again when leaving the fine view.
+- **Fine:** column `c` starts at `p + (c−120)·zoom`, where `p` is the selected point.
+  - Zoom runs from 1 to 64, starting at 16. The window is rescanned on every change.
+  - Samples outside `[0, len)` count as 0, as on the 2000XL fine window.
+  - Column 120, the point itself, is XORed as a cursor.
+- **Both:** columns overlapping the selected pair `[a, b]` are inverted over rows 16–47. In the full view the last column reaches `len`; this rule gives the same columns as phase 3's.
+
+### Screen
+
+The screen uses 6-pixel columns:
 
 | Rows | Content |
 |------|---------|
-| 0 | `Edit Snd:` + name |
-| 1 | `Start:` value at col 6, `End:` value at col 24; the selected value's 10 cells are inverted |
-| 16–47 | wave, with the columns holding start through end inverted |
-| 6 | `Length:` |
-| 7 | `<Start>   <End>   …   <Exit>` |
+| 0–6 | `Edit Snd:` + name |
+| 7–14 | The pair: `Start:` (value at col 6) / `End:` (col 24), or `Zone st:` (col 8) / `Zone end:` (col 28). The selected value's ten cells are inverted over rows 7–14 |
+| 15, 48 | blank |
+| 16–47 | wave |
+| 49–55 | `Length:`; in the fine view also `Zoom:nn` at col 33 |
+| 57–63 | `<Trim>` col 0, `<Zone>` col 10, `<Fine>`/`<Full>` col 21, `<Exit>` col 34 |
 
 Values use the Edit Sound units `sss.mmm.ss`: `s = f/44100`, `ms = (f mod 44100)·10/441`, then the leftover samples.
 
+### Keys
+
 | Key (code, from the `D547:0006` table) | Action |
 |-----------------------------------------|--------|
-| Data wheel, `+`/`-` (`'+'`/`'-'`) | Moves the selected point by one column, `len/240` frames (at least 1). Clamped so that `0 ≤ start ≤ end ≤ len`. Written to `+14`/`+18` at once, then redrawn and blitted (`C4C8:0F0D`) |
-| Soft Key 1 `'x'`, Left `'<'` | Select Start |
-| Soft Key 2 `'y'`, Right `'>'` | Select End |
+| Data wheel, `+`/`-` | Moves the selected point by one column: `len/240` frames (at least 1) in the full view, `zoom` samples in the fine view. Clamped, written at once, redrawn and blitted (`C4C8:0F0D`) |
+| Soft Key 1 `'x'` / Soft Key 2 `'y'` | Trim pair / zone pair (keeps first or second) |
+| Left `'<'` / Right `'>'` | First / second point of the pair |
+| Soft Key 3 `'z'` | Fine ↔ full |
+| Up `'^'` / Down `'!'` | Zoom in / out (halve / double, 1–64) |
 | Soft Key 4 `'u'`, Help `'H'` | Back to Edit Sound |
-| Mode keys `L M F J G U S l s O K` | Leave the view and pass the key on (the OS switches mode) |
+| Mode keys `L M F J G U S l s O K` | Leave the view and pass the key on |
 | Anything else, including the Help release `'h'` | Ignored |
 
 ## Evidence
@@ -62,7 +86,7 @@ All MAME traces, one execution each:
 
 | Test | Result |
 |------|--------|
-| `test_wave_view_edits_start_and_end`: `SINE441` with start 13,781 / end 48,000. Help, wheel +3, Soft Key 2, wheel −2, Soft Key 4 | The LCD equals `wave_ref.screen` at all four states (80, 82.5, 84, 86.5 s). Edit Sound then shows `Soft st :000.328.04` and `Soft end:001.078.03` (+3 and −2 steps of 229 frames). Help on Play/Record still shows the Help page. **PROVEN (trace)** |
+| `test_wave_view_edits_trim_and_zone`: `SINE441` with start 13,781 / end 48,000. Help; wheel +3; Soft Key 3 (fine); wheel +2; Up; Soft Key 2 (zone); Right; wheel +5; Soft Key 3 (full); Soft Key 4 | The LCD equals `wave_ref.screen` at all nine states (80–96.5 s). Edit Sound then shows `Soft st :000.328.36` (+3 × 229, then +2 × 16) and `Zone end:000.000.40` (+5 × 8). Help on Play/Record still shows the Help page. **PROVEN (trace)** |
 | Phase 2 engine (Best st dev hook, since removed) with a real stereo sample (Peter's `funkySnare.wav`, not in the repo) | 0 pixel differences for plane A. **PROVEN (trace)** |
 | Graphics mode | Probe `mode=32`, `30x64`. **PROVEN (trace)** |
 
@@ -72,8 +96,8 @@ Harness fix: `emu/mpc3k.py` `parse_screens` now splits only at lines that start 
 
 - **Framebuffer reuse:** reusing `8010:1591` while the Mixer is inactive is **HYPOTHESIS**. The Mixer clears and redraws it on entry (`C4C8:0490`). Other writers than `C4C8`/`B13A` are **UNDETERMINED** (computed aliases not searched).
 - **Stereo:** only plane A is drawn. That A is the left channel is **HYPOTHESIS**.
-- **Scan time on hardware:** `U-PHYS`. Every sample is read through `CF92:000C`.
+- **Scan time on hardware:** `U-PHYS`. The full view reads every sample through `CF92:000C` once per open. The fine view reads `240 × zoom` samples (at most 15,360) on every change.
 - **`CF92:000C`:** that it preserves `SI`/`DI`/`BP`/`DS` is **HYPOTHESIS** (C convention). The engine reloads everything else after each call.
-- **Keys:** the view ignores keys it does not list. The wheel step is fixed at one column; sample-level edits still need the digit fields (a fine view is phase 4).
+- **Keys:** the view ignores keys it does not list.
 - **Clamps:** the view's `0 ≤ start ≤ end ≤ len` may be stricter than the OS field clamps (**HYPOTHESIS**: they were not decoded exhaustively).
 - **Glass:** pixel order and graphics mode on the real LC7981 are `U-LC7981` / `U-PHYS`. The register values are the stock Mixer's.

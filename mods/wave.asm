@@ -25,6 +25,10 @@ BOT     equ 47
 BUSY    equ 0x9757              ; transfer busy counter (INC/DEC round CF92)
 MODE    equ 0xD7CB              ; 'L' = Program/Sounds
 OPTION  equ 0xD7CA              ; 6 = Edit Sound
+ZONE_ST equ 0xEDBB              ; zone start / end dwords (Edit Sound fields)
+ZONE_EN equ 0xEDB7
+ZOOM0   equ 16                  ; fine window: samples per column at entry
+ZOOMMAX equ 64
 
 ; ---------------------------------------------------------------- hooks
 
@@ -72,6 +76,8 @@ page_key:
 ; ---------------------------------------------------------------- view
 
 ; view(index): AL = key to hand back, AH = 1 to reopen Edit Sound.
+; Points: 0 soft start, 1 soft end (sound record +14/+18), 2 zone start,
+; 3 zone end (8010:EDBB/EDB7). sel picks one; its pair is sel & 2.
 view:
         push bp
         mov bp, sp
@@ -83,40 +89,48 @@ view:
         imul dx
         add ax, SND_DIR
         mov [cs:rec], ax
-        mov byte [cs:sel], 0
-        call scan
-        mov ax, [cs:len]                ; wheel step: one column, 1..FFFFh
-        mov dx, [cs:len+2]
-        mov cx, COLS
-        cmp dx, cx
-        jae .big                        ; quotient would overflow DIV
-        div cx
-        or ax, ax
-        jnz .st
-        inc ax
-        jmp .st
-.big:   mov ax, 0xFFFF
-.st:    mov [cs:step], ax
-        call draw
+        mov si, ax
+        mov ax, SND_SEG
+        mov es, ax
+        mov ax, [es:si+0x1C]
+        mov dx, [es:si+0x1E]
+        mov [cs:len], ax
+        mov [cs:len+2], dx
+        mov ax, [es:si+0x20]
+        mov dx, [es:si+0x22]
+        mov [cs:wave], ax
+        mov [cs:wave+2], dx
+        xor ax, ax
+        mov [cs:sel], al
+        mov [cs:fine], al
+        mov [cs:full_ok], al
+        mov word [cs:zoom], ZOOM0
+        call refresh
         call 0xC4C8:0x0F5F              ; graphics mode + blit 8010:1591
 .key:   push 0
         call 0xBDE3:0x000E              ; next key after the global filter
         add sp, 2
-        mov bx, ax
-        mov ax, [cs:step]
+        mov bl, al
         cmp bl, '+'
-        je .move
-        neg ax
+        je .plus
         cmp bl, '-'
-        je .move
-        cmp bl, 'x'                     ; Soft Key 1 / Left: start
-        je .s0
-        cmp bl, '<'
-        je .s0
-        cmp bl, 'y'                     ; Soft Key 2 / Right: end
-        je .s1
+        je .minus
+        mov al, [cs:sel]
+        cmp bl, 'x'                     ; Soft Key 1: trim pair
+        je .trim
+        cmp bl, 'y'                     ; Soft Key 2: zone pair
+        je .zone
+        cmp bl, '<'                     ; Left / Right: first / second point
+        je .first
         cmp bl, '>'
-        je .s1
+        je .second
+        cmp bl, 'z'                     ; Soft Key 3: fine / full
+        je .mode
+        mov cx, [cs:zoom]
+        cmp bl, '^'                     ; Up: zoom in
+        je .zin
+        cmp bl, '!'                     ; Down: zoom out
+        je .zout
         mov ah, 1                       ; Soft Key 4 / Help: back to Edit Sound
         mov al, 'L'
         cmp bl, 'u'
@@ -133,13 +147,34 @@ view:
         cmp bh, bl
         je .exit
         jmp .m
-.s0:    mov byte [cs:sel], 0
-        jmp .redraw
-.s1:    mov byte [cs:sel], 1
-        jmp .redraw
+.plus:  call step
+        jmp .move
+.minus: call step
+        neg ax
 .move:  call move
+        jmp .redraw
+.trim:  and al, 1
+        jmp .sel
+.zone:  or al, 2
+        jmp .sel
+.first: and al, 2
+        jmp .sel
+.second:
+        or al, 1
+.sel:   mov [cs:sel], al
+        jmp .redraw
+.mode:  xor byte [cs:fine], 1
+        jmp .redraw
+.zin:   cmp cx, 1
+        jbe .key
+        shr cx, 1
+        jmp .zoom
+.zout:  cmp cx, ZOOMMAX
+        jae .key
+        shl cx, 1
+.zoom:  mov [cs:zoom], cx
 .redraw:
-        call draw
+        call refresh
         call 0xC4C8:0x0F0D              ; blit
         jmp .key
 .exit:  push ax
@@ -150,57 +185,134 @@ view:
         pop bp
         ret
 
-; Move the selected point by AX (signed) and clamp: 0 <= start <= end <= len.
-move:
-        mov cx, SND_SEG
-        mov es, cx
-        mov si, [cs:rec]
-        cwd
-        mov bx, 0x14                    ; start: [0, end]
-        cmp byte [cs:sel], 0
-        je .add
-        mov bx, 0x18                    ; end: [start, len]
-.add:   add ax, [es:si+bx]
-        adc dx, [es:si+bx+2]
-        js .lo                          ; below zero
-        cmp byte [cs:sel], 0
-        jne .end
-        cmp dx, [es:si+0x1A]            ; start > end ?
-        jl .ok
-        jg .hiE
-        cmp ax, [es:si+0x18]
-        jbe .ok
-.hiE:   mov ax, [es:si+0x18]
-        mov dx, [es:si+0x1A]
-        jmp .ok
-.end:   cmp dx, [cs:len+2]              ; end > len ?
-        jl .loE
-        jg .hiL
-        cmp ax, [cs:len]
-        jbe .loE
-.hiL:   mov ax, [cs:len]
+; Scan if the columns changed, then draw. Fine: centred on the selected point.
+refresh:
+        cmp byte [cs:fine], 0
+        je .full
+        mov al, [cs:sel]
+        call point
+        mov [cs:center], ax
+        mov [cs:center+2], dx
+        mov byte [cs:full_ok], 0
+        call scan
+        jmp draw
+.full:  cmp byte [cs:full_ok], 0
+        jne draw
+        call scan
+        mov byte [cs:full_ok], 1
+        jmp draw
+
+; AX = wheel step: fine, the zoom; full, one column (len/240, 1..FFFFh).
+step:
+        mov ax, [cs:zoom]
+        cmp byte [cs:fine], 0
+        jne .r
+        mov ax, [cs:len]
         mov dx, [cs:len+2]
-.loE:   cmp dx, [es:si+0x16]            ; end < start ?
-        jg .ok
-        jl .loS
-        cmp ax, [es:si+0x14]
-        jae .ok
-.loS:   mov ax, [es:si+0x14]
-        mov dx, [es:si+0x16]
-        jmp .ok
-.lo:    xor ax, ax
-        xor dx, dx
-        cmp byte [cs:sel], 0
-        jne .loS
-.ok:    mov [es:si+bx], ax
-        mov [es:si+bx+2], dx
+        mov cx, COLS
+        cmp dx, cx
+        jae .big                        ; quotient would overflow DIV
+        div cx
+        or ax, ax
+        jnz .r
+        inc ax
+        ret
+.big:   mov ax, 0xFFFF
+.r:     ret
+
+; ES:DI = address of point AL (0..3).
+paddr:
+        cmp al, 2
+        jae .z
+        mov di, SND_SEG
+        mov es, di
+        mov di, [cs:rec]
+        add di, 0x14
+        test al, 1
+        jz .r
+        add di, 4
+.r:     ret
+.z:     push ds
+        pop es
+        mov di, ZONE_ST
+        test al, 1
+        jz .r
+        mov di, ZONE_EN
+        ret
+
+; DX:AX = point AL.
+point:
+        call paddr
+        mov ax, [es:di]
+        mov dx, [es:di+2]
+        ret
+
+; Move the selected point by AX (signed). The first point of a pair stays in
+; [0, second], the second in [first, len].
+move:
+        cwd
+        mov [cs:delta], ax
+        mov [cs:delta+2], dx
+        mov al, [cs:sel]
+        test al, 1
+        jnz .second
+        xor ax, ax
+        mov [cs:lo], ax
+        mov [cs:lo+2], ax
+        mov al, [cs:sel]
+        inc al
+        call point
+        mov [cs:hi], ax
+        mov [cs:hi+2], dx
+        jmp .go
+.second:
+        dec al
+        call point
+        mov [cs:lo], ax
+        mov [cs:lo+2], dx
+        mov ax, [cs:len]
+        mov dx, [cs:len+2]
+        mov [cs:hi], ax
+        mov [cs:hi+2], dx
+.go:    mov al, [cs:sel]
+        call paddr
+        mov ax, [es:di]
+        mov dx, [es:di+2]
+        add ax, [cs:delta]
+        adc dx, [cs:delta+2]
+        cmp dx, [cs:lo+2]               ; below lo?
+        jg .notlo
+        jl .setlo
+        cmp ax, [cs:lo]
+        jae .notlo
+.setlo: mov ax, [cs:lo]
+        mov dx, [cs:lo+2]
+        jmp .store
+.notlo: cmp dx, [cs:hi+2]               ; above hi?
+        jl .store
+        jg .sethi
+        cmp ax, [cs:hi]
+        jbe .store
+.sethi: mov ax, [cs:hi]
+        mov dx, [cs:hi+2]
+.store: mov [es:di], ax
+        mov [es:di+2], dx
         ret
 
 ; ---------------------------------------------------------------- scan
 
-; DX:AX = CX * len / 240 (CX <= 240, len < 2^24).
+; DX:AX = first sample of column CX (signed). Full: CX * len / 240
+; (CX <= 240, len < 2^24). Fine: center + (CX - 120) * zoom.
 bound:
-        mov ax, [cs:len+2]
+        cmp byte [cs:fine], 0
+        je .full
+        mov ax, cx
+        sub ax, COLS / 2
+        imul word [cs:zoom]
+        add ax, [cs:center]
+        adc dx, [cs:center+2]
+        ret
+.full:  mov ax, [cs:len+2]
         mul cx
         mov bx, ax
         mov ax, [cs:len]
@@ -215,6 +327,24 @@ bound:
         div cx
         mov dx, bx
         ret
+
+; Clamp signed DX:AX to [0, len]; set out when it changes.
+clampx:
+        or dx, dx
+        jns .pos
+        xor ax, ax
+        xor dx, dx
+        mov byte [cs:out], 1
+        ret
+.pos:   cmp dx, [cs:len+2]
+        jb .r
+        ja .cl
+        cmp ax, [cs:len]
+        jbe .r
+.cl:    mov ax, [cs:len]
+        mov dx, [cs:len+2]
+        mov byte [cs:out], 1
+.r:     ret
 
 ; Read min(BUF_W, len - cur) words from wave + cur into A2AE:0000.
 fill:
@@ -251,19 +381,9 @@ fill:
         dec byte [BUSY]
         ret
 
-; Column c covers samples [bound(c), max(bound(c+1), bound(c)+1)).
+; Column c covers [bound(c), max(bound(c+1), bound(c)+1)). Samples outside
+; [0, len) count as 0.
 scan:
-        mov ax, SND_SEG
-        mov es, ax
-        mov si, [cs:rec]
-        mov ax, [es:si+0x1C]
-        mov dx, [es:si+0x1E]
-        mov [cs:len], ax
-        mov [cs:len+2], dx
-        mov ax, [es:si+0x20]
-        mov dx, [es:si+0x22]
-        mov [cs:wave], ax
-        mov [cs:wave+2], dx
         xor ax, ax
         mov [cs:bend], ax               ; empty buffer: first sample refills
         mov [cs:bend+2], ax
@@ -276,18 +396,30 @@ scan:
         inc cx
         call bound
         cmp dx, [cs:cur+2]
-        ja .hi
-        jb .one
+        jg .hi
+        jl .one
         cmp ax, [cs:cur]
         ja .hi
 .one:   mov ax, [cs:cur]
         mov dx, [cs:cur+2]
         add ax, 1
         adc dx, 0
-.hi:    mov [cs:hi], ax
+.hi:    mov byte [cs:out], 0
+        call clampx
+        mov [cs:hi], ax
         mov [cs:hi+2], dx
+        mov ax, [cs:cur]
+        mov dx, [cs:cur+2]
+        call clampx
+        mov [cs:cur], ax
+        mov [cs:cur+2], dx
         mov word [cs:vmax], -32768
         mov word [cs:vmin], 32767
+        cmp byte [cs:out], 0
+        je .run
+        xor ax, ax
+        mov [cs:vmax], ax
+        mov [cs:vmin], ax
 .run:   mov ax, [cs:cur]
         mov dx, [cs:cur+2]
         cmp dx, [cs:hi+2]
@@ -357,27 +489,6 @@ scan:
 
 ; ---------------------------------------------------------------- draw
 
-; AX = column holding sample position DX:AX: the largest c < 240 with
-; bound(c) <= position.
-column:
-        mov [cs:pos], ax
-        mov [cs:pos+2], dx
-        xor di, di
-.c:     mov cx, di
-        inc cx
-        cmp cx, COLS
-        jae .r
-        call bound
-        cmp dx, [cs:pos+2]
-        ja .r
-        jb .n
-        cmp ax, [cs:pos]
-        ja .r
-.n:     inc di
-        jmp .c
-.r:     mov ax, di
-        ret
-
 ; XOR the pixels x = BX .. BX+CX-1 on rows AX .. AX+DX-1.
 invert:
 .y:     push bx
@@ -416,12 +527,9 @@ pixel:
         pop ax
         ret
 
-; Draw the zero-terminated string at CS:SI with its first cell at text
-; row AX, column BX (6 x 8 cells, glyph in the top 7 rows).
+; Draw the zero-terminated string at CS:SI, glyph rows AX..AX+6, first
+; cell at column BX (6-pixel cells).
 text:
-        shl ax, 1
-        shl ax, 1
-        shl ax, 1
         mov dx, bx
         shl bx, 1
         add bx, dx
@@ -511,7 +619,18 @@ digits:
         pop di
         ret
 
-; Frame, wave, start..end inversion, text, selected value inverted.
+; Point AL in sss.mmm.ss at glyph rows AX = 8, column BX.
+value:
+        push bx
+        call point
+        mov di, num
+        call fmt
+        pop bx
+        mov ax, 8
+        mov si, num
+        jmp text
+
+; Wave, pair region, centre cursor (fine), text, selected value inverted.
 draw:
         push ds
         pop es
@@ -522,9 +641,7 @@ draw:
         xor bx, bx
 .x:     mov al, [cs:tops+bx]
         xor ah, ah
-        push bx
         call pixel
-        pop bx
         mov al, cl
         mov cl, [cs:bots+bx]
         sub cl, [cs:tops+bx]
@@ -536,26 +653,58 @@ draw:
         inc bx
         cmp bx, COLS
         jb .x
-        mov ax, SND_SEG
-        mov es, ax
-        mov si, [cs:rec]
-        mov ax, [es:si+0x14]
-        mov dx, [es:si+0x16]
-        call column
-        mov [cs:xs], ax
-        mov ax, SND_SEG
-        mov es, ax
-        mov ax, [es:si+0x18]
-        mov dx, [es:si+0x1A]
-        call column
-        mov cx, ax
-        mov bx, [cs:xs]
-        sub cx, bx
+        mov al, [cs:sel]                ; region: columns overlapping [a, b]
+        and al, 2
+        push ax
+        call point
+        mov [cs:pa], ax
+        mov [cs:pa+2], dx
+        pop ax
+        inc al
+        call point
+        mov [cs:pb], ax
+        mov [cs:pb+2], dx
+        xor si, si
+.rc:    mov cx, si
+        call bound
+        cmp dx, [cs:pb+2]               ; first sample <= b ?
+        jg .rn
+        jl .r1
+        cmp ax, [cs:pb]
+        ja .rn
+.r1:    mov cx, si
         inc cx
+        cmp byte [cs:fine], 0
+        jne .rb
+        cmp cx, COLS                    ; full: the last column ends past len
+        jb .rb
+        mov ax, [cs:len]
+        mov dx, [cs:len+2]
+        add ax, 1
+        adc dx, 0
+        jmp .r2
+.rb:    call bound
+.r2:    cmp dx, [cs:pa+2]               ; end > a ?
+        jl .rn
+        jg .rx
+        cmp ax, [cs:pa]
+        jbe .rn
+.rx:    mov bx, si
+        mov cx, 1
         mov ax, TOP
         mov dx, BOT - TOP + 1
         call invert
-        mov ax, SND_SEG                 ; name: 16 characters at +00
+.rn:    inc si
+        cmp si, COLS
+        jb .rc
+        cmp byte [cs:fine], 0           ; fine: centre cursor at the point
+        je .t
+        mov bx, COLS / 2
+        mov cx, 1
+        mov ax, TOP
+        mov dx, BOT - TOP + 1
+        call invert
+.t:     mov ax, SND_SEG                 ; name: 16 characters at +00
         mov es, ax
         mov si, [cs:rec]
         xor bx, bx
@@ -573,71 +722,100 @@ draw:
         mov bx, 9
         mov si, name
         call text
-        mov ax, 1
-        xor bx, bx
-        mov si, s_start
+        mov si, labels                  ; pair labels and value columns
+        test byte [cs:sel], 2
+        jz .lab
+        add si, 12
+.lab:   mov [cs:lab], si
+        mov bx, [cs:si+4]
+        mov si, [cs:si]
+        mov ax, 8
         call text
-        mov ax, 1
-        mov bx, 20
-        mov si, s_end
+        mov si, [cs:lab]
+        mov bx, [cs:si+6]
+        mov si, [cs:si+2]
+        mov ax, 8
         call text
-        mov ax, 6
+        mov si, [cs:lab]
+        mov bx, [cs:si+8]
+        mov al, [cs:sel]
+        and al, 2
+        call value
+        mov si, [cs:lab]
+        mov bx, [cs:si+10]
+        mov al, [cs:sel]
+        or al, 1
+        call value
+        mov ax, 49
         xor bx, bx
         mov si, s_len
         call text
-        mov ax, 7
-        xor bx, bx
-        mov si, s_keys
-        call text
-        mov bx, 0x14
-        mov cx, 6
-        call value
-        mov bx, 0x18
-        mov cx, 24
-        call value
         mov di, num
         mov ax, [cs:len]
         mov dx, [cs:len+2]
         call fmt
-        mov ax, 6
+        mov ax, 49
         mov bx, 7
         mov si, num
         call text
-        mov bx, 6                       ; selected value, inverted
-        cmp byte [cs:sel], 0
-        je .sv
-        mov bx, 24
+        mov si, s_full
+        cmp byte [cs:fine], 0
+        je .keys
+        mov ax, [cs:zoom]               ; fine: "Zoom:nn" at column 33
+        mov di, s_zoom + 5
+        mov cx, 2
+        call digits
+        mov ax, 49
+        mov bx, 33
+        mov si, s_zoom
+        call text
+        mov si, s_fine
+.keys:  mov ax, 57
+        mov bx, 21
+        call text
+        mov ax, 57
+        xor bx, bx
+        mov si, s_trim
+        call text
+        mov ax, 57
+        mov bx, 10
+        mov si, s_zone
+        call text
+        mov ax, 57
+        mov bx, 34
+        mov si, s_exit
+        call text
+        mov si, [cs:lab]                ; selected value, inverted, rows 7..14
+        mov bx, [cs:si+8]
+        test byte [cs:sel], 1
+        jz .sv
+        mov bx, [cs:si+10]
 .sv:    mov ax, bx
         shl bx, 1
         add bx, ax
         shl bx, 1
         mov cx, 60
-        mov ax, 8
+        mov ax, 7
         mov dx, 8
         call invert
         ret
 
-; Text row 1, column CX: the record dword at +BX in sss.mmm.ss.
-value:
-        push cx
-        mov ax, SND_SEG
-        mov es, ax
-        mov si, [cs:rec]
-        mov ax, [es:si+bx]
-        mov dx, [es:si+bx+2]
-        mov di, num
-        call fmt
-        pop bx
-        mov ax, 1
-        mov si, num
-        call text
-        ret
+; Per pair: label strings, label columns, value columns.
+labels: dw s_start, s_end, 0, 20, 6, 24
+        dw s_zst, s_zend, 0, 19, 8, 28
 
 s_title: db "Edit Snd:", 0
 s_start: db "Start:", 0
 s_end:   db "End:", 0
+s_zst:   db "Zone st:", 0
+s_zend:  db "Zone end:", 0
 s_len:   db "Length:", 0
-s_keys:  db "<Start>   <End>                   <Exit>", 0
+s_zoom:  db "Zoom:00", 0
+s_trim:  db "<Trim>", 0
+s_zone:  db "<Zone>", 0
+s_fine:  db "<Full>", 0             ; in fine mode the key goes back to full
+s_full:  db "<Fine>", 0
+s_exit:  db "<Exit>", 0
 modes:   db "LMFJGUSlsOK", 0            ; mode keys (D547:0006 codes)
 
 %include "wave_font.inc"
@@ -645,16 +823,23 @@ modes:   db "LMFJGUSlsOK", 0            ; mode keys (D547:0006 codes)
 align 2
 rec:    dw 0
 col:    dw 0
-xs:     dw 0
-step:   dw 0
+zoom:   dw 0
 rem:    dw 0
+lab:    dw 0
 sel:    db 0
+fine:   db 0
+full_ok: db 0
+out:    db 0
 align 2
 len:    dd 0
 wave:   dd 0
 cur:    dd 0
 hi:     dd 0
-pos:    dd 0
+lo:     dd 0
+delta:  dd 0
+center: dd 0
+pa:     dd 0
+pb:     dd 0
 bstart: dd 0
 bend:   dd 0
 vmax:   dw 0
