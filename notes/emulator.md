@@ -9,7 +9,7 @@ The MAME driver lives in a fork; the harness lives in this tree
 
 | Path | Role |
 |------|------|
-| MAME fork `pmoneynz/mame` `mpc3000-accuracy` | Upstream MAME `9ede38cb` + driver commits, pinned `87e2129c` |
+| MAME fork `pmoneynz/mame` `mpc3000-accuracy` | Upstream MAME `9ede38cb` + driver commits, pinned `d651a20c` |
 | `emu/mpc3k.py` | Headless runner: fresh NVRAM/cfg per run, LCD text capture |
 | `emu/romset.py` | Romset from `07-rom/` + placeholders, in `build/roms/` |
 | `emu/probe.lua` | I/O first-access log, LC7981 register log, screen dump |
@@ -49,6 +49,7 @@ photo (section 5).
 | `an4_func` was never bound; `an3_func` was bound twice | Driver source | **PROVEN** |
 | TE7774 TXD2-4 to `mdout2`-`mdout4`, RXD2 from `mdin2` | MAME's own header wiring comment | **HYPOTHESIS** (MAME) |
 | BIOS `v308` (`MPC3000_V3.08_LSB/MSB.BIN`) | Boots to Play/Record; LSB is the even chip | **PROVEN (trace)** |
+| V53 wait states and refresh (WCU/REFU registers were no-ops) | Reset stub at file `0x7FF00`, see section 7 | Register values **PROVEN** (code). Timing model **HYPOTHESIS** where noted |
 
 Old flat 32 MiB wave RAM made every machine report `32636K`.
 
@@ -220,3 +221,76 @@ blink period are **UNDETERMINED** (one still frame).
 | U-I0055 | Installed I-0055 register behaviour; model returns 0 | SMPTE chase untestable |
 | U-TCLK | V53 TCLK fixed at 4 MHz in MAME (FIXME: DAWCK from DSP) | Timer-derived tempo accuracy |
 | U-DSP-AUDIO | L7A1045 voice/filter/effects accuracy | Audio not validated |
+| U-V53-TIMING | Base instruction clocks and prefetch come from MAME's NEC core; its V33 prefetch size/cost is marked "complete guess" | Absolute CPU speed unverified; section 7 adds only the bus waits |
+| U-DMA-BUS | DMA cycles do not stall the CPU (MAME grants the bus at once and the CPU keeps running) | CPU time during floppy/SCSI/DSP DMA is optimistic |
+| U-REFRESH-QUEUE | Every refresh cycle is charged to the CPU; the V53 queue can hide some while the bus is idle | CPU slowed by up to 4/272 (1.5%) too much |
+| U-BUS-SIZE | Every access is modelled as a 16-bit bus cycle (no BS8). NVRAM chip LC3517 is 8-bit | NVRAM word accesses may take one cycle too few |
+| U-READY | External READY waits (LCD, DSP, FDC, TE7774) unmodelled; only programmed waits are applied | Slow-peripheral stalls missing |
+
+## 7. V53 wait states (`mpc3000-accuracy`)
+
+Source: *NEC 1991 16-bit V-Series Microprocessor Data Book*
+(`01-cpu/`), uPD70236 (V53) Wait Control Unit (figures 53-61) and
+Refresh Control Unit (figure 62). Stock MAME mapped these registers to
+empty write handlers, so every bus cycle was zero-wait and refresh took no
+time.
+
+The reset stub at file `0x7FF00` (`FFF0:0000`, XA off, 20-bit
+`0xFFF00`) programs them with nine `MOV DX,port / MOV AX,imm / OUT DX,AL`
+and then does `JMP FAR FAC0:0000`. 3.08, 3.11 and 3.12 have the same bytes
+at the same offset. `M3K316.SYS` has no `MOV DX` to any of these ports.
+**PROVEN** (code).
+
+| Port | Register | Value | Meaning |
+|------|----------|-------|---------|
+| `FFEA` | WMB0 | `07` | 16 MiB space: lower block 1 MiB, upper block 8 MiB |
+| `FFF3` | WMB1 | `00` | 1 MiB area: lower and upper blocks 32 KiB |
+| `FFED` | WAC | `00` | 1 MiB area is `0x000000-0x0FFFFF` |
+| `FFEC` | WCY0 | `02` | `[0x800000, 0x1000000)`: 2 waits |
+| `FFEB` | WCY1 | `11` | `[0x100000, 0x800000)`: 1 wait; 16 MiB lower block: 1 wait |
+| `FFF4` | WCY2 | `11` | 1 MiB area lower and middle: 1 wait |
+| `FFF5` | WCY3 | `31` | External I/O: 3 waits; 1 MiB area upper: 1 wait |
+| `FFF6` | WCY4 | `31` | DMA: 3 waits; refresh: 1 wait |
+| `FFF2` | RFC | `90` | Refresh on, N = 17: every 272 clocks (17 us at 16 MHz) |
+
+So ROM (`0x000000`), work RAM (`0x300000`) and NVRAM (`0x500000`) all take
+1 wait per bus cycle. Before the stub runs, every cycle takes 7 (WCY reset
+value).
+
+Model (MAME fork `src/devices/cpu/nec/`, `src/devices/machine/am9517a.cpp`):
+
+- One wait count per 32 KiB page of the 24-bit physical space, from the
+  PGR-translated address. Byte access or aligned word: 1 bus cycle; odd
+  word: 2.
+- Queue fetches: one bus cycle per 2 bytes, so each byte costs half the
+  page's waits on top of the core's fetch cost.
+- External I/O (below `0xFF00`, not a relocated internal peripheral):
+  IOW waits. The system I/O area takes none (data book).
+- Refresh: `2 + max(2, RFW)` clocks (4 here) every `16 x N` clocks.
+  The data book's "minimum of 4 clocks" plus RFW is read as a floor.
+  **HYPOTHESIS**.
+- DMA: DMAW waits in the DMAU `SW` state. The DMAU now runs at the CPU
+  clock, as in the data book's clock figure. Before, it ran at half.
+- Where the 1 MiB area overlaps the 16 MiB blocks, the area wins.
+  **HYPOTHESIS**. It does not matter here: both give `[0, 1 MiB)` 1 wait.
+- The WCU and RFC registers are now readable. The data book says all
+  system I/O registers except XAM are read/write.
+
+Check against the core (MAME debugger, `totalcycles`, 3.50 boot):
+`REP MOVSW` at `FAC0:008D` copies 15945 words from ROM to RAM. Without
+waits it takes 179396 clocks = 10 per word + 2 per resume (9973 debugger
+timeslice resumes). With waits it takes 218880 clocks. Take away 12162
+resumes x 2 and the result is 194556. The model predicts
+15945 x 12 = 191340, plus 805 refreshes x 4 = 3219, for 194559. Every
+clock is accounted for to within 3 clocks. **PROVEN (trace)** for the
+model's arithmetic. This says nothing about the physical board.
+
+Effect: BIOS LCD init (`F800:186C` `IR=00`) moves from 0.0750 s to
+0.0883 s. Boot screens at 2-45 s are unchanged (boot is dominated by timed
+waits). All regression tests pass. Test:
+`test_reset_stub_wait_states_take_effect` (register readback through
+`emu/lua/wcu_dump.lua`, plus the LCD init floor).
+
+Every MAME driver on the V53/V53A (for example `hng64`, `mpc2000`) now gets
+the waits its own firmware programs. V40/V50 are unchanged (different
+register layout).

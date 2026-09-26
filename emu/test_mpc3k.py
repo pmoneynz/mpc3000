@@ -89,6 +89,8 @@ CASES = {
     **{f"mem_{b}_{s}": dict(bios="vailixi", times=[10], board_mb=b, simm_mb=s)
        for b, s in ((2, 0), (2, 1), (2, 4), (8, 0), (8, 1), (8, 4), (32, 0))},
     "smpte_on": dict(bios="vailixi", times=[10], smpte=True),
+    # V53 wait control, programmed by the reset stub at file 0x7FF00.
+    "wcu": dict(bios="vailixi", times=[2], extra=["-autoboot_script", str(LUA / "wcu_dump.lua")]),
     "canary": dict(bios="vailixi", times=[12], floppy=CANARY),
     # 3.16 is floppy-only (not a BIOS). 3.12 EPROM is the loader; SCSI
     # search after the overlay needs Cancel (soft 4) or ~60 s.
@@ -183,6 +185,16 @@ class Mpc3kBoot(unittest.TestCase):
     def test_smpte_line_only_with_option(self) -> None:
         self.assertNotIn("I-0055", text(self.results["mem_2_0"][-1]))
         self.assertIn("(I-0055 OPTION......):Active", text(self.results["smpte_on"][-1]))
+
+    def test_reset_stub_wait_states_take_effect(self) -> None:
+        # notes/emulator.md section 7: 1 wait on all memory, 3 on external I/O and DMA, refresh N=17.
+        regs = dict(line.split("=") for line in (RUNS / "wcu" / "wcu.txt").read_text().split())
+        self.assertEqual(regs, {"FFEA": "07", "FFEB": "11", "FFEC": "02", "FFED": "00", "FFF2": "90",
+                                "FFF3": "00", "FFF4": "11", "FFF5": "31", "FFF6": "31"})
+        # BIOS LCD init (F800:186C IR=00) runs at 0.0750 s with zero waits, 0.0883 s with them.
+        first = (RUNS / "wcu" / "lcd_io.log").read_text().split("\n", 1)[0].split()
+        self.assertEqual(first[1:3], ["F800:186C", "IR=00"])
+        self.assertGreater(float(first[0]), 0.085)
 
     def test_floppy_canary_prints_351(self) -> None:
         self.assertIn("Vailixi 3.51 (---/--/----)", text(self.results["canary"][-1]))

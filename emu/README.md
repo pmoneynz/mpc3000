@@ -10,14 +10,14 @@ The driver lives in a MAME fork, outside this repo:
 | Item | Value |
 |------|-------|
 | Fork | <https://github.com/pmoneynz/mame>, branch `mpc3000-accuracy` |
-| Pinned commit | `87e2129c1aab1fdffca307a9cb5790a1c7ebc047` (upstream base `9ede38cb`) |
-| Changed files | `src/mame/akai/mpc3000.cpp`, `src/mame/layout/mpc3000.lay` |
+| Pinned commit | `d651a20c55e90e9f183e089d0070addc1a878b08` (upstream base `9ede38cb`) |
+| Changed files | `src/mame/akai/mpc3000.cpp`, `src/mame/layout/mpc3000.lay`, `src/devices/cpu/nec/{nec,v5x}.{cpp,h}`, `necpriv.ipp`, `src/devices/machine/am9517a.{cpp,h}` |
 | Binary the harness runs | `$MPC3K_MAME`, default `../MPC3000_builds/mame/mpc3k` |
 
 ```bash
 git clone --depth 50 -b mpc3000-accuracy https://github.com/pmoneynz/mame.git ../MPC3000_builds/mame
 cd ../MPC3000_builds/mame
-git checkout 87e2129c1aab1fdffca307a9cb5790a1c7ebc047
+git checkout d651a20c55e90e9f183e089d0070addc1a878b08
 make SUBTARGET=mpc3k SOURCES=src/mame/akai/mpc3000.cpp TOOLS=0 NOWERROR=1 -j14
 ```
 
@@ -68,6 +68,7 @@ Extra probes in `emu/lua/`, passed as
 | `pgr_watch.lua` | Page table words 44–60 on every change (RAM `0EC…` vs ROM `02C…`) |
 | `loader_bp.lua` | Which floppy-loader call sites fire (needs `-debug -debugger none -log`) |
 | `snddump.lua` | Sound records `A2AE:4800` and each sound's wave RAM words at every snapshot time (`snd_dir.log`, `wave_<t>_idx<i>.bin`) |
+| `wcu_dump.lua` | V53 wait control / refresh registers after 1 s (`wcu.txt`) |
 | `cave_watch.lua` | Reads (including fetches) and writes of the code cave in EPROM and in the Route A RAM copy (`cave.txt`) |
 
 ## Front panel
