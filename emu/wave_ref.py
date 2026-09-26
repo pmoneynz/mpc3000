@@ -9,8 +9,10 @@ full view the last column reaches len). The fine view XORs column 120.
 
 Text (emu/lcd_font.py, 6-pixel cells): glyph rows 0-6 "Edit Snd:" + name;
 rows 8-14 the pair's labels and values, the selected value's ten cells
-inverted over rows 7-14; rows 49-55 Length (and Zoom in the fine view);
-rows 57-63 soft keys. Rows 15 and 48 stay blank.
+inverted over rows 7-14; rows 49-55 Length, for a stereo sound "View:" L/R
+at column 19 (its cell inverted over rows 49-55 when selected), and Zoom in
+the fine view; rows 57-63 soft keys. Rows 15 and 48 stay blank. Plane R is
+the second plane.
 """
 
 from __future__ import annotations
@@ -29,6 +31,8 @@ class View:
     sel: int = 0                # 0..3
     fine: bool = False
     zoom: int = 16
+    plane: int = 0              # 0 = L (plane A), 1 = R (plane B)
+    onview: bool = False        # View field selected
 
 
 def fmt(frames: int) -> str:
@@ -71,8 +75,9 @@ def _invert(lit: list[list[bool]], x0: int, w: int, y0: int, h: int) -> None:
             lit[y][x] = not lit[y][x]
 
 
-def screen(samples: list[int], name: str, v: View) -> list[str]:
+def screen(planes: list[list[int]], name: str, v: View) -> list[str]:
     """The whole view, rows of '#' (lit) and '.' as emu/probe.lua writes them."""
+    samples = planes[v.plane]
     n = len(samples)
     lit = [[False] * COLS for _ in range(ROWS)]
     for x, (top, bot) in enumerate(lines(samples, v)):
@@ -93,11 +98,17 @@ def screen(samples: list[int], name: str, v: View) -> list[str]:
         _text(lit, 8, vcol, fmt(v.points[(v.sel & 2) + i]))
     _text(lit, 49, 0, "Length:")
     _text(lit, 49, 7, fmt(n))
+    if len(planes) == 2:
+        _text(lit, 49, 19, "View:")
+        _text(lit, 49, 24, "LR"[v.plane])
     if v.fine:
         _text(lit, 49, 33, f"Zoom:{v.zoom:02d}")
     _text(lit, 57, 21, "<Full>" if v.fine else "<Fine>")
     _text(lit, 57, 0, "<Trim>")
     _text(lit, 57, 10, "<Zone>")
     _text(lit, 57, 34, "<Exit>")
-    _invert(lit, pair[v.sel & 1][2] * 6, 60, 7, 8)
+    if v.onview:
+        _invert(lit, 24 * 6, 6, 49, 7)
+    else:
+        _invert(lit, pair[v.sel & 1][2] * 6, 60, 7, 8)
     return ["".join("#" if p else "." for p in row) for row in lit]

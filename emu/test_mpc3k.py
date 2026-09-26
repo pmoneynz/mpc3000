@@ -29,6 +29,7 @@ MOD350 = MODS / "MOD350.img"
 PETER = MODS / "PETER.img"
 CAVEDEMO = MODS / "CAVEDEMO.img"
 WAVE_START, WAVE_END = 13781, 48000   # mid-sine .. mid-ramp of SINE441
+STEREO_START, STEREO_END = 5000, 30000
 LUA = REPO / "emu" / "lua"
 PHOTO_REF = REPO / "emu" / "font" / "photo_play_record.txt"
 
@@ -71,6 +72,9 @@ def snd_disks() -> dict[str, Path]:
     src = RUNS / "WAVE.SND"
     src.write_bytes(snd("SINE441", sine441(), start=WAVE_START, end=WAVE_END))
     out["wave_view"] = snd_disk("wave_view", [(MODS / "WAVE.SYS", "WAVE.SYS"), (src, "SINE441.SND")])
+    src = RUNS / "WAVEST.SND"
+    src.write_bytes(snd("STEREO1", stereo1(), start=STEREO_START, end=STEREO_END))
+    out["wave_stereo"] = snd_disk("wave_stereo", [(MODS / "WAVE.SYS", "WAVE.SYS"), (src, "STEREO1.SND")])
     return out
 
 
@@ -122,6 +126,14 @@ CASES = {
                           (91, "Y5", "Right Arrow"), (95, "Y4", "Soft Key 3"), (97, "Y4", "Soft Key 4"),
                           (101, "Y6", "Main Screen"), (102, "Y6", "Help"))],
                       panel=[dial(3, 81.0), dial(2, 85.0), dial(5, 93.0)]),
+    # View field on a stereo sound: Help; Right, Right (View); wheel + (R); Left (End); Soft Key 3; Soft Key 4.
+    "wave_stereo": dict(bios="vailixi", times=[80, 83, 85, 87, 89.5, 94], floppy=None,
+                        press=[(t, port, key, 0.1) for t, port, key in (
+                            (62, "Y0", "Disk"), (63.5, "Y0", "7"), (65.5, "Y3", "Soft Key 1"),
+                            (74, "Y0", "Program/Sounds"), (75.5, "Y1", "6"), (77.5, "Y6", "Help"),
+                            (81, "Y5", "Right Arrow"), (82, "Y5", "Right Arrow"), (86, "Y5", "Left Arrow"),
+                            (88, "Y4", "Soft Key 3"), (91, "Y4", "Soft Key 4"))],
+                        panel=[dial(1, 84.0)]),
     # Code cave: stock EPROM boot and Route A, each visiting Edit Sound, both graphic mixers, Disk, Other.
     **{n: dict(bios="vailixi", times=[t + 22], floppy=f, extra=["-autoboot_script", str(LUA / "cave_watch.lua")],
                press=[(t + 2 * i, port, key, 0.1) for i, (port, key) in enumerate((
@@ -260,13 +272,27 @@ class Mpc3kBoot(unittest.TestCase):
                         ("94.500", View([a3 + 32, b, 0, 40], sel=3, fine=True, zoom=8)),
                         ("96.500", View([a3 + 32, b, 0, 40], sel=3, zoom=8))):
             with self.subTest(t=t):
-                self.assertEqual(pixels[t], wave_ref.screen(wave, "SINE441", view))
+                self.assertEqual(pixels[t], wave_ref.screen([wave], "SINE441", view))
         before, after, help_screen = screens[0]["rows"], screens[-2]["rows"], screens[-1]["rows"]
         self.assertIn("Soft st :000.312.22", before[2])
         self.assertIn(f"Soft st :{wave_ref.fmt(a3 + 32)}", after[2])
         self.assertIn(f"Soft end:{wave_ref.fmt(b)}", after[3])
         self.assertIn("Zone end:000.000.40", after[3])
         self.assertIn("Help", help_screen[0])
+
+    def test_wave_view_field_selects_plane(self) -> None:
+        blocks = (RUNS / "wave_stereo" / "lcd_pixels.txt").read_text().split("@ ")[1:]
+        pixels = {b.split()[0]: b.splitlines()[1:65] for b in blocks}
+        points, View = [STEREO_START, STEREO_END, 0, 0], wave_ref.View
+        for t, view in (("80.000", View(points)), ("83.000", View(points, sel=1, onview=True)),
+                        ("85.000", View(points, sel=1, onview=True, plane=1)),
+                        ("87.000", View(points, sel=1, plane=1)),
+                        ("89.500", View(points, sel=1, plane=1, fine=True))):
+            with self.subTest(t=t):
+                self.assertEqual(pixels[t], wave_ref.screen(stereo1(), "STEREO1", view))
+        after = self.results["wave_stereo"][-1]["rows"]
+        self.assertIn("(ST)", after[0])
+        self.assertIn(f"Soft st :{wave_ref.fmt(STEREO_START)}", after[2])
 
     def test_synthetic_snd_loads_into_wave_ram(self) -> None:
         for name, title, length, planes in (("snd_mono", "Edit Snd:SINE441", "001.250.00", sine441()),

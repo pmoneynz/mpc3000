@@ -98,12 +98,16 @@ view:
         mov [cs:len+2], dx
         mov ax, [es:si+0x20]
         mov dx, [es:si+0x22]
-        mov [cs:wave], ax
-        mov [cs:wave+2], dx
+        mov [cs:wbase], ax
+        mov [cs:wbase+2], dx
+        mov al, [es:si+0x13]
+        mov [cs:stereo], al
         xor ax, ax
         mov [cs:sel], al
         mov [cs:fine], al
         mov [cs:full_ok], al
+        mov [cs:plane], al
+        mov [cs:onview], al
         mov word [cs:zoom], ZOOM0
         call refresh
         call 0xC4C8:0x0F5F              ; graphics mode + blit 8010:1591
@@ -147,21 +151,39 @@ view:
         cmp bh, bl
         je .exit
         jmp .m
-.plus:  call step
+.plus:  mov cl, 1                        ; View field: + = R
+        cmp byte [cs:onview], 0
+        jne .plane
+        call step
         jmp .move
-.minus: call step
+.minus: mov cl, 0                        ; View field: - = L
+        cmp byte [cs:onview], 0
+        jne .plane
+        call step
         neg ax
 .move:  call move
         jmp .redraw
+.plane: mov [cs:plane], cl
+        mov byte [cs:full_ok], 0
+        jmp .redraw
 .trim:  and al, 1
-        jmp .sel
+        jmp .pt
 .zone:  or al, 2
-        jmp .sel
-.first: and al, 2
-        jmp .sel
-.second:
-        or al, 1
-.sel:   mov [cs:sel], al
+        jmp .pt
+.first: cmp byte [cs:onview], 0         ; Left: View -> second point -> first
+        jne .pt
+        and al, 2
+        jmp .pt
+.second:                                ; Right: first -> second -> View (stereo)
+        test al, 1
+        jz .sec
+        cmp byte [cs:stereo], 0
+        je .sec
+        mov byte [cs:onview], 1
+        jmp .redraw
+.sec:   or al, 1
+.pt:    mov byte [cs:onview], 0
+        mov [cs:sel], al
         jmp .redraw
 .mode:  xor byte [cs:fine], 1
         jmp .redraw
@@ -186,7 +208,16 @@ view:
         ret
 
 ; Scan if the columns changed, then draw. Fine: centred on the selected point.
+; Plane R (stereo) is plane B at wave + len.
 refresh:
+        mov ax, [cs:wbase]
+        mov dx, [cs:wbase+2]
+        cmp byte [cs:plane], 0
+        je .w
+        add ax, [cs:len]
+        adc dx, [cs:len+2]
+.w:     mov [cs:wave], ax
+        mov [cs:wave+2], dx
         cmp byte [cs:fine], 0
         je .full
         mov al, [cs:sel]
@@ -758,7 +789,20 @@ draw:
         mov bx, 7
         mov si, num
         call text
-        mov si, s_full
+        cmp byte [cs:stereo], 0         ; stereo: "View:" L or R at column 19
+        je .nv
+        mov ax, 49
+        mov bx, 19
+        mov si, s_view
+        call text
+        mov si, s_l
+        cmp byte [cs:plane], 0
+        je .vl
+        mov si, s_r
+.vl:    mov ax, 49
+        mov bx, 24
+        call text
+.nv:    mov si, s_full
         cmp byte [cs:fine], 0
         je .keys
         mov ax, [cs:zoom]               ; fine: "Zoom:nn" at column 33
@@ -785,7 +829,14 @@ draw:
         mov bx, 34
         mov si, s_exit
         call text
-        mov si, [cs:lab]                ; selected value, inverted, rows 7..14
+        cmp byte [cs:onview], 0         ; View field selected: its cell, rows 49..55
+        je .pv
+        mov bx, 24 * 6
+        mov cx, 6
+        mov ax, 49
+        mov dx, 7
+        jmp invert
+.pv:    mov si, [cs:lab]                ; selected value, inverted, rows 7..14
         mov bx, [cs:si+8]
         test byte [cs:sel], 1
         jz .sv
@@ -810,6 +861,9 @@ s_end:   db "End:", 0
 s_zst:   db "Zone st:", 0
 s_zend:  db "Zone end:", 0
 s_len:   db "Length:", 0
+s_view:  db "View:", 0
+s_l:     db "L", 0
+s_r:     db "R", 0
 s_zoom:  db "Zoom:00", 0
 s_trim:  db "<Trim>", 0
 s_zone:  db "<Zone>", 0
@@ -829,10 +883,14 @@ lab:    dw 0
 sel:    db 0
 fine:   db 0
 full_ok: db 0
+stereo: db 0
+plane:  db 0
+onview: db 0
 out:    db 0
 align 2
 len:    dd 0
 wave:   dd 0
+wbase:  dd 0
 cur:    dd 0
 hi:     dd 0
 lo:     dd 0

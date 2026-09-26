@@ -1,14 +1,14 @@
 # Waveform editor: the wave view (phases 2–4)
 
 **Image:** Vailixi 3.50 linear, Route A. **Date:** 2026-09-25.
-**Source:** [`../mods/wave.asm`](../mods/wave.asm) (3,408 bytes in the code cave at `F07D:0000`),
+**Source:** [`../mods/wave.asm`](../mods/wave.asm) (3,640 bytes in the code cave at `F07D:0000`),
 [`../mods/WAVE.args`](../mods/WAVE.args). Font: [`../emu/lcd_font.py`](../emu/lcd_font.py) → `mods/wave_font.inc`.
 **Pixel contract:** [`../emu/wave_ref.py`](../emu/wave_ref.py) `screen()`. Evidence it builds on:
 [`waveform_phase0.md`](waveform_phase0.md).
 
 ## What it does
 
-1. **Scan.** Reads the sound's plane A from wave RAM.
+1. **Scan.** Reads the selected plane from wave RAM: L = plane A at `+20`, R = plane B at `+20 + len` (stereo only; the layout is **PROVEN**, code + trace, [`waveform_phase0.md`](waveform_phase0.md) §3).
    - Column `c` (0–239) covers samples `[c·len/240, (c+1)·len/240)`, with at least one sample per column.
    - Each column keeps its signed min and max.
    - Reads go through `CALLF CF92:000C(A2AE:0000, wave + cur, n, 1)` in blocks of `n ≤ 0x2400` words (Best st's buffer and call shape), each wrapped in `INC`/`DEC [8010:9757]`.
@@ -62,7 +62,7 @@ The screen uses 6-pixel columns:
 | 7–14 | The pair: `Start:` (value at col 6) / `End:` (col 24), or `Zone st:` (col 8) / `Zone end:` (col 28). The selected value's ten cells are inverted over rows 7–14 |
 | 15, 48 | blank |
 | 16–47 | wave |
-| 49–55 | `Length:`; in the fine view also `Zoom:nn` at col 33 |
+| 49–55 | `Length:`. For a stereo sound (`+13` ≠ 0), `View:` at col 19 and `L`/`R` at col 24; when the View field is selected its cell is inverted over rows 49–55. In the fine view also `Zoom:nn` at col 33 |
 | 57–63 | `<Trim>` col 0, `<Zone>` col 10, `<Fine>`/`<Full>` col 21, `<Exit>` col 34 |
 
 Values use the Edit Sound units `sss.mmm.ss`: `s = f/44100`, `ms = (f mod 44100)·10/441`, then the leftover samples.
@@ -71,9 +71,9 @@ Values use the Edit Sound units `sss.mmm.ss`: `s = f/44100`, `ms = (f mod 44100)
 
 | Key (code, from the `D547:0006` table) | Action |
 |-----------------------------------------|--------|
-| Data wheel, `+`/`-` | Moves the selected point by one column: `len/240` frames (at least 1) in the full view, `zoom` samples in the fine view. Clamped, written at once, redrawn and blitted (`C4C8:0F0D`) |
+| Data wheel, `+`/`-` | On the View field: `+` = R, `-` = L, then the view rescans that plane. Otherwise it moves the selected point by one column: `len/240` frames (at least 1) in the full view, `zoom` samples in the fine view. Clamped, written at once, redrawn and blitted (`C4C8:0F0D`) |
 | Soft Key 1 `'x'` / Soft Key 2 `'y'` | Trim pair / zone pair (keeps first or second) |
-| Left `'<'` / Right `'>'` | First / second point of the pair |
+| Left `'<'` / Right `'>'` | Step between the fields: first point, second point, View (stereo only). Stops at the ends |
 | Soft Key 3 `'z'` | Fine ↔ full |
 | Up `'^'` / Down `'!'` | Zoom in / out (halve / double, 1–64) |
 | Soft Key 4 `'u'`, Help `'H'` | Back to Edit Sound |
@@ -87,6 +87,7 @@ All MAME traces, one execution each:
 | Test | Result |
 |------|--------|
 | `test_wave_view_edits_trim_and_zone`: `SINE441` with start 13,781 / end 48,000. Help; wheel +3; Soft Key 3 (fine); wheel +2; Up; Soft Key 2 (zone); Right; wheel +5; Soft Key 3 (full); Soft Key 4 | The LCD equals `wave_ref.screen` at all nine states (80–96.5 s). Edit Sound then shows `Soft st :000.328.36` (+3 × 229, then +2 × 16) and `Zone end:000.000.40` (+5 × 8). Help on Play/Record still shows the Help page. **PROVEN (trace)** |
+| `test_wave_view_field_selects_plane`: `STEREO1` with start 5,000 / end 30,000. Help; Right ×2 (View); wheel +1 (R); Left (End); Soft Key 3 (fine on plane R); Soft Key 4 | The LCD equals `wave_ref.screen` at all five states. Edit Sound comes back with `(ST)` and the start unchanged. **PROVEN (trace)** |
 | Phase 2 engine (Best st dev hook, since removed) with a real stereo sample (Peter's `funkySnare.wav`, not in the repo) | 0 pixel differences for plane A. **PROVEN (trace)** |
 | Graphics mode | Probe `mode=32`, `30x64`. **PROVEN (trace)** |
 
@@ -95,7 +96,7 @@ Harness fix: `emu/mpc3k.py` `parse_screens` now splits only at lines that start 
 ## Assumptions and limits
 
 - **Framebuffer reuse:** reusing `8010:1591` while the Mixer is inactive is **HYPOTHESIS**. The Mixer clears and redraws it on entry (`C4C8:0490`). Other writers than `C4C8`/`B13A` are **UNDETERMINED** (computed aliases not searched).
-- **Stereo:** only plane A is drawn. That A is the left channel is **HYPOTHESIS**.
+- **Stereo:** one plane at a time, chosen with the View field, which starts at L on every open. Labelling plane A as L and B as R is **HYPOTHESIS** (MAME's mixer bits, [`waveform_phase0.md`](waveform_phase0.md) §3). Real-hardware left/right is `U-PHYS`.
 - **Scan time on hardware:** `U-PHYS`. The full view reads every sample through `CF92:000C` once per open. The fine view reads `240 × zoom` samples (at most 15,360) on every change.
 - **`CF92:000C`:** that it preserves `SI`/`DI`/`BP`/`DS` is **HYPOTHESIS** (C convention). The engine reloads everything else after each call.
 - **Keys:** the view ignores keys it does not list.
