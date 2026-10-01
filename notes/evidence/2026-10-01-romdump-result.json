@@ -1,0 +1,43 @@
+{
+  "source": "/Volumes/MPC3000/Disk_01.IMG",
+  "disk_sha256": "78a9c63f51ed4611ff4c1c328f2a779a1b4628d685e9d9fa5efb0d495acf1d8e",
+  "capture_sha256": "2c654334e011af2943d1d08f05e3ce48ebccdf49600aab7a2f040ba016c21168",
+  "image_changed_outside_dump_data": [],
+  "word_sum": "81A0",
+  "block_sums": [
+    "3E89",
+    "4A20",
+    "4473",
+    "C8F1",
+    "F800",
+    "F800",
+    "F800",
+    "0393"
+  ],
+  "different_bytes": 2494,
+  "different_words": 1287,
+  "first_different_byte": "7A25C",
+  "last_different_byte": "7BA00",
+  "first_different_word": "7A25C",
+  "last_different_word": "7BA00",
+  "identical_ranges": [
+    [
+      "78000",
+      "7A25C"
+    ],
+    [
+      "7BA01",
+      "80000"
+    ]
+  ],
+  "photograph": {
+    "path": "notes/evidence/2026-10-01-romdump-done.jpg",
+    "sha256": "e785953928aed3a2889e1e68d54320212f13d4cec51201a509d9d3870231d5b0",
+    "transcription": [
+      "ROMDUMP DONE - POWER OFF / KEEP USB",
+      "WORD SUM 81A0"
+    ]
+  },
+  "capture_path": "build/hardware/2026-10-01-romdump/BIOS.BIN",
+  "comparison_path": "build/hardware/2026-10-01-romdump/comparison.json"
+}

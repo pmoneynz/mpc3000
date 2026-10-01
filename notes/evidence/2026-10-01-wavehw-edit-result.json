@@ -1,0 +1,32 @@
+{
+  "photographs": [
+    {
+      "source": "IMG_4806.JPG",
+      "path": "notes/evidence/2026-10-01-wavehw-edited-full.jpg",
+      "sha256": "a0dd9536c869b884211c059a6d3f5ad583d8359eac960de1a818655ff62493ef"
+    },
+    {
+      "source": "IMG_4807.JPG",
+      "path": "notes/evidence/2026-10-01-wavehw-edited-stock.jpg",
+      "sha256": "29b0a0199fb347e982691a5c40f77f39a1705e6349d890894d57f81c22ad572a"
+    }
+  ],
+  "user_report": "Editing seems to work.",
+  "observed": {
+    "custom_view_start": "000.000.16",
+    "stock_edit_sound_soft_start": "000.000.16",
+    "end_and_length": "001.250.00"
+  },
+  "proven_one_physical_sequence": [
+    "16-frame start edit visible in custom view",
+    "return to stock Edit Sound with matching soft-start value",
+    "full view reachable after earlier fine view"
+  ],
+  "not_established": [
+    "saving/reloading edits on disk",
+    "other edit points and boundaries",
+    "stereo identity",
+    "audition",
+    "timing"
+  ]
+}

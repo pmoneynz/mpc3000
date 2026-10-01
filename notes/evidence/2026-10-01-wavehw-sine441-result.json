@@ -1,0 +1,39 @@
+{
+  "photograph": {
+    "path": "notes/evidence/2026-10-01-wavehw-sine441.jpg",
+    "sha256": "5d3a14059c05c6c7088602dc10596a0bebd7121b8469e5ed9540a343cab800ed",
+    "source_name": "IMG_4803.JPG"
+  },
+  "associated_deployment": {
+    "payload_sha256": "92f73b10139978b8a5c2abe7478cbc45614fa2d9972a0e73836e47048d5e207d",
+    "image_sha256": "05262e05d4ae2d0ebcaeb3fc247e994bcc6aff92d930adbeb451f21c82a53767",
+    "association": "user supplied photo in response to WAVE BENCH 02 procedure; boot marker not visible in this photo"
+  },
+  "visible_text": [
+    "Edit Snd:SINE441",
+    "Start:000.000.00",
+    "End:001.250.00",
+    "Length:001.250.00",
+    "<Trim>",
+    "<Zone>",
+    "<Fine>",
+    "<Exit>"
+  ],
+  "selected_field": "End",
+  "proven_one_physical_execution": [
+    "custom waveform view reached",
+    "sound name and expected duration rendered",
+    "full-view graph has dense first approximately40percent,flat middle approximately40percent,rising last approximately20percent",
+    "custom graphics text and soft-key labels readable"
+  ],
+  "interpretation": "Shape matches SINE441 generation:0.5s 441Hz sine,0.5s silence,0.25s rising ramp. The full-view min/max envelope packs multiple sine cycles into each pixel column. This is qualitative photographic agreement, not pixel-exact validation.",
+  "undetermined": [
+    "fine-view zoom",
+    "wheel point edits and field selection",
+    "exit/reopen behavior",
+    "audition",
+    "stereo plane identity",
+    "scan latency",
+    "all-path shared framebuffer/cave safety"
+  ]
+}

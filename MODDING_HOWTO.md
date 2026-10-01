@@ -324,13 +324,16 @@ not a pass.
 
 ## 7. Deploy to a real machine
 
-**UNDETERMINED: not yet done for any mod from this repo.** Record the first
-hardware result against these steps.
+**2026-10-01: the Route B canary ran on Peter's physical MPC3000 through
+FlashFloppy (PROVEN, user report and photo).** Route A and the waveform
+editor remain hardware-unqualified. See [the bench record](notes/waveform_bench.md).
 
 1. Use a freshly formatted FAT12 floppy. The 3.16 PDF says to copy the SYS
    to a "blank/fresh floppy".
-2. Either copy `out/<NAME>.SYS` to the root, or write `out/<NAME>.img` raw
-   to the disk.
+2. Either copy `build/mods/<NAME>.SYS` to the root, or write
+   `build/mods/<NAME>.img` raw to a physical floppy. For FlashFloppy,
+   replace the selected `.IMG` file on the USB filesystem after backing
+   it up; do not overwrite the USB block device.
 3. Make it the **only** `*.SYS` in the root. The loader takes the first
    match in directory order. A bad first SYS is fatal (`type 11h`) and
    there is no fallback. **PROVEN (trace)**.
@@ -341,8 +344,10 @@ hardware result against these steps.
    OS.
 
 Media density: the BIOS has geometry slots for 720K (9 sectors/track), 800K
-(10) and 1.44M (18), and the MAME runs use 1.44M. Whether the fitted drive
-reads HD media is **UNDETERMINED** (`U-PHYS`). If 1.44M fails, try 720K:
+(10) and 1.44M (18), and the MAME runs use 1.44M. The 1.44M canary image
+ran through Peter's FlashFloppy setup (**PROVEN**, one hardware execution).
+Physical HD floppy media and other drive configurations remain
+**UNDETERMINED** (`U-PHYS`). If 1.44M fails, try 720K:
 `mformat -f 720`, and a Route A image (310,640 bytes) fits. 720K has not been
 traced.
 
@@ -357,7 +362,7 @@ steps, so such files on the mod disk should load on the second pass.
 | Symptom | Cause |
 |---------|-------|
 | `System Error … software bug of type 11h` forever | First SYS is not a valid MZ, or a short read (`INT 45` AH≠0). **PROVEN (trace)** |
-| `Mod needs Vailixi 3.50 EPROMs`, halt | Route A on non-3.50 EPROMs. **PROVEN (trace)** |
+| `Mod needs Vailixi 3.50 EPROMs`, halt | BIOS-region sum differs from the reference `0x8634`. This is not a version detector: the physical personalized 3.50 build also rejects. Cause pending [`ROM comparison`](notes/rom_compatibility.md); do not bypass the guard |
 | Straight to `Searching SCSI…`, EPROM OS | No matching SYS: wrong extension, attribute bits `1Eh`, not in the root, or the floppy test failed. **PROVEN (trace)** for "no SYS" |
 | Stuck at `Searching floppy for startup files...` | The floppy-test wait loop has no bound (`E7F5:0440`). Hardware cause **UNDETERMINED** |
 | EPROM banner repeats, reload loop | SYS step not skipped in a relocated OS. The builder always applies `0x30207` `75→EB`. **HYPOTHESIS** (never observed, because it is always applied) |
@@ -370,16 +375,17 @@ steps, so such files on the mod disk should load on the second pass.
 | Claim | Status |
 |-------|--------|
 | Floppy loader present, same shape, in 3.08 / 3.11 / 3.12 / 3.50 | **PROVEN (code)** |
-| 3.16 loads from floppy on all four | **PROVEN (trace)** |
+| 3.16 loads from floppy on all four | **PROVEN (trace)** in the final 2026-10-01 suite. An earlier 3.08 run and isolated rerun produced type 11h before rebuilding the test disks; cause and reproducibility **UNDETERMINED** |
 | Selection: first `*.SYS`, any 8.3 name, fatal if bad | **PROVEN (trace)** |
 | Route A boots, runs from RAM for the session, takes panel input, 484K | **PROVEN (trace)** |
 | Route A guard on 3.12 | **PROVEN (trace)** |
 | Route B entry contract and MZ rules | **PROVEN (code)** |
-| Route B text output via `INT 43` AX=4 | **PROVEN (trace)** |
+| Route B text output via `INT 43` AX=4 | **PROVEN (trace)** and one physical canary execution, 2026-10-01; see `notes/waveform_bench.md` |
 | Code cave `[0x707C8, 0x74000)` unused | **PROVEN (trace)** for two sessions, `emu/lua/cave_watch.lua`. All-paths **HYPOTHESIS** |
 | Route A code in the cave (`--cave`) runs from RAM | **PROVEN (trace)**, `CAVEDEMO` |
 | No single-word PGR write reverts pages 44–60 later | **PROVEN (trace)** for 67.5 s of one boot. All-paths **UNDETERMINED** ([`patch_space.md`](notes/patch_space.md) §4) |
-| Real hardware: drive density, timing, any mod boot | **UNDETERMINED** (`U-PHYS`) |
+| Physical canary boot from a 1.44M FlashFloppy image | **PROVEN**, user report + photo, 2026-10-01; this setup and payload only |
+| Physical Route A/WAVE, timing, diskless reboot | **UNDETERMINED** (`U-PHYS`) |
 | 720K / 800K disks | **UNDETERMINED** (not traced) |
 | Effect of writing page 61 (`0x500000`) | **UNDETERMINED** |
 

@@ -1,0 +1,59 @@
+{
+  "evidence": "notes/evidence/2026-10-01-romsum2-result.jpg",
+  "sha256": "420df8ac3185fe04154ff9c036a16b2be8b91cac51f895fd582e393a00f6f9fc",
+  "source": "user photograph IMG_4797.JPG",
+  "report": "ROMSUM2 DONE",
+  "reference_sum": "8634",
+  "actual_sum": "81A0",
+  "blocks": [
+    {
+      "reference_linear_start": "78000",
+      "reference_word_sum": "3E89",
+      "observed_word_sum": "3E89",
+      "modulo_delta": "0000"
+    },
+    {
+      "reference_linear_start": "79000",
+      "reference_word_sum": "4A20",
+      "observed_word_sum": "4A20",
+      "modulo_delta": "0000"
+    },
+    {
+      "reference_linear_start": "7A000",
+      "reference_word_sum": "6693",
+      "observed_word_sum": "4473",
+      "modulo_delta": "DDE0"
+    },
+    {
+      "reference_linear_start": "7B000",
+      "reference_word_sum": "AB65",
+      "observed_word_sum": "C8F1",
+      "modulo_delta": "1D8C"
+    },
+    {
+      "reference_linear_start": "7C000",
+      "reference_word_sum": "F800",
+      "observed_word_sum": "F800",
+      "modulo_delta": "0000"
+    },
+    {
+      "reference_linear_start": "7D000",
+      "reference_word_sum": "F800",
+      "observed_word_sum": "F800",
+      "modulo_delta": "0000"
+    },
+    {
+      "reference_linear_start": "7E000",
+      "reference_word_sum": "F800",
+      "observed_word_sum": "F800",
+      "modulo_delta": "0000"
+    },
+    {
+      "reference_linear_start": "7F000",
+      "reference_word_sum": "0393",
+      "observed_word_sum": "0393",
+      "modulo_delta": "0000"
+    }
+  ],
+  "limitation": "Equal additive sums do not prove byte identity. Address translation conditional on reference third PGR/XA=1."
+}

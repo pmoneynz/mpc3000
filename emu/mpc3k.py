@@ -63,14 +63,15 @@ def parse_screens(text: str) -> list[dict]:
 def run(bios: str, times: list[float], out: Path, *, board_mb: int = 2, simm_mb: int = 0,
         smpte: bool = False, floppy: Path | None = None, panel: Path | None = None,
         trace: list[int] | None = None, press: list[tuple[float, str, str, float]] | None = None,
-        words: list[int] | None = None, extra: list[str] | None = None) -> list[dict]:
+        words: list[int] | None = None, extra: list[str] | None = None,
+        rompath: Path | None = None) -> list[dict]:
     if out.exists():
         shutil.rmtree(out)
     (out / "cfg").mkdir(parents=True)
     (out / "cfg" / "mpc3000.cfg").write_text(
         CFG.format(board=BOARD_MB[board_mb], simm=SIMM_MB[simm_mb], smpte=8 if smpte else 0))
 
-    cmd = [str(MAME), "mpc3000", "-bios", bios, "-rompath", str(build_roms()),
+    cmd = [str(MAME), "mpc3000", "-bios", bios, "-rompath", str(rompath or build_roms()),
            "-video", "none", "-sound", "none", "-nothrottle", "-skip_gameinfo",
            "-cfg_directory", str(out / "cfg"),
            "-nvram_directory", str(out / "nvram"),

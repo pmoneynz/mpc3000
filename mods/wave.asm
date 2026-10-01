@@ -16,17 +16,28 @@ org 0
 SND_SEG equ 0xA2AE              ; sound records at A2AE:4800 + idx*24h
 SND_DIR equ 0x4800
 BUF_W   equ 0x2400              ; Best st's read buffer A2AE:0000, words
+%ifdef WAVE_CAPTURE_20261001
+FB      equ 0x158F              ; captured personalized DGROUP; same consumers
+BUSY    equ 0x9755
+MODE    equ 0xD7C9
+OPTION  equ 0xD7C8
+ZONE_ST equ 0xEDB9
+ZONE_EN equ 0xEDB5
+KEY_REPEAT equ 0xD698
+%else
 FB      equ 0x1591              ; 8010:1591, 30 bytes x 64 rows, bit 7 = left
-ROW     equ 30
-COLS    equ 240
-MID     equ 31                  ; zero line; rows 16..47 hold the wave
-TOP     equ 16
-BOT     equ 47
 BUSY    equ 0x9757              ; transfer busy counter (INC/DEC round CF92)
 MODE    equ 0xD7CB              ; 'L' = Program/Sounds
 OPTION  equ 0xD7CA              ; 6 = Edit Sound
 ZONE_ST equ 0xEDBB              ; zone start / end dwords (Edit Sound fields)
 ZONE_EN equ 0xEDB7
+KEY_REPEAT equ 0xD69A
+%endif
+ROW     equ 30
+COLS    equ 240
+MID     equ 31                  ; zero line; rows 16..47 hold the wave
+TOP     equ 16
+BOT     equ 47
 ZOOM0   equ 16                  ; fine window: samples per column at entry
 ZOOMMAX equ 64
 
@@ -68,9 +79,7 @@ page_key:
         mov [bp-1], al
         or ah, ah
         jz .out
-        push '6'                        ; reopen Edit Sound, as Best st does
-        call 0xD6E0:0x0075
-        add sp, 2
+        call zones_reopen              ; preserve map only for immediate re-entry
 .out:   jmp 0xB99A:0x1595
 
 ; ---------------------------------------------------------------- view
@@ -83,6 +92,11 @@ view:
         mov bp, sp
         push si
         push di
+        mov ax, [ss:bp]
+        mov [cs:page_bp], ax
+        mov ax, [bp+4]
+        and ax, 0x00FF
+        mov [cs:sound_index], ax
         mov al, [bp+4]
         cbw
         mov dx, 0x24
@@ -108,22 +122,49 @@ view:
         mov [cs:full_ok], al
         mov [cs:plane], al
         mov [cs:onview], al
+        mov [cs:aud_too_short], al
         mov word [cs:zoom], ZOOM0
+        call zones_enter
+        call 0xB1B1:0x004F              ; save stock text for numeric entry
         call refresh
         call 0xC4C8:0x0F5F              ; graphics mode + blit 8010:1591
 .key:   push 0
         call 0xBDE3:0x000E              ; next key after the global filter
         add sp, 2
         mov bl, al
+        mov ax, [KEY_REPEAT]             ; BDE3 coalesces consecutive +/- keys
+        or ax, ax
+        jnz .repeat_ready
+        inc ax
+.repeat_ready:
+        mov [cs:key_repeat], ax
+        mov byte [cs:aud_too_short], 0
+        cmp byte [cs:onview], 0
+        jne .dispatch
+        cmp bl, 0x0D
+        je .number_empty
+        cmp bl, '0'
+        jb .dispatch
+        cmp bl, '9'
+        ja .dispatch
+        jmp .number
+.number_empty:
+        xor bl, bl
+.number:
+        call stock_numeric
+        or ax, ax
+        jz .key
+        mov bl, al
+.dispatch:
         cmp bl, '+'
         je .plus
         cmp bl, '-'
         je .minus
         mov al, [cs:sel]
-        cmp bl, 'x'                     ; Soft Key 1: trim pair
-        je .trim
-        cmp bl, 'y'                     ; Soft Key 2: zone pair
-        je .zone
+        cmp bl, 'y'                     ; Soft Key 2: toggle Trim / Zone
+        je .pair
+        cmp bl, 'x'                     ; Soft Key 1: Play / Stop
+        je .play
         cmp bl, '<'                     ; Left / Right: first / second point
         je .first
         cmp bl, '>'
@@ -131,10 +172,10 @@ view:
         cmp bl, 'z'                     ; Soft Key 3: fine / full
         je .mode
         mov cx, [cs:zoom]
-        cmp bl, '^'                     ; Up: zoom in
-        je .zin
-        cmp bl, '!'                     ; Down: zoom out
-        je .zout
+        cmp bl, '^'                     ; End -> Zone; otherwise zoom in
+        je .up
+        cmp bl, '!'                     ; Zone/Count -> End; otherwise zoom out
+        je .down
         mov ah, 1                       ; Soft Key 4 / Help: back to Edit Sound
         mov al, 'L'
         cmp bl, 'u'
@@ -152,34 +193,69 @@ view:
         je .exit
         jmp .m
 .plus:  mov cl, 1                        ; View field: + = R
+        cmp byte [cs:onview], 2
+        jae .zone_adjust
         cmp byte [cs:onview], 0
         jne .plane
         call step
         jmp .move
 .minus: mov cl, 0                        ; View field: - = L
+        cmp byte [cs:onview], 2
+        jae .zone_adjust
         cmp byte [cs:onview], 0
         jne .plane
         call step
         neg ax
+        adc dx, 0
+        neg dx
 .move:  call move
         jmp .redraw
 .plane: mov [cs:plane], cl
         mov byte [cs:full_ok], 0
         jmp .redraw
-.trim:  and al, 1
+.zone_adjust:
+        call zones_adjust
+        jmp .redraw
+.pair:  xor al, 2
         jmp .pt
-.zone:  or al, 2
-        jmp .pt
-.first: cmp byte [cs:onview], 0         ; Left: View -> second point -> first
-        jne .pt
+.play:  call audition
+        cmp byte [cs:aud_too_short], 0
+        jne .redraw
+        jmp .key
+.first: cmp byte [cs:onview], 3
+        je .previous_field
+        cmp byte [cs:onview], 2
+        jne .left_point
+        cmp byte [cs:stereo], 0
+        jne .previous_field
+        jmp .end_point
+.left_point:
+        cmp byte [cs:onview], 1
+        je .end_point
         and al, 2
         jmp .pt
-.second:                                ; Right: first -> second -> View (stereo)
+.previous_field:
+        dec byte [cs:onview]
+        jmp .redraw
+.end_point:
+        or al, 1
+        jmp .pt
+.second:                                ; Start -> End -> View -> Zone -> Count
+        cmp byte [cs:onview], 0
+        jne .next_field
         test al, 1
         jz .sec
         cmp byte [cs:stereo], 0
-        je .sec
+        je .zone_field
         mov byte [cs:onview], 1
+        jmp .redraw
+.zone_field:
+        mov byte [cs:onview], 2
+        jmp .redraw
+.next_field:
+        cmp byte [cs:onview], 3
+        jae .key
+        inc byte [cs:onview]
         jmp .redraw
 .sec:   or al, 1
 .pt:    mov byte [cs:onview], 0
@@ -187,6 +263,14 @@ view:
         jmp .redraw
 .mode:  xor byte [cs:fine], 1
         jmp .redraw
+.up:    cmp byte [cs:onview], 0
+        jne .zin
+        test al, 1
+        jnz .zone_field
+        jmp .zin
+.down:  cmp byte [cs:onview], 2
+        jae .end_point
+        jmp .zout
 .zin:   cmp cx, 1
         jbe .key
         shr cx, 1
@@ -233,23 +317,44 @@ refresh:
         mov byte [cs:full_ok], 1
         jmp draw
 
-; AX = wheel step: fine, the zoom; full, one column (len/240, 1..FFFFh).
+; DX:AX = accumulated wheel step: zoom or max(1,len/240), times the
+; normalized-key repeat count. Saturate at len: further motion would clamp
+; to the same endpoint, and a large burst must not overflow signed move.
 step:
+        xor dx, dx
         mov ax, [cs:zoom]
         cmp byte [cs:fine], 0
         jne .r
-        mov ax, [cs:len]
-        mov dx, [cs:len+2]
+        mov ax, [cs:len+2]
         mov cx, COLS
-        cmp dx, cx
-        jae .big                        ; quotient would overflow DIV
         div cx
-        or ax, ax
+        mov bx, ax
+        mov ax, [cs:len]
+        div cx
+        mov dx, bx
+        or bx, ax
         jnz .r
         inc ax
-        ret
-.big:   mov ax, 0xFFFF
-.r:     ret
+.r:     mov bx, dx
+        mul word [cs:key_repeat]
+        mov cx, ax
+        push dx
+        mov ax, bx
+        mul word [cs:key_repeat]
+        pop bx
+        add ax, bx
+        adc dx, 0
+        jnz .limit
+        mov dx, ax
+        mov ax, cx
+        cmp dx, [cs:len+2]
+        ja .limit
+        jb .done
+        cmp ax, [cs:len]
+        jbe .done
+.limit: mov ax, [cs:len]
+        mov dx, [cs:len+2]
+.done:  ret
 
 ; ES:DI = address of point AL (0..3).
 paddr:
@@ -278,10 +383,9 @@ point:
         mov dx, [es:di+2]
         ret
 
-; Move the selected point by AX (signed). The first point of a pair stays in
+; Move the selected point by DX:AX (signed). The first point of a pair stays in
 ; [0, second], the second in [first, len].
 move:
-        cwd
         mov [cs:delta], ax
         mov [cs:delta+2], dx
         mov al, [cs:sel]
@@ -305,7 +409,8 @@ move:
         mov dx, [cs:len+2]
         mov [cs:hi], ax
         mov [cs:hi+2], dx
-.go:    mov al, [cs:sel]
+.go:    call zones_limits
+        mov al, [cs:sel]
         call paddr
         mov ax, [es:di]
         mov dx, [es:di+2]
@@ -328,6 +433,7 @@ move:
         mov dx, [cs:hi+2]
 .store: mov [es:di], ax
         mov [es:di+2], dx
+        call zones_store
         ret
 
 ; ---------------------------------------------------------------- scan
@@ -568,6 +674,13 @@ text:
 .ch:    mov dl, [cs:si]
         or dl, dl
         jz .end
+        cmp dl, 0x20
+        jb .unknown
+        cmp dl, 0x7E
+        jbe .glyph
+.unknown:
+        mov dl, '?'
+.glyph:
         inc si
         push si
         sub dl, 0x20
@@ -753,6 +866,7 @@ draw:
         mov bx, 9
         mov si, name
         call text
+        call zones_title
         mov si, labels                  ; pair labels and value columns
         test byte [cs:sel], 2
         jz .lab
@@ -818,17 +932,27 @@ draw:
         mov bx, 21
         call text
         mov ax, 57
-        xor bx, bx
+        mov bx, 10
         mov si, s_trim
+        test byte [cs:sel], 2
+        jnz .pairkey
+        mov si, s_zone
+.pairkey:
         call text
         mov ax, 57
-        mov bx, 10
-        mov si, s_zone
+        xor bx, bx
+        mov si, s_play
+        cmp byte [cs:aud_too_short], 0
+        je .playkey
+        mov si, s_short
+.playkey:
         call text
         mov ax, 57
         mov bx, 34
         mov si, s_exit
         call text
+        cmp byte [cs:onview], 2
+        jae zones_focus
         cmp byte [cs:onview], 0         ; View field selected: its cell, rows 49..55
         je .pv
         mov bx, 24 * 6
@@ -851,6 +975,14 @@ draw:
         call invert
         ret
 
+%include "wave_playback.inc"
+%include "wave_numeric.inc"
+%include "wave_zones.inc"
+%include "wave_chop.inc"
+%include "mute_storage.inc"
+%include "mute_voice.inc"
+%include "mute_ui.inc"
+
 ; Per pair: label strings, label columns, value columns.
 labels: dw s_start, s_end, 0, 20, 6, 24
         dw s_zst, s_zend, 0, 19, 8, 28
@@ -867,6 +999,8 @@ s_r:     db "R", 0
 s_zoom:  db "Zoom:00", 0
 s_trim:  db "<Trim>", 0
 s_zone:  db "<Zone>", 0
+s_play:  db "<Ply/Stp>", 0
+s_short: db "Too short", 0
 s_fine:  db "<Full>", 0             ; in fine mode the key goes back to full
 s_full:  db "<Fine>", 0
 s_exit:  db "<Exit>", 0
@@ -876,8 +1010,10 @@ modes:   db "LMFJGUSlsOK", 0            ; mode keys (D547:0006 codes)
 
 align 2
 rec:    dw 0
+page_bp: dw 0
 col:    dw 0
 zoom:   dw 0
+key_repeat: dw 1
 rem:    dw 0
 lab:    dw 0
 sel:    db 0

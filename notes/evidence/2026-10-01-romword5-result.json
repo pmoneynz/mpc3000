@@ -1,0 +1,30 @@
+{
+  "evidence": "notes/evidence/2026-10-01-romword5-result.jpg",
+  "sha256": "4ffac8569f41954a3e23d08803e7bec4604425d730eecbb5bd3aea3ce692ba30",
+  "source": "user photograph IMG_4800.JPG",
+  "report": "ROMWORD5 DONE",
+  "entry_cs": "6900",
+  "reference_sum_expected": "11F8",
+  "reference_sum_actual": "11F8",
+  "compared_reference_linear_range": [
+    "7A000",
+    "7BFFF"
+  ],
+  "different_words_hex": "0507",
+  "different_words_decimal": 1287,
+  "first_different_word_linear": "7A25C",
+  "last_different_word_linear": "7BA00",
+  "expected_words": [
+    "7B91",
+    "7404",
+    "8A09",
+    "B4C2"
+  ],
+  "actual_words": [
+    "7B8F",
+    "7404",
+    "8A09",
+    "B4C2"
+  ],
+  "limitation": "Counts aligned 16-bit word differences in the focused 8 KiB window only. A matching additive reference sum does not prove byte identity. Actual-ROM file coordinates and 24-bit addresses assume reference third PGR with XA=1."
+}

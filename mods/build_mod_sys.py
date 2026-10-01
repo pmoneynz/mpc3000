@@ -27,6 +27,7 @@ import argparse
 import re
 import struct
 import subprocess
+from collections.abc import Mapping
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,19 +66,50 @@ def apply(img: bytearray, patches: list[tuple[int, str, str]]) -> None:
         img[off:end] = new_b
 
 
-def stub() -> bytes:
-    out = OUT / "mod_stub.bin"
-    subprocess.run(["nasm", "-f", "bin", "-o", str(out), str(STUB_ASM)], check=True)
+def _stem(value: str) -> str:
+    if not value or Path(value).name != value:
+        raise ValueError("output stem must be a plain filename")
+    return value
+
+
+def _define_args(defines: Mapping[str, int | str | None] | None) -> list[str]:
+    args: list[str] = []
+    for name, value in (defines or {}).items():
+        if not re.fullmatch(r"[A-Za-z_]\w*", name):
+            raise ValueError(f"invalid NASM define name: {name!r}")
+        args.append(f"-D{name}" if value is None else f"-D{name}={value}")
+    return args
+
+
+def stub(*, dgroup_bytes: int = 0x7C92, exact_bios_path: Path | None = None,
+         stem: str = "mod_stub") -> bytes:
+    if dgroup_bytes <= 0 or dgroup_bytes > 0xFFFF or dgroup_bytes & 1:
+        raise ValueError("DGROUP byte count must be a positive even 16-bit value")
+    stem = _stem(stem)
+    OUT.mkdir(parents=True, exist_ok=True)
+    out = OUT / f"{stem}.bin"
+    defines: dict[str, int | str] = {"DGROUP_BYTES": dgroup_bytes}
+    if exact_bios_path is not None:
+        exact_bios_path = exact_bios_path.resolve()
+        if exact_bios_path.stat().st_size != BIOS[1] - BIOS[0]:
+            raise ValueError("exact BIOS guard must be exactly 32 KiB")
+        bios_text = str(exact_bios_path).replace("\\", "\\\\").replace('"', '\\"')
+        defines["EXACT_BIOS_PATH"] = f'"{bios_text}"'
+    subprocess.run(["nasm", "-f", "bin", *_define_args(defines),
+                    "-o", str(out), str(STUB_ASM)], check=True)
     return out.read_bytes()
 
 
-def cave(src: Path, img: bytes) -> tuple[tuple[int, str, str], dict[str, int]]:
+def cave(src: Path, img: bytes, *, defines: Mapping[str, int | str | None] | None = None,
+         stem: str | None = None) -> tuple[tuple[int, str, str], dict[str, int]]:
     """Assemble src for CAVE_SEG:0000; return its FF->code patch and its labels."""
     OUT.mkdir(parents=True, exist_ok=True)
-    out, map_ = OUT / f"{src.stem}.cave.bin", OUT / f"{src.stem}.cave.map"
-    pre = OUT / "cave_map.inc"
+    output_stem = _stem(stem or src.stem)
+    out, map_ = OUT / f"{output_stem}.cave.bin", OUT / f"{output_stem}.cave.map"
+    pre = OUT / ("cave_map.inc" if stem is None else f"{output_stem}.cave_map.inc")
     pre.write_text(f"[map symbols {map_}]\n")
-    subprocess.run(["nasm", "-f", "bin", "-I", f"{src.parent}/", "-P", str(pre), "-o", str(out), str(src)],
+    subprocess.run(["nasm", "-f", "bin", "-I", f"{src.parent}/",
+                    *_define_args(defines), "-P", str(pre), "-o", str(out), str(src)],
                    check=True)
     code = out.read_bytes()
     if len(code) > CAVE[1] - CAVE[0]:
@@ -104,21 +136,28 @@ def para(n: int) -> int:
     return (n + 15) & ~15
 
 
-def image(img: bytes) -> bytes:
-    code = stub()
+def image(img: bytes, *, dgroup: tuple[int, int] = DGROUP,
+          exact_bios_path: Path | None = None, stem: str = "mod_stub") -> bytes:
+    dgroup_bytes = dgroup[1] - dgroup[0]
+    if not (0 <= dgroup[0] < dgroup[1] <= len(img)):
+        raise ValueError("DGROUP bounds are outside the source image")
+    if CODE[1] > len(img):
+        raise ValueError("OS code bounds are outside the source image")
+    code = stub(dgroup_bytes=dgroup_bytes, exact_bios_path=exact_bios_path, stem=stem)
     fields = len(code) - 6                                  # bios_sum, code_para, dgroup_para
     dgroup_off = para(len(code))
-    code_off = para(dgroup_off + DGROUP[1] - DGROUP[0])
-    bios_sum = sum(struct.unpack_from(f"<{(BIOS[1] - BIOS[0]) // 2}H", img, BIOS[0])) & 0xFFFF
+    code_off = para(dgroup_off + dgroup_bytes)
+    bios_sum = (0 if exact_bios_path is not None else
+                sum(struct.unpack_from(f"<{(BIOS[1] - BIOS[0]) // 2}H", img, BIOS[0])) & 0xFFFF)
     for seg in LOAD_SEGMENTS:
         if 0xB0000 - (seg * 16 + code_off) < 0x4000:
             raise ValueError(f"load segment {seg:04X}: code chunks would overlap in one pass")
-        if seg * 16 + dgroup_off + DGROUP[1] - DGROUP[0] > 0x80100:
+        if seg * 16 + dgroup_off + dgroup_bytes > 0x80100:
             raise ValueError(f"load segment {seg:04X}: DGROUP source overlaps 8010:0000")
     body = bytearray(code_off + CODE[1] - CODE[0])
     body[: len(code)] = code
     struct.pack_into("<3H", body, fields, bios_sum, code_off >> 4, dgroup_off >> 4)
-    body[dgroup_off : dgroup_off + DGROUP[1] - DGROUP[0]] = img[DGROUP[0] : DGROUP[1]]
+    body[dgroup_off : dgroup_off + dgroup_bytes] = img[dgroup[0] : dgroup[1]]
     body[code_off:] = img[CODE[0] : CODE[1]]
     return bytes(body)
 

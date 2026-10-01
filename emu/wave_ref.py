@@ -33,6 +33,10 @@ class View:
     zoom: int = 16
     plane: int = 0              # 0 = L (plane A), 1 = R (plane B)
     onview: bool = False        # View field selected
+    too_short: bool = False     # last Ply/Stp request was below two timer ticks
+    zone_current: int = 1
+    zone_count: int = 16
+    zone_focus: int = 0         # 0 none, 2 current zone, 3 total count
 
 
 def fmt(frames: int) -> str:
@@ -63,7 +67,10 @@ def lines(samples: list[int], v: View) -> list[tuple[int, int]]:
 def _text(lit: list[list[bool]], y: int, col: int, s: str) -> None:
     glyphs = font()
     for i, ch in enumerate(s):
-        for r, bits in enumerate(glyphs[ord(ch)]):
+        code = ord(ch)
+        if not 0x20 <= code <= 0x7E:
+            code = ord("?")
+        for r, bits in enumerate(glyphs[code]):
             for x in range(5):
                 if bits & (0x10 >> x):
                     lit[y + r][(col + i) * 6 + x] = True
@@ -92,6 +99,7 @@ def screen(planes: list[list[int]], name: str, v: View) -> list[str]:
         _invert(lit, COLS // 2, 1, TOP, BOT - TOP + 1)
     _text(lit, 0, 0, "Edit Snd:")
     _text(lit, 0, 9, name.ljust(16))
+    _text(lit, 0, 30, f"ZONE:{v.zone_current:02d}/{v.zone_count:02d}")
     pair = PAIRS[v.sel >> 1]
     for i, (label, lcol, vcol) in enumerate(pair):
         _text(lit, 8, lcol, label)
@@ -104,10 +112,12 @@ def screen(planes: list[list[int]], name: str, v: View) -> list[str]:
     if v.fine:
         _text(lit, 49, 33, f"Zoom:{v.zoom:02d}")
     _text(lit, 57, 21, "<Full>" if v.fine else "<Fine>")
-    _text(lit, 57, 0, "<Trim>")
-    _text(lit, 57, 10, "<Zone>")
+    _text(lit, 57, 10, "<Trim>" if v.sel & 2 else "<Zone>")
+    _text(lit, 57, 0, "Too short" if v.too_short else "<Ply/Stp>")
     _text(lit, 57, 34, "<Exit>")
-    if v.onview:
+    if v.zone_focus:
+        _invert(lit, (35 if v.zone_focus == 2 else 38) * 6, 12, 0, 7)
+    elif v.onview:
         _invert(lit, 24 * 6, 6, 49, 7)
     else:
         _invert(lit, pair[v.sel & 1][2] * 6, 60, 7, 8)

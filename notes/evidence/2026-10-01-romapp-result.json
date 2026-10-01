@@ -1,0 +1,47 @@
+{
+  "source": "/Volumes/MPC3000/Disk_01.IMG",
+  "disk_sha256": "94b3575d6a5291f6ff154fcd37ce3b2552d8398337dc2587c28b295c09fddd29",
+  "capture_sha256": "bc1dd8cd6d59714c1a1b0d4f5145df26a2cfec8be14ca0787f9cbef8c22be1e2",
+  "capture_size": 344064,
+  "word_sum": "7DBA",
+  "both_fat_copies_match": true,
+  "full_cluster_chain_validated": true,
+  "startup_sys_matches_deployed": true,
+  "all_bytes_outside_output_unchanged": true,
+  "reference_file_range": [
+    "20000",
+    "74000"
+  ],
+  "page_sums": [
+    "094E",
+    "43AD",
+    "E000",
+    "E000",
+    "79E6",
+    "64FC",
+    "78E4",
+    "5C93",
+    "574D",
+    "31A9",
+    "2FD5",
+    "5700",
+    "46C0",
+    "C270",
+    "68F8",
+    "6B86",
+    "B0D8",
+    "A498",
+    "AC20",
+    "CA43",
+    "031A"
+  ],
+  "photograph": {
+    "path": "notes/evidence/2026-10-01-romapp-done.jpg",
+    "sha256": "ea86277e3f010f8f109b2af5a940a23b01de3b5f1f5629569b92aef4166512c3",
+    "transcription": [
+      "21 PAGES / 336K WRITTEN",
+      "ROMAPP DONE - POWER OFF / KEEP USB",
+      "WORD SUM 7DBA"
+    ]
+  }
+}

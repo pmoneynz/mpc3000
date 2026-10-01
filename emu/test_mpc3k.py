@@ -8,6 +8,7 @@ missing: see emu/README.md for the pinned MAME build.
 
 from __future__ import annotations
 
+import re
 import shutil
 import struct
 import subprocess
@@ -30,6 +31,7 @@ PETER = MODS / "PETER.img"
 CAVEDEMO = MODS / "CAVEDEMO.img"
 WAVE_START, WAVE_END = 13781, 48000   # mid-sine .. mid-ramp of SINE441
 STEREO_START, STEREO_END = 5000, 30000
+LONG_FRAMES = 240 * 32768       # full-view wheel step has bit 15 set
 LUA = REPO / "emu" / "lua"
 PHOTO_REF = REPO / "emu" / "font" / "photo_play_record.txt"
 
@@ -75,7 +77,75 @@ def snd_disks() -> dict[str, Path]:
     src = RUNS / "WAVEST.SND"
     src.write_bytes(snd("STEREO1", stereo1(), start=STEREO_START, end=STEREO_END))
     out["wave_stereo"] = snd_disk("wave_stereo", [(MODS / "WAVE.SYS", "WAVE.SYS"), (src, "STEREO1.SND")])
+    src = RUNS / "EDGE.SND"
+    src.write_bytes(snd("EDGE", [[12345]]))
+    out["wave_edges"] = snd_disk("wave_edges", [(MODS / "WAVE.SYS", "WAVE.SYS"), (src, "EDGE.SND")])
     return out
+
+
+def wave_edge_script(wave_map: Path | None = None) -> Path:
+    """Inject a long length after the initial one-sample full scan.
+
+    The full-view cache then lets the wheel exercise a 32-bit step without
+    making every regression copy 15 MiB from wave RAM.  After recording the
+    moved point, make the same sound empty for the reopen/empty-view check.
+    """
+    map_text = (wave_map or MODS / "wave.cave.map").read_text()
+    match = re.search(r"^\s*[0-9A-Fa-f]+\s+([0-9A-Fa-f]+)\s+len$", map_text, re.M)
+    if match is None:
+        raise RuntimeError("wave.cave.map has no len symbol")
+    len_off = int(match.group(1), 16)
+    path = RUNS / "wave_edges.lua"
+    probe = (REPO / "emu" / "probe.lua").as_posix()
+    path.write_text(f"""local machine = manager.machine
+local cpu = machine.devices[\":maincpu\"]
+local iosp = cpu.spaces[\"io\"]
+local prog = cpu.spaces[\"program\"]
+local out = os.getenv(\"PROBE_OUT\") or \".\"
+local function phys(seg, off)
+    local a = ((seg << 4) + off) & 0xfffff
+    if cpu.state[\"XA\"].value ~= 0 then
+        return ((iosp:read_u16(0xff00 + (a >> 14) * 2) & 0x3ff) << 14) | (a & 0x3fff)
+    end
+    return a
+end
+local function rd8(seg, off) return prog:read_u8(phys(seg, off)) end
+local function rd32(seg, off)
+    return rd8(seg, off) | (rd8(seg, off + 1) << 8) |
+           (rd8(seg, off + 2) << 16) | (rd8(seg, off + 3) << 24)
+end
+local function wr32(seg, off, value)
+    for i = 0, 3 do prog:write_u8(phys(seg, off + i), (value >> (8 * i)) & 0xff) end
+end
+local injected, captured, saved = false, false, false
+emu.register_periodic(function()
+    local now = machine.time:as_double()
+    if not injected and now >= 80.5 then
+        wr32(0xa2ae, 0x4818, {LONG_FRAMES})
+        wr32(0xa2ae, 0x481c, {LONG_FRAMES})
+        wr32(0xf07d, 0x{len_off:x}, {LONG_FRAMES})
+        injected = true
+    end
+    if injected and not captured and now >= 82.5 then
+        local f = assert(io.open(out .. \"/wave_edges.txt\", \"w\"))
+        f:write(string.format(\"after_plus=%u end=%u len=%u\\n\",
+            rd32(0xa2ae, 0x4814), rd32(0xa2ae, 0x4818), rd32(0xa2ae, 0x481c)))
+        f:close()
+        captured = true
+    end
+    if injected and not saved and now >= 85.0 then
+        local f = assert(io.open(out .. \"/wave_edges.txt\", \"a\"))
+        f:write(string.format(\"after_minus=%u\\n\", rd32(0xa2ae, 0x4814)))
+        f:close()
+        wr32(0xa2ae, 0x4814, 0)
+        wr32(0xa2ae, 0x4818, 0)
+        wr32(0xa2ae, 0x481c, 0)
+        saved = true
+    end
+end)
+dofile(\"{probe}\")
+""")
+    return path
 
 
 def text(screen: dict) -> str:
@@ -134,6 +204,20 @@ CASES = {
                             (81, "Y5", "Right Arrow"), (82, "Y5", "Right Arrow"), (86, "Y5", "Left Arrow"),
                             (88, "Y4", "Soft Key 3"), (91, "Y4", "Soft Key 4"))],
                         panel=[dial(1, 84.0)]),
+    # A real sound record, mutated after the first cheap full scan: wheel + must use
+    # the unsigned 32-bit len/240 step. Main Screen leaves the mode; reopen with an
+    # empty length must render safely and Soft Key 4 must return to Edit Sound.
+    "wave_edges": dict(bios="vailixi", board_mb=32, times=[79.5, 86, 94, 98], floppy=None,
+                       press=[(t, port, key, 0.1) for t, port, key in (
+                           (62, "Y0", "Disk"), (63.5, "Y0", "7"), (65.5, "Y3", "Soft Key 1"),
+                           (74, "Y0", "Program/Sounds"), (75.5, "Y1", "6"), (77.5, "Y6", "Help"),
+                           (84, "Y6", "Main Screen"), (88, "Y0", "Program/Sounds"),
+                           (89.5, "Y1", "6"), (91, "Y6", "Help"), (96, "Y4", "Soft Key 4"))],
+                       panel=[dial(1, 82.0), dial(-1, 83.0)]),
+    # Help on Edit Sound with DI=-1 must remain on the stock no-sounds page.
+    "wave_no_sound": dict(bios="vailixi", times=[74, 77], floppy=None,
+                          press=[(68, "Y0", "Program/Sounds", 0.1), (70, "Y1", "6", 0.1),
+                                 (75, "Y6", "Help", 0.1)]),
     # Code cave: stock EPROM boot and Route A, each visiting Edit Sound, both graphic mixers, Disk, Other.
     **{n: dict(bios="vailixi", times=[t + 22], floppy=f, extra=["-autoboot_script", str(LUA / "cave_watch.lua")],
                press=[(t + 2 * i, port, key, 0.1) for i, (port, key) in enumerate((
@@ -164,7 +248,9 @@ class Mpc3kBoot(unittest.TestCase):
                      ["build_mod_sys.py", "@mods/CAVEDEMO.args"], ["build_mod_sys.py", "@mods/WAVE.args"]):
             subprocess.run([sys.executable, str(REPO / "mods" / args[0]), *args[1:]], cwd=REPO,
                            check=True, capture_output=True)
-        disks = {"os316": floppy_316(), **loader_disks(), **snd_disks()}
+        CASES["wave_edges"]["extra"] = ["-autoboot_script", str(wave_edge_script())]
+        disks = {"os316": floppy_316(), "wave_no_sound": MODS / "WAVE.img",
+                 **loader_disks(), **snd_disks()}
         for name in CASES:
             key = "os316" if name.startswith("os316") else name
             if key in disks:
@@ -263,21 +349,22 @@ class Mpc3kBoot(unittest.TestCase):
         wave = sine441()[0]
         a3, b = WAVE_START + 3 * (len(wave) // 240), WAVE_END
         View = wave_ref.View
-        for t, view in (("80.000", View([WAVE_START, b, 0, 0])), ("82.500", View([a3, b, 0, 0])),
-                        ("84.500", View([a3, b, 0, 0], fine=True)),
-                        ("86.500", View([a3 + 32, b, 0, 0], fine=True)),
-                        ("88.500", View([a3 + 32, b, 0, 0], fine=True, zoom=8)),
-                        ("90.500", View([a3 + 32, b, 0, 0], sel=2, fine=True, zoom=8)),
-                        ("92.500", View([a3 + 32, b, 0, 0], sel=3, fine=True, zoom=8)),
-                        ("94.500", View([a3 + 32, b, 0, 40], sel=3, fine=True, zoom=8)),
-                        ("96.500", View([a3 + 32, b, 0, 40], sel=3, zoom=8))):
+        first_zone_end = len(wave) // 16
+        for t, view in (("80.000", View([WAVE_START, b, 0, first_zone_end])), ("82.500", View([a3, b, 0, first_zone_end])),
+                        ("84.500", View([a3, b, 0, first_zone_end], fine=True)),
+                        ("86.500", View([a3 + 32, b, 0, first_zone_end], fine=True)),
+                        ("88.500", View([a3 + 32, b, 0, first_zone_end], fine=True, zoom=8)),
+                        ("90.500", View([a3 + 32, b, 0, first_zone_end], sel=2, fine=True, zoom=8)),
+                        ("92.500", View([a3 + 32, b, 0, first_zone_end], sel=3, fine=True, zoom=8)),
+                        ("94.500", View([a3 + 32, b, 0, first_zone_end + 40], sel=3, fine=True, zoom=8)),
+                        ("96.500", View([a3 + 32, b, 0, first_zone_end + 40], sel=3, zoom=8))):
             with self.subTest(t=t):
                 self.assertEqual(pixels[t], wave_ref.screen([wave], "SINE441", view))
         before, after, help_screen = screens[0]["rows"], screens[-2]["rows"], screens[-1]["rows"]
         self.assertIn("Soft st :000.312.22", before[2])
         self.assertIn(f"Soft st :{wave_ref.fmt(a3 + 32)}", after[2])
         self.assertIn(f"Soft end:{wave_ref.fmt(b)}", after[3])
-        self.assertIn("Zone end:000.000.40", after[3])
+        self.assertIn(f"Zone end:{wave_ref.fmt(first_zone_end + 40)}", after[3])
         self.assertIn("Help", help_screen[0])
 
     def test_wave_view_field_selects_plane(self) -> None:
@@ -293,6 +380,28 @@ class Mpc3kBoot(unittest.TestCase):
         after = self.results["wave_stereo"][-1]["rows"]
         self.assertIn("(ST)", after[0])
         self.assertIn(f"Soft st :{wave_ref.fmt(STEREO_START)}", after[2])
+
+    def test_wave_view_long_step_empty_sound_and_mode_exits(self) -> None:
+        state = dict(field.split("=") for field in
+                     (RUNS / "wave_edges" / "wave_edges.txt").read_text().split())
+        self.assertEqual(state, {"after_plus": str(LONG_FRAMES // 240),
+                                 "end": str(LONG_FRAMES), "len": str(LONG_FRAMES),
+                                 "after_minus": "0"})
+
+        screens = self.results["wave_edges"]
+        self.assertEqual(screens[1]["rows"][0].replace(".", " "), MAIN_SCREEN)
+        self.assertIn("Edit Snd:EDGE", screens[-1]["rows"][0])
+        self.assertIn("Length:000.000.00", screens[-1]["rows"][4])
+
+        blocks = (RUNS / "wave_edges" / "lcd_pixels.txt").read_text().split("@ ")[1:]
+        pixels = {b.split()[0]: b.splitlines()[1:65] for b in blocks}
+        self.assertEqual(pixels["94.000"], wave_ref.screen([[]], "EDGE", wave_ref.View([0, 0, 0, 0])))
+
+    def test_wave_view_help_is_safe_when_there_are_no_sounds(self) -> None:
+        before, after = self.results["wave_no_sound"]
+        self.assertIn("Edit Snd:(no sounds)", before["rows"][0])
+        self.assertEqual(after["rows"], before["rows"])
+        self.assertIn("40x8", after["head"])
 
     def test_synthetic_snd_loads_into_wave_ram(self) -> None:
         for name, title, length, planes in (("snd_mono", "Edit Snd:SINE441", "001.250.00", sine441()),
