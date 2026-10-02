@@ -1,0 +1,34 @@
+{
+  "photograph": {
+    "path": "notes/evidence/2026-10-01-wavehw-fine.jpg",
+    "source_name": "IMG_4805.JPG",
+    "sha256": "3c8c70abf36d6019cbc30e494c47881315aff1c79c05de12cdab3c58feb96f43"
+  },
+  "visible_text": [
+    "Edit Snd:SINE441",
+    "Start:000.000.00",
+    "End:001.250.00",
+    "Length:001.250.00",
+    "Zoom:16",
+    "<Trim>",
+    "<Zone>",
+    "<Full>",
+    "<Exit>"
+  ],
+  "selected_field": "Start",
+  "proven_one_physical_execution": [
+    "fine view displayed at Zoom16",
+    "Start selected at zero",
+    "individual sine cycles visible to right of central boundary",
+    "out-of-range left half displayed as flat zero line"
+  ],
+  "interpretation": "Matches centered fine window: sample index = selected point + (column-120)*16. At Start=0, columns0..119 are before sample zero; remaining120columns cover1920 samples, about19.2 cycles of the period100 sine. Qualitative photo agreement only.",
+  "undetermined": [
+    "Up/Down zoom adjustment",
+    "wheel edits and stock-page numeric persistence",
+    "exit/reopen",
+    "audition",
+    "stereo plane identity",
+    "timing"
+  ]
+}

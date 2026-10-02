@@ -1,5 +1,143 @@
 # Audited project status
 
+**2026-10-02 review fixes merged (not yet built as a release):** an
+adversarial review of BENCH 06 and its fixes are in the sources. CHOP ZONE now
+honours the stock Edit Sound safe lock and mute-audio settings and keeps the
+saved list selection; numeric entry no longer reorders fast-typed digits; the
+mute trigger context lives on the note-on wrapper's stack instead of in
+globals; mute storage range-checks program indices; Apply All asks and only
+soft key 3 applies; the APS save budget is 49 KB (three stock patches) so a
+near-full disk refuses instead of losing the file; the wave view keeps a
+separate full-view cache and inverts by column. Builders share
+`mods/buildkit.py`, derive the capture patch list from `WAVE.args`, and check
+every cave far target against the captured ROM. PROVEN in MAME: 135 emulator
+tests in 22 suites with skips forbidden, 67 builder tests, 171 boot checks;
+payloads are built from current sources per run (`emu/harness.py`). Cave
+12,804 of 14,384 bytes. The `build/mods` BENCH 06 artifacts predate these
+changes and were deliberately not rebuilt. Physical behaviour is
+UNDETERMINED. Cross-task mute interleaving, CHOP rollback after a late
+allocator failure, and wheel bursts beyond the 8-key stock queue remain
+without a hardware observation.
+
+**2026-10-01 WAVE BENCH 06 ready:** four program-level mute groups, per-pad
+Off/1-4, enable, Apply All, and PGM/APS persistence are implemented. End Up
+selects Zone; Down returns to End, including typed End acceptance. PROVEN:
+95 final emulator tests, 171 boot checks, exact disk/FAT/ROM/relocation checks,
+and DRUMS preview. BENCH 05 remains on USB; BENCH 06 is prepared, not deployed.
+Physical BENCH 06 behavior is UNDETERMINED. See notes/mute_groups.md,
+notes/waveform_bench.md and build/mods/WAVEHW-validation.json.
+
+**2026-10-01 WAVE BENCH 05 ready:** shared 1–16 zone editing and
+Do:CHOP ZONE are implemented. Current/total fields use cursor and wheel/+−;
+created sounds preserve exact PCM, stereo and volume/tune. PROVEN: 65 final
+emulator tests, including stock stereo save/cold reload, plus 171 boot checks
+and full four-file disk/relocation validation. The DRUMS preview uses the
+exact final image. Chopping requires >=441 frames (10 ms) per zone. Maps last
+for the current Edit Sound session; resulting sounds save normally. BENCH 05 is
+installed in USB slot 1, readback verified and safely ejected. Physical
+behavior is UNDETERMINED. See
+notes/waveform_bench.md and build/mods/WAVEHW-validation.json.
+
+**2026-10-01 WAVE BENCH 04 prepared:** waveform keys now read 1 Ply/Stp,
+2 Trim/Zone, 3 Fine/Full, 4 Exit. Playback/numeric behavior is unchanged.
+PROVEN: 13 emulator regressions, 171 boot checks and full disk/relocation
+validation pass. The image is prepared for emulator display review;
+USB remains on BENCH 03. Physical BENCH 04 behavior is UNDETERMINED.
+See notes/waveform_bench.md for hashes and evidence.
+
+**2026-10-01 WAVE BENCH 03:** stock numeric entry and visible-selection
+Play X are implemented and deployed to FlashFloppy slot 1, retaining DRUMS,
+SINE441 and STEREO1. 43 emulator regressions and 171 boot-slice checks pass;
+image/FAT/relocation and USB readback are verified. WAVE-only call-chain
+hooks remove stock's 30 ms early cutoff; playback still uses the 10 ms
+timer and rejects intervals below two ticks as Too short. Earlier BENCH 02
+full/Fine editing is physically observed; BENCH 03 numeric/audio behavior
+awaits the next machine test. See notes/waveform_bench.md, wave_numeric.md
+and wave_playback.md. The prior working image is preserved for rollback.
+
+**2026-10-01 physical editing/exit:** IMG_4806/4807 show the 16-frame
+Start edit in the custom view and the same Soft st after returning to
+stock Edit Sound. User reports editing works. RAM edit persistence across
+this exit is PROVEN; disk save/reload and broader cases remain open.
+
+**2026-10-01 physical fine view:** IMG_4805.JPG shows SINE441 at Zoom16,
+Start selected at zero, expected left out-of-range zero line and right
+sine cycles. Full/fine rendering and Start selection are now observed.
+Wheel edits, exit/reopen, zoom changes, audition and stereo remain open.
+Evidence: notes/evidence/2026-10-01-wavehw-fine-result.json.
+
+**2026-10-01 first physical waveform display:** IMG_4803.JPG shows the
+custom SINE441 full view with correct 1.250-second duration and expected
+sine/silence/ramp sections. First feature execution/display is PROVEN
+for this run; fine zoom, edits, exits, audition and stereo remain pending.
+Evidence: notes/evidence/2026-10-01-wavehw-sine441-result.json.
+
+**2026-10-01 WAVE BENCH 02 ready:** ROMAPP completed physically; its
+336 KiB capture is verified (sum 7DBA). WAVEHW uses that exact captured
+OS/DGROUP and an exact 32 KiB BIOS guard, with six verified RAM-offset
+changes. Five focused emulator tests, independent FAT/relocation review,
+19 probe regressions and 171 boot checks pass. USB slot 1 is installed,
+read back and safely ejected. Next: boot to WAVE BENCH 02 / Play-Record,
+load SINE441, then Program/Sounds -> 6 -> Help. Physical waveform
+qualification remains pending. See notes/wave_physical_profile.md.
+
+**2026-10-01 ROMAPP ready:** captured BIOS confirms the generic WAVE
+ABI is incompatible. A guarded 336 KiB application/data capture is
+validated in MAME, installed in USB slot 1, and safely ejected. It
+excludes the NVRAM page. The next physical run should reach ROMAPP
+DONE; then return the USB for extraction. Reference MSO restoration
+is verified and all 171 boot-slice checks pass.
+
+**2026-10-01 captured physical BIOS:** ROMDUMP returned 32 KiB,
+SHA-256 2c654334e011af2943d1d08f05e3ce48ebccdf49600aab7a2f040ba016c21168.
+All prior measurements match. 2,494 bytes differ; AMX public entries
+shift by -0xA, DGROUP length is 7C90, and init table is F076. The
+generic WAVE ABI is incompatible; guard remains intact. Details in
+notes/rom_compatibility.md.
+
+**2026-10-01 focused physical result:** ROMWORD5 completed: 0x0507
+(1,287) differing words, first 7A25C / last 7BA00. The first change
+is a DGROUP classification-table displacement, 7B91 -> 7B8F. Keep
+the WAVE guard; physical ROM bytes are needed before compatibility
+work. ROMDUMP is validated and installed on USB slot 1, safely
+ejected; next run saves high-ROM BIOS.BIN for analysis. Evidence:
+notes/rom_compatibility.md.
+
+**2026-10-01 comparison checkpoint:** ROMCHECK4 shows CS=6900, SUM
+DONE, and NEXT OFFSET 2400. The user confirms successful M3K316.SYS
+loading on this same machine/FlashFloppy. ROMWORD5 now compares the
+two changed blocks with aligned word reads; verified on USB slot 1
+and safely ejected. Exact ROM differences remain pending.
+
+**2026-10-01 comparator follow-up:** ROMCHECK3 stayed at ENTER for
+over 30 seconds. Cause unresolved; ROMCHECK4 now adds stage and scan
+progress markers. It is verified on USB slot 1 and safely ejected.
+
+**2026-10-01 ROMSUM2 result:** physical diagnostic completed with sum
+81A0 (reference 8634). Blocks corresponding to file 7A000 and 7B000
+have different sums. ROMCHECK3 is on USB slot 1 for byte comparison,
+verified and safely ejected. Compatibility remains unresolved.
+
+**2026-10-01 diagnostic follow-up:** the first ROMCHECK stayed on
+Loading files. Its forbidden PGR reads and directory metadata were
+corrected; the exact hardware stopping point is still undetermined.
+A 353-byte ROMSUM2 probe is verified on USB slot 1 and safely ejected,
+awaiting the next LCD photograph.
+
+**2026-10-01 bench follow-up:** physical WAVE startup halted at the BIOS
+checksum guard on the personalized Vailixi 3.50 machine. The waveform
+feature did not run. Compatibility diagnosis is in
+[`notes/rom_compatibility.md`](notes/rom_compatibility.md).
+
+**2026-10-01 hardware/mod update:** the Route B canary marker was observed
+on Peter's physical MPC3000, loaded through FlashFloppy (**PROVEN**, user
+report and photo). WAVE bench preparation corrects signed wheel movement
+on long sounds and adds a marked image with disposable mono/stereo sounds.
+Route A/WAVE hardware behavior remains **UNDETERMINED**. See
+[`notes/waveform_bench.md`](notes/waveform_bench.md) for the evidence,
+validation, USB manifest, and bench procedure. The baseline below describes
+reverse-engineering coverage; it is not a summary of the latest mods.
+
 **2026-09-21.** Target: Vailixi OS 3.50 linear
 `a52b7122bf40d020544300bb270afb815e99c1969847a28d457ce727bbe770c9`.
 

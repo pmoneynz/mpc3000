@@ -24,8 +24,11 @@ make SUBTARGET=mpc3k SOURCES=src/mame/akai/mpc3000.cpp TOOLS=0 NOWERROR=1 -j14
 When the driver changes: commit and push the fork, then update the pinned
 commit here in the same change as the tests that depend on it.
 
-Without the binary, `emu.test_mpc3k` is skipped (not failed). It also needs
-`nasm` and `mtools`.
+Without the binary, the emulator suites are skipped (not failed). They also
+need `nasm` and `mtools`. Under `MPC3K_RELEASE=1` a missing tool or fixture is
+an error instead of a skip; `python3 -m emu.harness_release [suites]` sets it,
+runs the suites in sequence and fails unless the summary line says
+`skipped=0` with no failures, errors or expected failures.
 
 ## ROM set
 
@@ -67,9 +70,61 @@ Extra probes in `emu/lua/`, passed as
 |--------|-------|
 | `pgr_watch.lua` | Page table words 44–60 on every change (RAM `0EC…` vs ROM `02C…`) |
 | `loader_bp.lua` | Which floppy-loader call sites fire (needs `-debug -debugger none -log`) |
-| `snddump.lua` | Sound records `A2AE:4800` and each sound's wave RAM words at every snapshot time (`snd_dir.log`, `wave_<t>_idx<i>.bin`) |
+| `snddump.lua` | Sound records `A2AE:4800` and each sound's wave RAM words at every snapshot time (`snd_dir.log`, `wave_<t>_idx<i>.bin`; `SNDDUMP_PCM=0` for the directory only) |
 | `wcu_dump.lua` | V53 wait control / refresh registers after 1 s (`wcu.txt`) |
 | `cave_watch.lua` | Reads (including fetches) and writes of the code cave in EPROM and in the Route A RAM copy (`cave.txt`) |
+
+## WAVE / MUTE GROUPS suites (`emu/harness.py`)
+
+Every WAVE and MUTE GROUPS suite gets its payload from `harness.payload()`:
+it assembles the cave and builds the SYS from the current sources into
+`build/emu/harness-payloads/<source digest>/<profile>/` (both builders are
+called with `out=` a private directory: `build_mod_sys.build(..., out)` and
+`build_wave_physical.build(out=...)`; `build/mods` release artifacts are never
+read or written). The digest covers `mods/*.inc`, `mods/*.asm`, both
+builders, `mods/buildkit.py`, `WAVE.args`, the 3.50 chips, the hash-pinned
+captures and the NASM version; a rebuild with the same digest must give the same bytes. Each
+suite logs `STARTUP.SYS sha256=...` to stderr and to
+`<runs>/payload-<profile>.json`, and every disk image is read back to prove
+its `STARTUP.SYS` is that payload. Suites therefore do not depend on
+discovery order or on earlier builds.
+
+| Profile | Payload | Romset |
+|---------|---------|--------|
+| `capture` | `build_wave_physical.build()` (`WAVE_CAPTURE_20261001`) | composite: captured ranges over the reference interleave |
+| `generic` | `mods/WAVE.args` on the 3.50 interleave | `build/roms` |
+
+`harness.EmuSuite` runs a suite's cases on `capture` and its `GENERIC`
+subset on `generic`. Environment: `MPC3K_GENERIC=all` runs every case on
+both; `MPC3K_PROFILES=capture` (or `generic`) and `MPC3K_CASES=a,b` narrow a
+development run; `MPC3K_TIMEOUT_SCALE` scales the per-run wall-time limit
+(`emu/mpc3k.py` kills MAME after `240 + 8 * last probe time` seconds and
+checks that one screen was captured per requested time).
+
+Timeline: Soft Key 4 at 20 s cancels the SCSI search; `<Load>` of the disk's
+sound at 26.5 s; the wave view is open from `harness.VIEW` = 40 s for sounds
+up to ~170 KB. `harness.burst(n, t)` sends wheel events 1 ms apart, which the
+stock reader coalesces (the stock key queue holds 8 keys, so bursts of up to
+9 apply exactly whatever the redraw time; see `emu/test_harness_bursts.py`
+for which assertions also depend on a redraw outlasting the burst).
+
+Observers are composed by `harness.observer(profile, path, parts)` from
+`emu/lua/<part>.lua` with a preamble defining `CAVE` (every symbol of that
+profile's map) and `DG` (its DGROUP offsets); all parts only read state:
+
+| Part | Writes |
+|------|--------|
+| `repeat_watch` | `repeat.log`: every `key_repeat`/`mu_repeat` store with its value, key-queue capacity |
+| `wave_zones` | `zones.jsonl`, `records_<t>.bin` |
+| `snddump` | `snd_dir.log`, `wave_<t>_idx<i>.bin` (`SNDDUMP_PCM=0` or a time list limits PCM) |
+| `wave_playback` | `wave_playback.log`: BOUNDREAD/BOUNDWRITE, STARTREG/KEYON, D213/D21F, WAV windows (`PLAYBACK_WAV`) |
+| `mute_voice`, `mute_ui` | mute tag/stop log; mute page state |
+
+`<t>` in file names is the probe time formatted as `%g` (79.5 and 80.5 stay
+distinct). New suites: `test_harness_bursts` (coalesced point motion and
+saturation), `test_harness_long` (220,500-frame sound, 32-bit paths),
+`test_harness_lifecycle` (stock Do 0-9, zone-pair import, A->B->A, sound
+delete).
 
 ## Front panel
 

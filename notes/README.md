@@ -1,11 +1,19 @@
 # Notes
 
+- [Waveform playback](wave_playback.md): stock audition ABI and pad-dispatch boundary.
+
 Load-bearing analysis for Vailixi OS 3.50. New notes must close a named
 uncertainty or correct a proven error. Status of the project:
 [`../STATUS.md`](../STATUS.md).
 
 | Note | Role |
 |------|------|
+| [`rom_compatibility.md`](rom_compatibility.md) | Physical personalized 3.50 guard rejection and ROM comparison diagnostic |
+| [`waveform_bench.md`](waveform_bench.md) | First physical canary result, waveform review, bench image and procedure |
+| [`waveform_engine.md`](waveform_engine.md) | Help-on-Edit-Sound waveform feature, point editing, zoom and stereo planes |
+| [`mute_groups.md`](mute_groups.md) | BENCH 06 controls, menu hooks, UI execution evidence |
+| [`mute_voice.md`](mute_voice.md) | Shared note-on/voice allocator hooks and group choking |
+| [`mute_storage.md`](mute_storage.md) | Program state lifetime and PGM/APS extensions |
 | [`artifact_identity.md`](artifact_identity.md) | What the bytes are |
 | [`address_model.md`](address_model.md) | How those bytes are addressed |
 | [`boot_reset_to_bios_banner.md`](boot_reset_to_bios_banner.md) | First connected slice |

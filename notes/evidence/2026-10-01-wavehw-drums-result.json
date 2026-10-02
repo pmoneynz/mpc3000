@@ -1,0 +1,13 @@
+{
+  "photograph": "notes/evidence/2026-10-01-wavehw-drums.jpg",
+  "sha256": "19a09af4127c590a1d87a4fcf4411d5c39672ba68a4e9e5c52b2a3cf86b93355",
+  "user_report": "Drums look cool and accurate. Waveform editing full and fine performs correctly.",
+  "visible": {
+    "sound": "DRUMS",
+    "start": "000.010.43",
+    "end": "001.271.06",
+    "length": "001.271.06",
+    "view": "L"
+  },
+  "scope": "User-reported successful full/fine waveform editing of real drum sound plus one photographed full view; no audition or numeric keypad entry tested yet."
+}

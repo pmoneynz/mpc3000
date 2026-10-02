@@ -1,0 +1,17 @@
+{
+  "evidence": "2026-10-01-romcheck4-compare-2400.jpg",
+  "reported_cs": "6900",
+  "entry_returned": true,
+  "sum_completed": true,
+  "last_compare_next_offset": "2400",
+  "next_checkpoint_offset": "2800",
+  "diagnostic_reference_body_offset": "06CC",
+  "conditional_reference_access_20bit": "6BACC",
+  "conditional_reference_access_24bit": "36BACC",
+  "rom_operand": "F800:2400",
+  "rom_operand_20bit": "FA400",
+  "conditional_rom_operand_24bit": "0FA400",
+  "corresponding_reference_file_offset": "7A400",
+  "boundary": "Stop is within/after last checkpoint, not an exact PC; next reference-page boundary at offset2934 lies after this chunk. Physical PGR contents unknown.",
+  "additional_user_report": "M3K316.SYS loaded correctly on this same machine using the same FlashFloppy."
+}

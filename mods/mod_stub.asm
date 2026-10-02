@@ -9,6 +9,9 @@ bits 16
 org 0
 
 %define CODE_CHUNKS 17                  ; 0x44000 / 0x4000: logical 0xB0000-0xF3FFF
+%ifndef DGROUP_BYTES
+%define DGROUP_BYTES 0x7C92
+%endif
 
 start:
         cli
@@ -21,6 +24,16 @@ start:
         mov ax, 0xF800
         mov es, ax
         xor si, si
+%ifdef EXACT_BIOS_PATH
+        mov di, expected_bios
+        mov cx, 0x4000
+.guard: mov ax, [es:si]
+        cmp ax, [di]
+        jne wrong_bios
+        add si, 2
+        add di, 2
+        loop .guard
+%else
         xor bx, bx
         mov cx, 0x4000
 .sum:   add bx, [es:si]
@@ -29,6 +42,7 @@ start:
         loop .sum
         cmp bx, [bios_sum]
         jne wrong_bios
+%endif
 
         ; OS code, top chunk first: every source chunk that a destination
         ; chunk overlaps has a higher index and is already copied.
@@ -60,7 +74,7 @@ start:
         mov es, ax
         xor si, si
         xor di, di
-        mov cx, 0x7C92 / 2
+        mov cx, DGROUP_BYTES / 2
         rep movsw
 
         ; Rejoin the reset path after the DGROUP copy and second PGR load.
@@ -80,7 +94,15 @@ wrong_bios:
         jmp .put
 .halt:  jmp .halt
 
+%ifdef EXACT_BIOS_PATH
+msg:    db 13, 10, "Mod ROM mismatch", 0
+
+align 2
+expected_bios:
+        incbin EXACT_BIOS_PATH
+%else
 msg:    db 13, 10, "Mod needs Vailixi 3.50 EPROMs", 0
+%endif
 
 ; Patched by build_mod_sys.py.
 align 2

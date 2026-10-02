@@ -1,0 +1,145 @@
+"""32-bit paths on a really loaded 220,500-frame sound (5 s, above 16 bits).
+
+Run: python3 -m unittest emu.test_harness_long -v
+
+One run per profile loads LONG.SND through Disk / 7 / <Load> (no RAM pokes)
+and checks, against emu/wave_ref.py or exact arithmetic:
+
+- full and fine view pixels with points above 65,535;
+- the 16- and 3-way zone divisions of a length above 16 bits;
+- point motion whose result carries from 65,000 across 65,536;
+- numeric commit of 2.000.00 = 88,200 frames;
+- an audition whose start (88,200) is above 65,535: the stock player's own
+  reads of the record bounds and the DSP start address;
+- CHOP ZONE with source offsets 73,500 and 147,000, PCM compared.
+"""
+from __future__ import annotations
+
+import math
+from pathlib import Path
+import unittest
+
+from emu import harness as h
+from emu import wave_ref
+from emu.harness import burst, pcm, sound_records, taps, zone_rows
+from emu.panel import dial
+from emu.snd import snd
+from emu.test_wave_chop import do_action
+from emu.test_wave_playback import parse_events
+
+ROOT = Path(__file__).resolve().parents[1]
+RUNS = ROOT / "build/emu/harness-long-tests"
+L = 220_500
+STEP = L // 240                     # 918
+START, END = 65_000, 200_000
+NUMERIC = 2 * 44_100
+# 441 KB loads in about 16 s; the full view then scans all 220,500 frames.
+VL = 58.0
+
+
+def long_wave() -> list[list[int]]:
+    """441 Hz sine under a linear envelope: distinct columns everywhere."""
+    return [[round(30000 * (i / L) * math.sin(2 * math.pi * i / 100)) for i in range(L)]]
+
+
+class Long(h.EmuSuite):
+    RUNS = RUNS
+    GENERIC = frozenset({"long"})
+    WORKERS = 2
+
+    @classmethod
+    def cases(cls, profile, runs):
+        src = runs / "LONG.SND"
+        if not src.exists():
+            src.write_bytes(snd("LONG", long_wave(), start=START, end=END))
+        events = (burst(5, VL + 1)                                       # Start 65000 -> 69590
+                  + taps((VL + 3, "soft3"), (VL + 5, "soft3"))            # Fine, then Full
+                  + taps((VL + 8, "2"), (VL + 9, "right"), (VL + 10, "0"), (VL + 11, "right"),
+                         (VL + 12, "0"), (VL + 13, "enter"))              # Start = 2.000.00
+                  + taps((VL + 15, "soft1"), (VL + 16, "soft1"))          # audition, stop
+                  + taps((VL + 18, "right"), (VL + 19, "right"), (VL + 20, "right"))
+                  + dial(-13, VL + 21)                                    # 16 -> 3 zones
+                  + do_action(VL + 24))                                   # CHOP ZONE
+        return {"long": h.Case(
+            events=h.wave_events(events, view_at=VL - 6),
+            times=[VL, VL + 2.5, VL + 4.5, VL + 14.5, VL + 17, VL + 23, VL + 43],
+            files=[(src, "LONG.SND")],
+            parts=("repeat_watch", "wave_zones", "snddump", "wave_playback"),
+            env={"SNDDUMP_PCM": f"{VL},{VL + 43}", "PLAYBACK_WATCH_FROM": str(VL - 1)})}
+
+    def test_full_and_fine_pixels_above_16_bits(self):
+        planes = long_wave()
+        for prof, d, screens in self.each("long"):
+            with self.subTest(profile=prof):
+                px = h.lcd_pixels(d)
+                zone = [0, L // 16]
+                self.assertEqual(px[f"{VL:.3f}"], wave_ref.screen(
+                    planes, "LONG", wave_ref.View([START, END, *zone])))
+                moved = START + 5 * STEP
+                self.assertEqual(px[f"{VL + 2.5:.3f}"], wave_ref.screen(
+                    planes, "LONG", wave_ref.View([moved, END, *zone])))
+                self.assertEqual(px[f"{VL + 4.5:.3f}"], wave_ref.screen(
+                    planes, "LONG", wave_ref.View([moved, END, *zone], fine=True)))
+
+    def test_point_motion_carries_across_16_bits(self):
+        for prof, d, _ in self.each("long"):
+            with self.subTest(profile=prof):
+                records = sound_records(d, VL + 2.5)[0]
+                self.assertEqual((records["start"], records["end"], records["length"]),
+                                 (START + 5 * STEP, END, L))
+                self.assertGreater(START + 5 * STEP, 0xFFFF)
+                self.assertEqual(sum(h.repeats(d, start=VL + 1, end=VL + 2)), 5)
+
+    def test_zone_divisions_above_16_bits(self):
+        for prof, d, _ in self.each("long"):
+            with self.subTest(profile=prof):
+                r = zone_rows(d)
+                self.assertEqual(r[VL]["bounds"], [L * i // 16 for i in range(17)])
+                self.assertEqual(r[VL + 23]["count"], 3)
+                self.assertEqual(r[VL + 23]["bounds"][:4], [0, 73_500, 147_000, L])
+
+    def test_numeric_commit_above_16_bits(self):
+        for prof, d, screens in self.each("long"):
+            with self.subTest(profile=prof):
+                self.assertEqual(sound_records(d, VL + 14.5)[0]["start"], NUMERIC)
+                self.assertIn("mode=32", screens[3]["head"])
+
+    def test_audition_start_above_16_bits(self):
+        for prof, d, _ in self.each("long"):
+            with self.subTest(profile=prof):
+                log = parse_events(d / "wave_playback.log")
+                kinds = lambda k: [e.values for e in log if e.kind == k]
+                # The audition's temporary record bounds (point edits before it
+                # also write the start word; take the window around Ply/Stp).
+                writes = [w for w in kinds("BOUNDWRITE") if VL + 15 <= w["t"] < VL + 16]
+                self.assertEqual(len(writes), 8)
+                self.assertEqual([w["data"] for w in writes[:4]],
+                                 [NUMERIC & 0xFFFF, NUMERIC >> 16, END & 0xFFFF, END >> 16])
+                # CFC6:0CE9 read the start dword and the end's high word
+                # (its signed high-word compare decides start < end here).
+                reads = {(r["phys"], r["data"]) for r in kinds("BOUNDREAD")
+                         if r["cs"] == "CFC6" and 0x0CE9 <= int(r["ip"], 16) < 0x0D75}
+                self.assertEqual(reads, {(0x3A72F4, NUMERIC & 0xFFFF), (0x3A72F6, NUMERIC >> 16),
+                                         (0x3A72FA, END >> 16)})
+                base = kinds("SNAP")[0]["wave"]
+                self.assertEqual([s["start"] for s in kinds("STARTREG")], [base + NUMERIC])
+                # Restored after the call.
+                after = sound_records(d, VL + 17)[0]
+                self.assertEqual((after["start"], after["end"]), (NUMERIC, END))
+
+    def test_chop_with_source_offsets_above_16_bits(self):
+        bounds = [0, 73_500, 147_000, L]
+        for prof, d, _ in self.each("long"):
+            with self.subTest(profile=prof):
+                old, new = sound_records(d, VL), sound_records(d, VL + 43)
+                self.assertEqual(len(old), 1)
+                self.assertEqual(len(new), 4)
+                source = pcm(d, VL, 0)
+                self.assertEqual(pcm(d, VL + 43, 0), source)
+                for i, (a, b) in enumerate(zip(bounds, bounds[1:]), 1):
+                    self.assertEqual(new[i]["length"], b - a)
+                    self.assertEqual(pcm(d, VL + 43, i), source[2 * a:2 * b], f"slice {i}")
+
+
+if __name__ == "__main__":
+    unittest.main()
