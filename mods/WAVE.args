@@ -22,3 +22,6 @@
 --patch=428bc:9a8600e6ce:9a{mute_aps_load_close}
 --patch=6894e:9a8600e6ce:9a{mute_pgm_save_close}
 --patch=68dae:9a8600e6ce:9a{mute_aps_save_close}
+--patch=4c3c4:b82e00:b83100
+--patch=4c3e3:052e00:053100
+--patch=4bf5d:c746fc2a00:c746fc3100

@@ -4,7 +4,8 @@
 
 Program/Sounds → **0. Mute groups** opens four program-scoped groups. Each
 program has an enable switch; pads 1–64 each select Off or one of groups 1–4.
-Soft key 1 **Apply All** assigns the selected group to all 64 pads in one action.
+Soft key 1 **Apply All** opens a prompt naming the group; only soft key 3 **Do it**
+then assigns it to all 64 pads. Any other key cancels without changing anything.
 Assignments follow program copy/initialize and persist in PGM and APS files.
 Pads sharing one MIDI note share the first matching pad's effective group.
 See [controls and UI evidence](mute_groups.md), [voice behavior](mute_voice.md),
@@ -352,6 +353,19 @@ An earlier baseline suite and isolated run failed loading OS 3.16 under
 3.08 EPROMs with type 11h. The fresh final suite passes that case after
 rebuilding its test disks. The discrepancy's cause is **UNDETERMINED**;
 it is not represented as fixed by this waveform change.
+
+**2026-10-02 cause found (PROVEN in MAME):** that failure was not load- or
+emulation-dependent. `emu.mpc3k.disk()` built images with mtools, which stamps
+each directory entry with the host clock. With 3.08 EPROMs the creation-time
+word at entry `+0Eh` decides whether `M3K316.SYS` loads or the OS stops with
+type 11h: one captured failing image failed 8 of 8 boots, and replacing only
+that word (or zeroing `+0Ch..+13h`) made it pass. Observed words `2D2Ch` and
+`2D73h` fail; `2C82h` and `2D82h` pass. The 3.08 loader's exact rule for that
+word is **UNDETERMINED** (not disassembled). `disk()` now normalizes every
+image (zero `+0Ch..+13h`, fixed write stamp and volume serial), and parallel
+cases no longer share one image file. A real floppy written by a tool that
+timestamps entries could hit the same 3.08 behaviour; the builders' own
+packer writes zeros there.
 
 ### Slot-1 power-on correction
 

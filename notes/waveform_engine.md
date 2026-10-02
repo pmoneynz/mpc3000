@@ -19,12 +19,16 @@ Hardware canary result, review fixes, build manifest, and bench procedure:
    - Column `c` (0–239) covers samples `[c·len/240, (c+1)·len/240)`, with at least one sample per column.
    - Each column keeps its signed min and max.
    - Reads go through `CALLF CF92:000C(A2AE:0000, wave + cur, n, 1)` in blocks of `n ≤ 0x2400` words (Best st's buffer and call shape), each wrapped in `INC`/`DEC [8010:9757]`.
-2. **Cache.** Two 240-byte arrays in the cave, holding the top and bottom rows of each column's line:
+2. **Cache.** Each mode has its own pair of 240-byte arrays in the cave (`tops`/`bots` for full, `ftops`/`fbots` for fine; `cols` points at the active pair), holding the top and bottom rows of each column's line:
    - top row = `31 − (max >> 11)`
    - bottom row = `31 − (min >> 11)`
 
    The wave fills rows 16–47 around the zero line at row 31. Rows 0–15 and 48–63 hold text.
+   - The full arrays are valid while `full_ok` is set. `view` clears it on every entry (after loading `len`/`wbase` from the record, so CHOP's `chop_refresh_source_base` rewrite of `wbase` between sessions is always picked up), and the View field clears it on a plane change. Nothing else writes `wave`, `len` or `wbase` during a session. Visiting the fine view no longer drops it, so Fine → Full redraws without reading wave RAM.
+   - The fine arrays are rescanned on every fine redraw.
 3. **Render.** Clears the Mixer framebuffer `8010:1591` (30 bytes × 64 rows, bit 7 = leftmost), draws each column's vertical line, then inverts the columns containing soft start (`+14`) through soft end (`+18`) over rows 16–47. This matches the 2000XL's inverted region.
+   - `bound` and each column's end never decrease with the column, so the selected columns are one run. `draw` stops testing at the first column that starts after `b` and inverts the run with one `invert` call.
+   - `invert` (AX = first row < 64, BX = first x, CX = width ≥ 1, DX = rows ≥ 1) XORs one mask per framebuffer byte the span touches, stepping 30 bytes per row. It keeps BX, CX, SI, BP, DS and ES and clobbers AX, DX, DI and flags. All callers (`draw`, `zones_focus`, `mute_ui_draw`) reload AX/DX before any later use; several tail-call it. `text` computes one framebuffer byte and mask per glyph and walks them, instead of calling `pixel` per lit bit.
 4. **Show.** `CALLF C4C8:0F5F` enters graphics mode (registers `32/07/1D/3F`) and blits. `CALLF BDE3:000E(0)` waits for a key. `CALLF C4C8:0409` returns to text mode.
 
 ## Entry: Help on Edit Sound (phase 3)
@@ -52,7 +56,7 @@ When the view closes, `page_key` stores the returned key in `[bp-1]`. For Soft K
 
 ### Full and fine views
 
-- **Full:** column `c` starts at `c·len/240`. It is scanned once per open, and again when leaving the fine view.
+- **Full:** column `c` starts at `c·len/240`. It is scanned once per open, and again after a plane change.
 - **Fine:** column `c` starts at `p + (c−120)·zoom`, where `p` is the selected point.
   - Zoom runs from 1 to 64, starting at 16. The window is rescanned on every change.
   - Samples outside `[0, len)` count as 0, as on the 2000XL fine window.
@@ -106,7 +110,8 @@ Harness fix: `emu/mpc3k.py` `parse_screens` now splits only at lines that start 
 
 - **Framebuffer reuse:** reusing `8010:1591` while the Mixer is inactive is **HYPOTHESIS**. The Mixer clears and redraws it on entry (`C4C8:0490`). Other writers than `C4C8`/`B13A` are **UNDETERMINED** (computed aliases not searched).
 - **Stereo:** one plane at a time, chosen with the View field, which starts at L on every open. Labelling plane A as L and B as R is **HYPOTHESIS** (MAME's mixer bits, [`waveform_phase0.md`](waveform_phase0.md) §3). Real-hardware left/right is `U-PHYS`.
-- **Scan time on hardware:** `U-PHYS`. The full view reads every sample through `CF92:000C` once per open. The fine view reads `240 × zoom` samples (at most 15,360) on every change.
+- **Scan time on hardware:** `U-PHYS`. The full view reads every sample through `CF92:000C` once per open (and per plane change). The fine view reads `240 × zoom` samples (at most 15,360) on every change.
+- **Redraw time in MAME** (one execution, 551,040-frame mono sound, whole sound selected; MAME's V53 timing is an approximation of hardware): wheel tick in the full view, refresh to blit end 75.4 → 31.5 ms (draw 56.7 → 13.0 ms); Fine → Full 1,686 → 31.5 ms (the 1,610 ms rescan is gone); fine redraw at zoom 16 79.7 → 55.1 ms. The blit (`C4C8:0F0D`) is about 18.6 ms in both.
 - **`CF92:000C`:** preservation of `SI`/`DI`/`BP`/`DS` on return is **PROVEN** by the bounded reader/helper walk in [`waveform_bench.md`](waveform_bench.md). The engine reloads everything else after each call. Hardware DMA completion remains unverified.
 - **Keys:** the view ignores keys it does not list.
 - **Clamps:** the view's `0 ≤ start ≤ end ≤ len` may be stricter than the OS field clamps (**HYPOTHESIS**: they were not decoded exhaustively).

@@ -54,9 +54,16 @@ At generic `D6E0:001B` it writes their count to `8010:D69A`; the captured
 profile uses `8010:D698`.  WAVE snapshots that word immediately after
 `BDE3:000E` returns.  Zone-current and zone-count adjustment applies the
 whole snapshot, clamps at its existing bounds, then loads or redivides once.
-Thus a fast wheel batch does not lose steps or redraw every intermediate
-state.  **PROVEN** by the stock producer/consumer code and implementation;
-the MAME burst case checks count and current-zone changes in execution.
+Thus a wheel batch that fits the stock key queue does not lose steps or
+redraw every intermediate state.  **PROVEN** by the stock producer/consumer
+code and implementation; `emu/test_harness_bursts.py`, `emu/test_wave_zones.py`
+and `emu/test_mute_ui.py` send bursts 1 ms apart and check the coalesced
+counts in execution.  The bound is the queue: it holds 8 keys (capacity word
+of `8010:12BC`, captured `8010:12BA`), so while one redraw is in progress at
+most 1 + 8 events survive and stock code drops the rest.  A 20-event burst
+applies 9 steps (`test_burst_beyond_queue_capacity`, both profiles).  The
+earlier unbounded claim is retracted.  Whether the physical dial can deliver
+more than 8 events inside one redraw is **UNDETERMINED** (`U-PANEL-ROM`).
 Point motion similarly multiplies its 32-bit base step by the repeat count,
 saturating at source length before signed movement clamps the endpoint.
 
@@ -95,7 +102,16 @@ the next Edit Sound entry consumes the byte and arms a second one-shot selector.
 After the stock list builder sorts the current Sound records, the selector
 scans `SS:[BP-0xBC]` for `zones_source` and writes its new list position to
 `[BP-2]`.  This keeps the same Sound selected when CHOP ZONE inserted names
-which sort before it.  The front insertion matters:
+which sort before it.  A found position is also stored to the word global
+`8010:E40A` (capture `E408`) in stock's `cbw` form, as `B99A:04E9` does;
+positions are `0..127`, so the zero-extended index is identical.  The stock
+`cmp [E40A],di / jl` at `B99A:006B` (linear `0x39A0B`) that follows the
+rejoin therefore keeps the resolved position (always below the count `DI`),
+instead of zeroing it when a stale global is at or above the count, and the
+next fresh Edit Sound entry restores the same Sound.  A missed scan or an
+ordinary entry leaves the global untouched, as stock does.  The
+choice-10 handler stores it the same way after its list rebuild.  The front
+insertion matters:
 `D6E0:0075` appends to the FIFO, so an older queued mode key could otherwise
 run first and leave the resume byte alive across a Disk reload.  If the queue
 is full, the helper clears both resume and validity and safely loses the map.
@@ -111,8 +127,9 @@ mutate or replace the selected sound without changing all cached identity
 bytes.  `CHOP ZONE` may retain the map only while its executor guarantees
 that the source descriptor and sample data remain unchanged.  If that
 executor causes a fresh Edit Sound invocation, it must use the same one-shot
-resume path.  This is the required integration contract; the chop backend is
-documented separately.
+resume path.  A `CHOP ZONE` refused by the stock safe lock touches nothing
+and keeps the map.  This is the required integration contract; the chop
+backend is documented separately.
 
 Replacement of the active descriptor by an asynchronous external writer
 while the same Edit Sound invocation remains open is **UNDETERMINED**.  No
@@ -131,7 +148,7 @@ The capture-specific WAVE route uses XA=1 with the third PGR, hence the
 | Surface | Linear file | `CS:IP` | 20-bit | 24-bit, generic / capture | Evidence |
 |---|---:|---:|---:|---:|---|
 | Edit Sound entry | `0x399A2` | `B99A:0002` | `0xB99A2` | `0x0B99A2` / `0x3B99A2` | Seven replaced bytes are `55 8B EC 81 EC C0 02`; identical in the target and captured APP. The hook reproduces `PUSH BP; MOV BP,SP; SUB SP,2C0h` and resumes at `0009`. **PROVEN** |
-| Sorted-list selection | `0x39A03` | `B99A:0063` | `0xB9A03` | `0x0B9A03` / `0x3B9A03` | Runs immediately after `B99A:27F2` returns the Sound count and builds the record-index list at `SS:[BP-BC]`. Replaced generic bytes are `8B F8 A0 0A E4 88 46 FE`; the capture differs only in its shifted selector global, `E408`. The hook preserves the stock `DI=AX` result, resolves `zones_source` only for a one-shot waveform re-entry, stores the sorted position at `[BP-2]`, and resumes at `006B`. **PROVEN** |
+| Sorted-list selection | `0x39A03` | `B99A:0063` | `0xB9A03` | `0x0B9A03` / `0x3B9A03` | Runs immediately after `B99A:27F2` returns the Sound count and builds the record-index list at `SS:[BP-BC]`. Replaced generic bytes are `8B F8 A0 0A E4 88 46 FE`; the capture differs only in its shifted selector global, `E408`. The hook preserves the stock `DI=AX` result, resolves `zones_source` only for a one-shot waveform re-entry, stores the sorted position at `[BP-2]` and, when found, as the word `[E40A]`/`[E408]`, and resumes at `006B`. **PROVEN** |
 | Sound-field commit | `0x39E7B` | `B99A:04DB` | `0xB9E7B` | `0x0B9E7B` / `0x3B9E7B` | Field-dispatch table word 0 selects `04DB`. Replaced bytes `83 FF FF 75 03 E9 4B 03` are identical in both inputs. The hook preserves the original `DI==-1` exits after invalidating. **PROVEN** |
 | Help/page key | `0x3A1FA` | `B99A:085A` | `0xBA1FA` | `0x0BA1FA` / `0x3BA1FA` | Existing WAVE key hook. **PROVEN** |
 | Stock Do dispatch | `0x3A493` | `B99A:0AF3` | `0xBA493` | `0x0BA493` / `0x3BA493` | Clears `[BP-1]`, then dispatches the selected Do action. **PROVEN** |

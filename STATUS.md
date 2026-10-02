@@ -1,5 +1,24 @@
 # Audited project status
 
+**2026-10-02 review fixes merged (not yet built as a release):** an
+adversarial review of BENCH 06 and its fixes are in the sources. CHOP ZONE now
+honours the stock Edit Sound safe lock and mute-audio settings and keeps the
+saved list selection; numeric entry no longer reorders fast-typed digits; the
+mute trigger context lives on the note-on wrapper's stack instead of in
+globals; mute storage range-checks program indices; Apply All asks and only
+soft key 3 applies; the APS save budget is 49 KB (three stock patches) so a
+near-full disk refuses instead of losing the file; the wave view keeps a
+separate full-view cache and inverts by column. Builders share
+`mods/buildkit.py`, derive the capture patch list from `WAVE.args`, and check
+every cave far target against the captured ROM. PROVEN in MAME: 135 emulator
+tests in 22 suites with skips forbidden, 67 builder tests, 171 boot checks;
+payloads are built from current sources per run (`emu/harness.py`). Cave
+12,804 of 14,384 bytes. The `build/mods` BENCH 06 artifacts predate these
+changes and were deliberately not rebuilt. Physical behaviour is
+UNDETERMINED. Cross-task mute interleaving, CHOP rollback after a late
+allocator failure, and wheel bursts beyond the 8-key stock queue remain
+without a hardware observation.
+
 **2026-10-01 WAVE BENCH 06 ready:** four program-level mute groups, per-pad
 Off/1-4, enable, Apply All, and PGM/APS persistence are implemented. End Up
 selects Zone; Down returns to End, including typed End acceptance. PROVEN:

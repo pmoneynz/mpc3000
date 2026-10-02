@@ -15,9 +15,16 @@ Pads also select their mapped instrument. The overview shows all 64 pad slots,
 in banks A–D, with `-` for Off and 1–4 for group membership.
 
 Each program has an enable switch and one assignment per pad: Off, 1, 2, 3,
-or 4. Soft key 1 **Apply All** assigns the selected pad's group to all 64 pads
-in that program in one action, retaining the enable setting. Soft key 4 exits
-to Program/Sounds. A mode key opens the corresponding stock page.
+or 4. Soft key 1 **Apply All** only asks: the title row becomes
+`Program NN: set all 64 pads to group G` and the soft-key row shows
+`<Do it>` (Soft key 3) and `<Cancel>` (Soft key 4); fields and pad grid stay.
+Only Soft key 3 assigns G to all 64 pads of program NN, retaining the enable
+setting. Every other key cancels with nothing changed and redraws the page —
+including Soft key 1 again, so a double press cannot apply. A cancelling mode
+key still opens its page. A MIDI program change while asking is noticed at
+the next key (the prompt still names the old program); that key cancels, even
+Soft key 3, and the page redraws for the new program.
+Otherwise Soft key 4 exits to Program/Sounds and a mode key opens its page.
 
 When enabled, a trigger stops sounding voices from other pads in the same
 program and group. Off pads are unaffected. Repeated hits on the same pad
@@ -53,6 +60,32 @@ jump table. No table index is added to that table.
 | note-to-first-pad lookup | `0x59F5D` | `D9F2:003D` | `0xD9F5D` | `0x3D9F5D` |
 
 These code sites are identical in the generic and captured application.
+
+**Confirmation idiom (PROVEN bytes, generic linear image; evidence only, not
+called).** Stock confirms with Soft key 1 `'x'` under a `<Do it>`-style label
+on the soft-key line; any other key is returned to the caller unconsumed, so
+mode keys still switch. Delete Sound opens its second step from a *different*
+key (`'y'`, `<DEL ALL SNDS!>`) than the one that confirms it. Apply All already
+owns Soft key 1, so its confirm moves to Soft key 3 (not adjacent) and keeps
+the `<Do it>` wording; `<Cancel>` sits right as in stock `... <Cancel>` lines.
+**HYPOTHESIS:** `B1B1:0026` takes (row, column), making these labels row 7,
+column 0.
+
+| Stock site | Linear file | CPU `CS:IP` | 20-bit | XA=1, third-PGR 24-bit |
+|---|---:|---|---:|---:|
+| `<Do it> <DEL ALL SNDS!>` (`8010:3A5F`) push | `0x3CD00` | `B99A:3360` | `0xBCD00` | `0x3BCD00` |
+| Delete Sound `cmp ax,79h` → second step | `0x3CDE8` | `B99A:3448` | `0xBCDE8` | `0x3BCDE8` |
+| `<DELETE ALL!>` (`8010:3ACE`) push | `0x3CE83` | `B99A:34E3` | `0xBCE83` | `0x3BCE83` |
+| its confirm `cmp ax,78h` | `0x3CE9F` | `B99A:34FF` | `0xBCE9F` | `0x3BCE9F` |
+| Initialize All Programs `<Do it>` (`8010:6118`) push | `0x4A422` | `C887:1BB2` | `0xCA422` | `0x3CA422` |
+| its confirm `cmp ax,78h` | `0x4A43E` | `C887:1BCE` | `0xCA43E` | `0x3CA43E` |
+| Extra System Parameters `<Do it>` (`8010:5D64`) push | `0x4884C` | **UNDETERMINED** | `0xC884C` | `0x3C884C` |
+| its key loop / `cmp dl,78h` | `0x48857` / `0x48867` | **UNDETERMINED** | | |
+
+`B99A` is the segment of the adjacent far target `B99A:3514` (`0x3CEB4`,
+Audio trigger, called by Program/Sounds option 8 at `C887:00DC`); the Delete
+Sound code reaches `B99A:34A3` by `PUSH CS`/near call. `C887:1B66` is near-called from
+`C887:13AA` inside option 4 (`C887:1317`, Copy/Initialize Program).
 Before relocation, the second PGR maps application ROM at physical
 `0x0B0000..0x0F3FFF`; after relocation, the third PGR maps that logical window
 to RAM at `0x3B0000..0x3F3FFF`. XA=0 is not this execution domain.
@@ -78,11 +111,18 @@ and group changes clamp to their legal bounds. It preserves SI, DI, BP and DS;
 ES is also restored on return.
 
 **PROVEN (emulator executions):** `emu.test_mute_ui` passes seven tests with
-real panel input and read-only observers: individual pads 1 and 64, one-action
-Apply All, independent programs, fast-wheel accumulation and bounds, physical
+real panel input and read-only observers: individual pads 1 and 64, Apply All
+prompt then Soft key 3, independent programs, fast-wheel accumulation and bounds, physical
 pad selection across four banks, generic-profile entry/exit, and complete
 240×64 pixel comparisons against an independent layout reference. Evidence:
 `build/wavebench06-navigation-ui-tests.log` and `build/emu/mute-ui-tests/`.
+`emu.test_mute_apply_all` (five tests, `build/emu/mute-apply-all-tests/`)
+proves the prompt leaves all 24 programs unchanged and matches its pixel
+reference; Soft key 1 again, Soft keys 2 and 4, Left, digit 2, wheel −1 and a
+pad hit each cancel with state, pad, focus and pixels unchanged; the Other key
+cancels and opens Other (generic profile); a MIDI program change while asking
+makes Soft key 3 cancel; Soft key 3 then still applies. Its prompt assertions
+fail against the previous one-key firmware.
 The same final 14-test run includes five End/Zone navigation cases and two
 real-menu lifecycle cases: copying all assignments from Program 1 to Program
 24, then initializing Program 24 while retaining Program 1.

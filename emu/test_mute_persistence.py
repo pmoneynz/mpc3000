@@ -12,18 +12,15 @@ import hashlib
 import subprocess
 import unittest
 
+from emu import harness as h
 from emu import pgm
-from emu import test_mpc3k as base
 from emu.mpc3k import run
 from emu.panel import dial, write_smf
-from emu.snd import disk
 from emu.test_mute_ui import observer, states
-from emu.test_wave_zones import taps
+from emu.harness import taps
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "build/emu/mute-persistence-tests"
-SYS = ROOT / "build/mods/WAVEHW.SYS"
-ROMS = ROOT / "build/roms-wavehw-composite"
 NATIVE_PGM_SHA256 = "92fb1c621c10db67788da83b4f2dfc7d97919b16d1f2472886f871495023e733"
 ZERO = {"enabled": 0, "groups": [0] * 64}
 
@@ -69,22 +66,21 @@ def stale_then_load_events():
 class MutePersistence(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if missing := base.missing_tools():
-            raise unittest.SkipTest(str(missing))
-        for path in (SYS, ROMS / "composite.json", pgm.NATIVE_BLANK_PATH,
-                     ROOT / "build/mods/wavehw.cave.map"):
-            if not path.is_file():
-                raise unittest.SkipTest(f"current frozen fixture is missing: {path}")
+        profile = h.payload("capture")
+        SYS, ROMS = profile.sys, profile.rompath
+        if not pgm.NATIVE_BLANK_PATH.is_file():
+            h.unavailable(f"native PGM fixture is missing: {pgm.NATIVE_BLANK_PATH}")
         native = pgm.native_blank()
         if hashlib.sha256(native).hexdigest() != NATIVE_PGM_SHA256:
             raise RuntimeError("native PGM fixture hash changed")
         RUNS.mkdir(parents=True, exist_ok=True)
-        cls.payload_hash = hashlib.sha256(SYS.read_bytes()).hexdigest()
-        probe = observer(RUNS)
+        profile.record(RUNS)
+        cls.payload_hash = profile.sha256
+        probe = observer(RUNS, profile=profile)
 
         # The two saves are independent and both use the stock Disk UI.
-        pgm_image = disk("mute-persistence-pgm-save", [(SYS, "STARTUP.SYS")])
-        aps_image = disk("mute-persistence-aps-save", [(SYS, "STARTUP.SYS")])
+        pgm_image = h.wave_disk(profile, "mute-persistence-pgm-save")
+        aps_image = h.wave_disk(profile, "mute-persistence-aps-save")
         saves = {
             "pgm-save": ([39, 49, 62], pgm_image, pgm_save_events()),
             "aps-save": ([46, 54, 76], aps_image, aps_save_events()),
@@ -109,13 +105,13 @@ class MutePersistence(unittest.TestCase):
         malformed_path = RUNS / "MALFORM.PGM"
         malformed_path.write_bytes(malformed)
 
-        cold_pgm_image = disk("mute-persistence-pgm-cold", [(SYS, "STARTUP.SYS"),
+        cold_pgm_image = h.wave_disk(profile, "mute-persistence-pgm-cold", [
                                (RUNS / "saved-program-2.PGM", "SOURCE2.PGM")])
-        cold_aps_image = disk("mute-persistence-aps-cold", [(SYS, "STARTUP.SYS"),
+        cold_aps_image = h.wave_disk(profile, "mute-persistence-aps-cold", [
                                (RUNS / "saved-all.APS", "ALL_PGMS.APS")])
-        legacy_image = disk("mute-persistence-legacy", [(SYS, "STARTUP.SYS"),
+        legacy_image = h.wave_disk(profile, "mute-persistence-legacy", [
                             (pgm.NATIVE_BLANK_PATH, "LEGACY.PGM")])
-        malformed_image = disk("mute-persistence-malformed", [(SYS, "STARTUP.SYS"),
+        malformed_image = h.wave_disk(profile, "mute-persistence-malformed", [
                                (malformed_path, "MALFORM.PGM")])
         loads = {
             # Startup also sees the PGM, then the explicit Disk path selects

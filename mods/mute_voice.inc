@@ -23,20 +23,26 @@ MUTE_VOICE_COUNT   equ 32
 ; Wrap the shared note-on engine so every layer and stereo plane inherits
 ; one canonical (program, pad) context.  The incoming group is also cached
 ; for this trigger, while candidate groups are looked up during each choke
-; scan so UI edits apply to voices that are already sounding.  Saving the old
-; context on the stack makes a nested note-on restore the outer context.
+; scan so UI edits apply to voices that are already sounding.
+;
+; The context lives only in this wrapper's own BP frame, on the stack of the
+; task that took the trigger.  CFB3:0008 is reached from AMX task 3
+; (EAD0:000B) as well as from the shared event pump, and CFC6:0B2D can block
+; in the AMX resource reserve D1F7:0126; a CS-global context would therefore
+; be visible to, and restorable by, the wrong task.  The allocator wrapper
+; finds this frame through the stock BP chain instead.
+;   [bp-4] valid   [bp-3] program   [bp-2] pad   [bp-1] group
 mute_note_on_wrapper:
         push bp
         mov bp, sp
-        push word [cs:mute_context_valid] ; valid + program
-        push word [cs:mute_context_pad]   ; pad + group
-        mov byte [cs:mute_context_valid], 0
-        mov byte [cs:mute_context_group], 0
+        xor ax, ax
+        push ax                          ; pad = group = 0
+        push ax                          ; valid = program = 0
 
         mov al, [MUTE_CURRENT_PROGRAM]
         cmp al, MUTE_PROGRAM_COUNT
         jae .forward
-        mov [cs:mute_context_program], al
+        mov [bp-3], al
         les bx, [bp+6]                   ; far pointer to the stock event
         mov al, [es:bx+2]                ; MIDI note, 23h..62h for pads
         xor ah, ah
@@ -45,30 +51,28 @@ mute_note_on_wrapper:
         add sp, 2
         cmp ax, MUTE_PAD_COUNT
         jae .forward
-        mov [cs:mute_context_pad], al
-        mov byte [cs:mute_context_valid], 1
+        mov [bp-2], al
+        mov byte [bp-4], 1
 
-        mov al, [cs:mute_context_program]
+        mov al, [bp-3]
         call mute_get_enabled
         or al, al
         jz .forward                      ; still tag mapped voices while disabled
-        mov bl, [cs:mute_context_pad]
-        mov al, [cs:mute_context_program]
+        mov bl, [bp-2]
+        mov al, [bp-3]
         call mute_get_group
         cmp al, 1
         jb .forward
         cmp al, 4
         ja .forward
-        mov [cs:mute_context_group], al
+        mov [bp-1], al
 
 .forward:
         push word [bp+8]                 ; event segment
         push word [bp+6]                 ; event offset
         call 0xCFC6:0x0007
-        add sp, 4
-        pop word [cs:mute_context_pad]
-        pop word [cs:mute_context_valid]
-        leave
+.builder_return:                         ; frame signature; see below
+        leave                            ; also drops the two arguments
         retf
 
 ; Wrap the sole stock voice allocator call.  Before each layer/plane is
@@ -78,27 +82,54 @@ mute_note_on_wrapper:
 ; allocation is tagged even while MUTE GROUPS is disabled or its pad is Off;
 ; this lets a later enable/group edit act on voices that are still sounding.
 ; An unmapped/audition allocation clears any older tag on the returned channel.
+;
+; Every path from mute_note_on_wrapper to this call is exactly three stock
+; BP frames deep, in both profiles: CFC6:0007 -> CFC6:039E (01F0/0263/02CC)
+; -> CFC6:0B2D (0A8A/0AEC/0B16) -> here.  Each has a push bp/mov bp,sp
+; prologue and writes BP nowhere else.  The context is valid only when the
+; third frame returns to mute_note_on_wrapper.builder_return in this CS;
+; any other caller of 0007/039E (CFC6:0C68, Edit Sound CFC6:0CE9/0C70, the
+; WAVE audition) leaves it zero.  Only SS reads; no global is consulted.
+;   [bp-2] valid   [bp-1] program   [bp-4] pad   [bp-3] group
 mute_voice_alloc_wrapper:
         push bp
         mov bp, sp
+        xor ax, ax                       ; AL valid, AH program
+        xor dx, dx                       ; DL pad, DH group
+        mov bx, [bp]                     ; CFC6:0B2D frame
+        mov bx, [ss:bx]                  ; CFC6:039E frame
+        mov bx, [ss:bx]                  ; CFC6:0007 frame
+        cmp word [ss:bx+2], mute_note_on_wrapper.builder_return
+        jne .context
+        mov cx, cs
+        cmp [ss:bx+4], cx
+        jne .context
+        mov bx, [ss:bx]                  ; mute_note_on_wrapper frame
+        mov ax, [ss:bx-4]
+        mov dx, [ss:bx-2]
+.context:
+        push ax
+        push dx
         push si
         push di
+        mov [cs:mute_context_valid], ax  ; observer mirror only; never read
+        mov [cs:mute_context_pad], dx
 
-        cmp byte [cs:mute_context_group], 1
+        cmp byte [bp-3], 1
         jb .allocate
         xor di, di
 .scan:
-        mov al, [cs:mute_context_program]
+        mov al, [bp-1]
         inc al                           ; stored program tag is 1..24
         cmp byte [cs:mute_voice_program+di], al
         jne .next
         mov al, [cs:mute_voice_pad+di]
-        cmp al, [cs:mute_context_pad]
+        cmp al, [bp-4]
         je .next
         mov bl, al                       ; candidate's current group, not old group
-        mov al, [cs:mute_context_program]
+        mov al, [bp-1]
         call mute_get_group
-        cmp al, [cs:mute_context_group]
+        cmp al, [bp-3]
         jne .next
         mov byte [cs:mute_voice_program+di], 0
         mov byte [cs:mute_voice_pad+di], 0
@@ -122,12 +153,12 @@ mute_voice_alloc_wrapper:
         cmp ax, MUTE_VOICE_COUNT
         jae .done                       ; defensive: stock normally returns 0..31
         mov bx, ax
-        cmp byte [cs:mute_context_valid], 1
+        cmp byte [bp-2], 1
         jne .clear
-        mov dl, [cs:mute_context_program]
+        mov dl, [bp-1]
         inc dl                           ; program tag 1..24; zero is invalid
         mov [cs:mute_voice_program+bx], dl
-        mov dl, [cs:mute_context_pad]
+        mov dl, [bp-4]
         mov [cs:mute_voice_pad+bx], dl
         jmp .done
 .clear:
@@ -164,6 +195,8 @@ mute_forget_program:
 ; A zero program tag is invalid.  Nonzero values encode program+1, and the
 ; parallel byte records the canonical pad.  Group membership stays live in
 ; the storage table and is deliberately not copied into these voice tags.
+; mute_context_* is a write-only mirror of the context resolved by the most
+; recent allocation, kept for read-only emulator observers.
 mute_context_valid:   db 0
 mute_context_program: db 0
 mute_context_pad:     db 0

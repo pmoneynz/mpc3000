@@ -86,6 +86,10 @@ same stock entry while temporarily replacing both boundary dwords:
 so `ES` or `DI` clobber cannot redirect restoration.  There is no early exit
 between mutation and restoration.  This establishes the requested bounds at
 `CFC6:0CE9`; it does **not** establish that every requested frame is audible.
+`CFC6:0CE9` itself reads all four bound words only when the start and end high
+words are equal: its signed high-word compare at `CFC6:0D13..0D21` skips the
+end's low word otherwise (observed with start 88,200 and end 200,000 in
+`emu/test_harness_long.py`).  The player `CFC6:039E` reads the full bounds.
 The rejected-candidate evidence below disproves that stronger claim for the
 unmodified stock duration path.
 

@@ -28,13 +28,12 @@ high BIOS slots remain mapped to ROM.
 | redraw fields 0 through 16 | `0x3B05B` | `B99A:16BB` | `0xBB05B` | `0x0BB05B` / `0x3BB05B` | **PROVEN** |
 | components to frames | `0x3BFB9` | `B99A:2619` | `0xBBFB9` | `0x0BBFB9` / `0x3BBFB9` | **PROVEN** |
 | frames to components | `0x3C00D` | `B99A:266D` | `0xBC00D` | `0x0BC00D` / `0x3BC00D` | **PROVEN** |
-| enqueue the already-read digit | `0x56E75` | `D6E0:0075` | `0xD6E75` | `0x0D6E75` / `0x3D6E75` | **PROVEN** |
 | normalized key input | `0x3DE3E` | `BDE3:000E` | `0xBDE3E` | `0x0BDE3E` / `0x3BDE3E` | **PROVEN** |
 | leave graphics for character mode | `0x45089` | `C4C8:0409` | `0xC5089` | `0x0C5089` / `0x3C5089` | **PROVEN** |
 | enter graphics and blit | `0x45BDF` | `C4C8:0F5F` | `0xC5BDF` | `0x0C5BDF` / `0x3C5BDF` | **PROVEN** |
 
-The source 24-bit addresses use second-PGR slots 44, 46, 47, 49, and 53
-(`0x002C`, `0x002E`, `0x002F`, `0x0031`, and `0x0035`).  The WAVE-runtime
+The source 24-bit addresses use second-PGR slots 44, 46, 47, and 49
+(`0x002C`, `0x002E`, `0x002F`, and `0x0031`).  The WAVE-runtime
 forms use the corresponding copied pages in the third PGR.  The physical
 capture and generic image use the same instruction addresses for these
 routines; only the named DGROUP operands differ.
@@ -105,10 +104,63 @@ giving the stock all-page navigation loop an opportunity to enter field 0 or
 another point.  This bound is **PROVEN** for the wrapper's direct action
 dispatch; physical key behavior remains to be observed on hardware.
 
-`BL=0` opens the seconds field without queued input, allowing Right to select
+`BL=0` opens the seconds field without input, allowing Right to select
 milliseconds or samples.  A nonzero BL is an ASCII digit already consumed by
-the graphics loop; `D6E0:0075` enqueues it through `FB00:0672`, and the first
-`BDE3:000E` read consumes it.  **PROVEN** for the software queue path.
+the graphics loop.  The wrapper's first pass uses it as that pass's key in
+place of the `BDE3:000E` read, then clears it; every later pass reads
+normally.  The cursor calls (`B1B1:0008` shape 3/2 before the key, 0 after)
+are unchanged.  No key queue operation is involved.
+
+## First digit ahead of queued keys
+
+An earlier version put the first digit back with `D6E0:0075` (linear
+`0x56E75`, 20-bit `0xD6E75`, source/runtime 24-bit `0x0D6E75` /
+`0x3D6E75`).  That routine loads `ES:BX = 8010:12BC` and `CL` = key and calls
+`FB00:067C` (linear `0x7B67C`, 20-bit `0xFB67C`, 24-bit `0x0FB67C`, high ROM
+slot): it decrements the write index at `[BX+4]` and stores there, the same
+append used by the panel key producer at linear `0x553C8`.  The readers
+`D6E0:0000` / `D6E0:001B` (linear `0x56E00` / `0x56E1B`) call `FB00:0725`
+(linear `0x7B725`), which decrements the read index at `[BX+6]` and loads
+from there; `FB00:06B9` (linear `0x7B6B9`) stores at the read index and
+increments it, so it is push-front (`D6E0:0060` uses it to unget).  **PROVEN:**
+`8010:12BC` is a FIFO and `D6E0:0075` appends at the tail.  In the captured
+image the same routine is `D6E0:0075` on `8010:12BA` calling `FB00:0672`
+(reader `FB00:071B`, unget `FB00:06AF`), the documented -2 DGROUP and -0xA
+high-ROM shifts; earlier text here cited that captured `FB00:0672` without
+the profile label.
+
+Consequence (**PROVEN** in MAME, both profiles): keys typed while
+`stock_numeric` leaves graphics, replays the shadow, and redraws 17 fields
+were already queued, so the re-queued first digit reached the editor after
+them.  Typing `0` then `1` 10 ms apart showed the draft `Soft st :10` and
+committed 10 s (clamped to End).  Typing `0`, `1`, Enter in one burst let
+`1`+Enter commit, then the stale `0` reopened a second dialog.
+
+The fix does not use the queue (design chosen over the `FB00:06B9`
+push-front helper that `zones_reopen` uses).  Direct dispatch is equivalent to
+re-reading the digit because:
+
+- `BDE3:000E` (linear `0x3DE3E`) is `D6E0:001B` followed by the global filter
+  `DE5C:000E` (linear `0x5E5CE`).  That filter's switch has no case below
+  `0x40` except `#` and `$`; digits take the default at `DE5C:087D`, which
+  returns the key unchanged with no side effect.  The graphics loop already
+  applied it once.  **PROVEN.**
+- `B31B:0007` (linear `0x331B7`) tests `[7B91+key]` bit 2 and, for a digit,
+  calls `B060:08E6` and `B060:0A7B(key)` and returns 0 at `B31B:0053`.  The
+  `KEY_REPEAT` word `8010:D69A` is read only afterward (`B31B:0054`, for
+  `+`/`-`).  **PROVEN:** the digit path depends on neither the filter nor the
+  repeat count.
+- It cannot fail on a full queue (`FB00:067C` returns -1 and drops the key)
+  and does not depend on capture-profile queue constants.
+
+Remaining queue interaction (**PROVEN** from code; not exercised): every
+other key comes from `BDE3:000E`, and `D6E0:001B` coalesces consecutive equal
+keys into one key with the count in `8010:D69A` (linear `0x56E4A`-`0x56E66`).
+Since the digit path ignores that count, a fast repeated digit (`1`,`1`)
+enters once.  The stock Edit Sound editor reads through the same routine, and
+so does the graphics loop for its first digit.  This wrapper re-queues
+nothing else.  It leaves unread keys in the FIFO for the graphics loop in
+order, and it does not assume an empty queue.
 
 ## BENCH 06 End-to-Zone shortcut
 
@@ -162,3 +214,18 @@ Generic WAVE payload SHA-256:
 The composite fixture borrows uncaptured ROM holes as documented in
 [the physical profile](wave_physical_profile.md); this is software evidence,
 not physical-keyboard or LCD qualification.
+
+**First-digit order (MAME, one execution per case):**
+`python3 -m unittest emu.test_wave_numeric_order -v` runs three cases on a
+55125-frame sound, Start 0.  Panel keys `0`,`1` 10 ms apart, then Enter,
+run on WAVEHW (composite ROMs) and on generic WAVE.  The draft must read
+`Soft st :01` and Start must commit at 44100.  A third WAVEHW case sends `0`,
+`1`, Enter as one 10 ms burst and must commit 44100 and stay in graphics.
+With the queued first digit, all three failed: draft `10` in both
+profiles, and in the burst case a second dialog was left open at `Soft st :0`.
+With direct dispatch, 3/3 pass and `emu.test_wave_numeric` passes 9/9.
+Those payloads were WAVEHW.SYS SHA-256
+`2f8cdd654929987c696d1ea8c109d18ef0184f5981443f70440f76f2c0f33ab6` and WAVE.SYS
+`0a8594a8d0fe3fa1c1dc0ebeb3b51e90f71c74ac90eba8de55fb050da4ff569b`, with the
+cave 12,042 bytes in both profiles.  The physical-panel equivalent, fast
+typing on the real keyboard, remains unobserved.

@@ -2,11 +2,18 @@
 
 Procedure, rules and evidence: [`../MODDING_HOWTO.md`](../MODDING_HOWTO.md).
 Loader facts: [`../notes/floppy_loader.md`](../notes/floppy_loader.md).
-Builders read `07-rom/` and write only `build/mods/`.
+Builders read `07-rom/` (and, for the capture profile, `build/hardware/`)
+and write only `build/mods/`, or the directory given by `--out` / `out=`
+(tests use temporary directories). NASM runs in a private scratch
+directory per invocation, so concurrent builds cannot read each other's
+maps. Floppy images come from one deterministic FAT12 packer: directory
+times and bytes `+0C..+13` (3.50 filename characters 9-16) are zero, so an
+image hash is a function of its files. Builders no longer need mtools.
 
 | File | Role |
 |------|------|
-| `build_mod_sys.py` | Route A: patched Vailixi 3.50 relocated to RAM → `<NAME>.SYS`, `<NAME>.img` |
+| `buildkit.py` | Shared: pinned ROM interleave, word sum, MZ header, NASM map/listing/deps, deterministic FAT12 |
+| `build_mod_sys.py` | Route A: patched Vailixi 3.50 relocated to RAM → `<NAME>.SYS`, `<NAME>.img`; checks DGROUP size against the guarded BIOS |
 | `mod_stub.asm` | Route A stub: 3.50 BIOS guard, copy OS code + DGROUP, rejoin reset at `FAC0:0134` |
 | `*.args` | One mod per file: `--name=` and `--patch=FILE:OLD:NEW` lines |
 | `build_canary.py` | Route B minimal example: 288-byte `STARTUP.SYS` that prints `Vailixi 3.51 (---/--/----)` |
@@ -14,17 +21,17 @@ Builders read `07-rom/` and write only `build/mods/`.
 | `wave_numeric.inc`, `wave_playback.inc` | Stock numeric-entry integration and visible-selection audition |
 | `wave_zones.inc`, `wave_chop.inc` | Shared zone editor, source lifetime guards, and native sample creation through CHOP ZONE |
 | `mute_ui.inc`, `mute_voice.inc`, `mute_storage.inc` | Four program-level mute groups, 64-pad page, voice choking, and PGM/APS persistence |
-| `build_wave_bench.py` | `WAVEBENCH.img`: WAVE plus disposable mono/stereo sounds, with a SHA-256 manifest |
+| `build_wave_bench.py` | `WAVEBENCH.img`: WAVE plus disposable mono/stereo sounds; manifest marker from `WAVE.args`, sources from `nasm -M` |
 | `build_romcheck.py`, `romcheck.asm` | `ROMCHECK4` high-ROM byte comparison; physical stop at comparison checkpoint `2400` |
 | `build_romsum.py`, `romsum.asm` | One-cluster `ROMSUM2` checksum probe; physical run measured `81A0` versus reference `8634` |
 | `build_romword.py`, `romword.asm` | `ROMWORD5` focused aligned-word comparison of `7A000–7BFFF`; physical result: 1,287 differing words |
 | `build_romdump.py`, `romdump.asm` | Capture runtime `F800:0000–7FFF` to preallocated `BIOS.BIN`; physical 32 KiB capture verified |
-| `build_wave_physical.py` | WAVEHW / WAVE BENCH 06, hash-pinned captured ROM profile with exact high-ROM guard |
+| `build_wave_physical.py` | WAVEHW, hash-pinned captured ROM profile with exact high-ROM guard; hooks generated from `WAVE.args`; every cave far target checked against the capture |
 | `build_romapp.py`, `romapp.asm` | Guarded 336 KiB application/data capture to `ROMAPP.BIN`; excludes NVRAM, uses captured PGR wrapper |
 | `PETER.args`, `CAVEDEMO.args` | Version-screen credit and execution-from-RAM demonstrations |
 
 ```bash
-python3 mods/build_mod_sys.py @mods/DEMO351.args   # build/mods/DEMO351.{SYS,img}
+python3 mods/build_mod_sys.py @mods/DEMO351.args   # build/mods/DEMO351.{SYS,img}; --out DIR elsewhere
 python3 mods/build_canary.py                       # build/mods/STARTUP.SYS, vailixi350-canary.img
 python3 mods/build_wave_bench.py                   # build/mods/WAVEBENCH.{img,json}
 python3 mods/build_romcheck.py                     # build/mods/ROMCHECK.{SYS,img,json}
@@ -62,7 +69,10 @@ before power-on. The SND files are loaded manually after boot; the current USB a
 
 The captured personalized ROM requires `build_wave_physical.py`. Its
 validated BENCH 05 image is installed in slot 1; BENCH 06 adds mute groups. Both capture hashes are pinned; the loader compares all 32 KiB
-of high ROM before relocation. BENCH 02 full/Fine editing is physically observed; the new numeric and audio
+of high ROM before relocation. The build fails if a cave far CALL/JMP
+target in the capture is not the generic routine (allowing only the
+DGROUP −2 and AMX −0xA operand shifts); see
+[the profile note](../notes/wave_physical_profile.md#build-requirements-and-remaining-boundaries). BENCH 02 full/Fine editing is physically observed; the new numeric and audio
 controls need their next physical check;
 see [the capture and validation](../notes/rom_compatibility.md#wavehw-capture-specific-waveform-build).
 
@@ -103,7 +113,8 @@ created sounds are ordinary independent sound objects. Detailed evidence:
 [zone editor](../notes/wave_zones.md), [CHOP ZONE](../notes/wave_chop.md).
 
 BENCH 06 adds **Program/Sounds → 0. Mute groups**: Enabled per program,
-Group Off/1–4 per pad 1–64, and soft key 1 Apply All. Assignments are stored
+Group Off/1–4 per pad 1–64, and soft key 1 Apply All, which asks first: only
+soft key 3 `<Do it>` applies it and any other key cancels. Assignments are stored
 with PGM/APS files. See [controls and evidence](../notes/mute_groups.md).
 
 BENCH 06 also adds the waveform shortcut **End → Up → Zone**, then **Down →

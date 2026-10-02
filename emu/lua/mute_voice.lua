@@ -90,7 +90,10 @@ local dsp_tap = iosp:install_write_tap(0x60, 0x6f, "mute_dsp", function(address,
 		if mask & 0x00ff ~= 0 then selected_channel = data & 0x1f end
 		if mask & 0xff00 ~= 0 then selected_reg = (data >> 8) & 0x0f end
 		local t = now()
-		if cs == 0xd21f and ip == 0x001c then
+		-- D21F:001C is OUT DX,AX with AX = 0x0400 + channel (register-4
+		-- select): match the instruction and its full-word operand, as
+		-- wave_playback.lua does, not merely any port-60 write at that CS:IP.
+		if cs == 0xd21f and ip == 0x001c and mask == 0xffff and (data >> 8) & 0xff == 0x04 then
 			local ss = tonumber(cpu.state["SS"].value)
 			-- D21F has pushed BP and copied SP into it by its first OUT.  MAME
 			-- exposes SP but not BP in this V53 state surface, so SP is the live

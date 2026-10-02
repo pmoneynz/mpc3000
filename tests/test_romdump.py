@@ -19,11 +19,19 @@ import build_romdump as r  # noqa: E402
 
 @unittest.skipIf(shutil.which("nasm") is None, "needs nasm")
 class RomdumpTests(unittest.TestCase):
+    """Builds into a temporary directory; build/mods release artifacts are untouched."""
+
     @classmethod
     def setUpClass(cls) -> None:
-        cls.manifest = r.build()
-        cls.payload = r.SYS_PATH.read_bytes()
-        cls.image = r.IMG_PATH.read_bytes()
+        cls.tempdir = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(cls.tempdir.cleanup)
+        cls.out = Path(cls.tempdir.name)
+        cls.sys_path = cls.out / r.SYS_PATH.name
+        cls.img_path = cls.out / r.IMG_PATH.name
+        cls.manifest_path = cls.out / r.MANIFEST_PATH.name
+        cls.manifest = r.build(cls.out)
+        cls.payload = cls.sys_path.read_bytes()
+        cls.image = cls.img_path.read_bytes()
         cls.labels = {name: int(value, 16) for name, value in cls.manifest["labels"].items()}
 
     def test_mz_retains_loader_stack_and_fits_load_window(self) -> None:
@@ -59,16 +67,16 @@ class RomdumpTests(unittest.TestCase):
     @unittest.skipIf(any(shutil.which(tool) is None for tool in ("mdir", "mcopy")),
                      "needs mtools")
     def test_mtools_extracts_both_exact_files(self) -> None:
-        listing = subprocess.run(["mdir", "-i", str(r.IMG_PATH), "::"], check=True,
+        listing = subprocess.run(["mdir", "-i", str(self.img_path), "::"], check=True,
                                  capture_output=True, text=True).stdout
         self.assertIn("STARTUP  SYS", listing)
         self.assertIn("BIOS     BIN", listing)
         with tempfile.TemporaryDirectory() as directory:
             extracted_sys = Path(directory) / "STARTUP.SYS"
             extracted_bios = Path(directory) / "BIOS.BIN"
-            subprocess.run(["mcopy", "-i", str(r.IMG_PATH), "::STARTUP.SYS",
+            subprocess.run(["mcopy", "-i", str(self.img_path), "::STARTUP.SYS",
                             str(extracted_sys)], check=True)
-            subprocess.run(["mcopy", "-i", str(r.IMG_PATH), "::BIOS.BIN",
+            subprocess.run(["mcopy", "-i", str(self.img_path), "::BIOS.BIN",
                             str(extracted_bios)], check=True)
             self.assertEqual(extracted_sys.read_bytes(), self.payload)
             self.assertEqual(extracted_bios.read_bytes(), r.SENTINEL)
@@ -86,9 +94,9 @@ class RomdumpTests(unittest.TestCase):
                          {"0x41", "0x43"})
 
     def test_manifest_hashes_current_outputs(self) -> None:
-        manifest = json.loads(r.MANIFEST_PATH.read_text())
-        self.assertEqual(manifest["payload"]["sha256"], r.sha256(r.SYS_PATH.read_bytes()))
-        self.assertEqual(manifest["image"]["sha256"], r.sha256(r.IMG_PATH.read_bytes()))
+        manifest = json.loads(self.manifest_path.read_text())
+        self.assertEqual(manifest["payload"]["sha256"], r.sha256(self.sys_path.read_bytes()))
+        self.assertEqual(manifest["image"]["sha256"], r.sha256(self.img_path.read_bytes()))
 
 
 if __name__ == "__main__":

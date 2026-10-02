@@ -1,40 +1,48 @@
-"""WAVE <Ply/Stp> emulator regressions against the current physical payload.
+"""WAVE <Ply/Stp> emulator regressions.
 
 Run from the repository root:
 
     python3 -m unittest emu.test_wave_playback -v
 
-The test uses the already-built ``build/mods/WAVEHW.SYS`` and existing
-physical/reference composite ROM fixture.  It deliberately does not invoke a
-payload builder.  Evidence comes from the exact CFC6:0CE9 entry, full 16-bit
-DSP I/O writes, and writes/snapshots of the live sound record.
+Payloads come from emu.harness, built from the current sources (capture
+profile for every case, generic for the GENERIC subset).  Evidence comes from
+the stock player's own data reads of the record bounds inside CFC6:0CE9
+(BOUNDREAD, CS=CFC6, IP in [0CE9,0D75)), full 16-bit DSP I/O writes, the exact
+D213/D21F release/stop instructions, writes/snapshots of the live sound
+record, and short WAV windows of the mixed output.  Every started channel must
+stop exactly once within the selected duration plus one 10 ms scheduler tick
+(notes/wave_playback.md).
 """
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 import struct
-import time
 import unittest
 import wave
 
-from emu import test_mpc3k as base, wave_ref
-from emu.mpc3k import run
-from emu.panel import dial, key_tap, write_smf
-from emu.snd import disk, sine441, snd, stereo1
+from emu import harness as h, wave_ref
+from emu.harness import VIEW as V
+from emu.panel import dial, key_tap
+from emu.snd import sine441, snd, stereo1
 
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "build/emu/wave-playback-tests"
+PROBE = ROOT / "emu/lua/wave_playback.lua"
+# Legacy names for modules that import them from here (release artifacts;
+# this suite itself uses the payload emu.harness builds).
 SYS = ROOT / "build/mods/WAVEHW.SYS"
 ROMS = ROOT / "build/roms-wavehw-composite"
-PROBE = ROOT / "emu/lua/wave_playback.lua"
 
 MONO_START, MONO_END = 13_781, 48_000
 MONO_LEN = len(sine441()[0])
 STEREO_START, STEREO_END = 5_000, 30_000
 STEREO_LEN = len(stereo1()[0])
+RATE = 44_100
+TICK = 0.010                    # stock playback scheduler tick
+BOUND_WORDS = [0x3A72F4, 0x3A72F6, 0x3A72F8, 0x3A72FA]
+HEX_KEYS = {"phys", "data", "mask", "wave", "mixer", "step", "left", "right", "type"}
 
 
 @dataclass(frozen=True)
@@ -44,6 +52,7 @@ class Event:
 
 
 def parse_events(path: Path) -> list[Event]:
+    """KIND k=v lines: t float; cs/ip/file text; HEX_KEYS and DSP starts hex."""
     events = []
     for line in path.read_text().splitlines():
         kind, *fields = line.split()
@@ -52,10 +61,9 @@ def parse_events(path: Path) -> list[Event]:
             key, value = field.split("=", 1)
             if key == "t":
                 values[key] = float(value)
-            elif key in {"cs", "ip"}:
+            elif key in {"cs", "ip", "file"}:
                 values[key] = value
-            elif key in {"phys", "data", "mask", "wave", "mixer", "step", "left", "right"} \
-                    or (key == "start" and kind in {"KEYON", "STARTREG"}):
+            elif key in HEX_KEYS or (key == "start" and kind in {"KEYON", "STARTREG"}):
                 values[key] = int(value, 16)
             else:
                 values[key] = int(value)
@@ -64,6 +72,7 @@ def parse_events(path: Path) -> list[Event]:
 
 
 def common_events() -> list[tuple[float, bytes]]:
+    """Legacy timeline (load at 65.5 s, Help at 77.5 s, view from 80 s)."""
     events = []
     for at, key in ((62.0, "disk"), (63.5, "7"), (65.5, "soft1"),
                     (74.0, "program_sounds"), (75.5, "6"), (77.5, "help")):
@@ -71,261 +80,315 @@ def common_events() -> list[tuple[float, bytes]]:
     return events
 
 
-class WavePlayback(unittest.TestCase):
-    results: dict[str, list[Event]] = {}
+class WavePlayback(h.EmuSuite):
+    RUNS = RUNS
+    GENERIC = frozenset({"full_stop", "empty", "fine_record_end", "stock_exit"})
+    results: dict = {}
 
     @classmethod
-    def setUpClass(cls) -> None:
-        if missing := base.missing_tools():
-            raise unittest.SkipTest("emulator tests need: " + ", ".join(missing))
-        if not SYS.is_file():
-            raise unittest.SkipTest(f"current payload is missing: {SYS}")
-        if not (ROMS / "composite.json").is_file():
-            raise unittest.SkipTest(f"existing composite fixture is missing: {ROMS}")
-
-        RUNS.mkdir(parents=True, exist_ok=True)
-        mono_path = RUNS / "SINE441.SND"
-        stereo_path = RUNS / "STEREO1.SND"
-        end_path = RUNS / "SINEEND.SND"
+    def cases(cls, profile, runs):
+        mono_path = runs / "SINE441.SND"
+        stereo_path = runs / "STEREO1.SND"
+        end_path = runs / "SINEEND.SND"
         mono_path.write_bytes(snd("SINE441", sine441(), start=MONO_START, end=MONO_END))
         stereo_path.write_bytes(snd("STEREO1", stereo1(), start=STEREO_START, end=STEREO_END))
         end_path.write_bytes(snd("SINEEND", sine441(), start=MONO_START, end=MONO_LEN))
 
         actions: dict[str, list[tuple[float, bytes]]] = {}
-
         # Full Trim audition followed by the same key while active: stock D93
         # must stop all 32 channels.
-        actions["full_stop"] = key_tap("soft1", 81.0) + key_tap("soft1", 81.3)
-
+        actions["full_stop"] = key_tap("soft1", V + 1) + key_tap("soft1", V + 1.3)
         # Fine around Trim start clips the end; selecting Trim end recentres
         # the visible window and clips the start.  Default zoom is 16, so each
         # half-window is 120 * 16 = 1,920 frames.
-        actions["fine"] = (key_tap("soft3", 81.0) + key_tap("soft1", 82.0)
-                           + key_tap("right", 83.0) + key_tap("soft1", 84.0))
-
-        # Select first of 16 equal zones; add 10 wheel steps to its end
-        # and 2 steps to its start,
-        # then audition the selected Zone pair.  floor(55125 / 240) = 229.
-        actions["zone"] = (key_tap("soft2", 81.0) + key_tap("right", 82.0)
-                           + dial(10, 83.0) + key_tap("left", 84.5)
-                           + dial(2, 85.5) + key_tap("soft1", 86.5))
-
-        actions["stereo"] = key_tap("soft1", 81.0)
-
-        # Collapse the first zone by advancing Start to its End. Ply/Stp must not
-        # call the stock player or touch the sound record.
-        actions["empty"] = (key_tap("soft2", 81.0) + dial(20, 81.3)
-                            + key_tap("soft1", 82.5))
-
+        actions["fine"] = (key_tap("soft3", V + 1) + key_tap("soft1", V + 2)
+                           + key_tap("right", V + 3) + key_tap("soft1", V + 4))
+        # Select first of 16 equal zones; add 10 wheel steps to its end and 2
+        # steps to its start, then audition the Zone pair.  floor(55125/240) = 229.
+        actions["zone"] = (key_tap("soft2", V + 1) + key_tap("right", V + 2)
+                           + dial(10, V + 3) + key_tap("left", V + 4.5)
+                           + dial(2, V + 5.5) + key_tap("soft1", V + 6.5))
+        actions["stereo"] = key_tap("soft1", V + 1)
+        # Collapse the first zone by advancing Start to its End: Ply/Stp must
+        # not call the stock player or touch the record.  Positive control:
+        # move Start back 10 steps (to 3445 - 2290) and the same key plays.
+        actions["empty"] = (key_tap("soft2", V + 1) + dial(20, V + 1.3)
+                            + key_tap("soft1", V + 2.5)
+                            + dial(-10, V + 4) + key_tap("soft1", V + 6))
         # Zoom 1 exposes only 120 frames on the selected side: below the
-        # scoped hook's safe two-tick floor.  Reject it, zoom back out to 16,
-        # and prove a later request succeeds and clears the warning.
-        actions["short_recover"] = (key_tap("soft3", 81.0)
-                                    + sum((key_tap("up", t) for t in (82.0, 83.0, 84.0, 85.0)), [])
-                                    + key_tap("soft1", 86.0)
-                                    + sum((key_tap("down", t) for t in (87.0, 87.3, 87.6, 87.9)), [])
-                                    + key_tap("soft1", 89.0))
-
+        # scoped hook's two-tick floor.  Reject it, zoom back out to 16, and
+        # prove a later request succeeds and clears the warning.
+        actions["short_recover"] = (key_tap("soft3", V + 1)
+                                    + sum((key_tap("up", V + t) for t in (2.0, 3.0, 4.0, 5.0)), [])
+                                    + key_tap("soft1", V + 6)
+                                    + sum((key_tap("down", V + t) for t in (7.0, 7.3, 7.6, 7.9)), [])
+                                    + key_tap("soft1", V + 9))
         # Select Trim end when it equals record length.  The visible
         # intersection must end at len; no scheduler tail may be added.
-        actions["fine_record_end"] = (key_tap("soft3", 81.0) + key_tap("right", 82.0)
-                                      + key_tap("soft1", 83.0))
-
+        actions["fine_record_end"] = (key_tap("soft3", V + 1) + key_tap("right", V + 2)
+                                      + key_tap("soft1", V + 3))
         # Exit WAVE and invoke the stock Edit Sound Ply/Stp caller.  Its
         # original 30 ms subtraction must remain active.
-        actions["stock_exit"] = key_tap("soft4", 81.0) + key_tap("soft1", 82.0)
+        actions["stock_exit"] = key_tap("soft4", V + 1) + key_tap("soft1", V + 2)
 
-        final_time = {"full_stop": 82.0, "fine": 85.0, "zone": 87.0,
-                      "stereo": 82.0, "empty": 83.0, "short_recover": 90.0,
-                      "fine_record_end": 84.0, "stock_exit": 83.0}
-        capture_times = {name: [80.0, end] for name, end in final_time.items()}
-        capture_times["short_recover"] = [80.0, 86.5, 88.5, 90.0]
+        final_time = {"full_stop": 2, "fine": 5, "zone": 7, "stereo": 2, "empty": 8,
+                      "short_recover": 10, "fine_record_end": 4, "stock_exit": 3}
+        capture_times = {name: [V, V + end] for name, end in final_time.items()}
+        capture_times["short_recover"] = [V, V + 6.5, V + 8.5, V + 10]
+        capture_times["empty"] = [V, V + 3.5, V + 8]
         sound = {"full_stop": mono_path, "fine": mono_path, "zone": mono_path,
                  "stereo": stereo_path, "empty": mono_path, "short_recover": mono_path,
                  "fine_record_end": end_path, "stock_exit": mono_path}
-
-        jobs = []
+        cases = {}
         for name in actions:
-            image = disk(f"wave-playback-{name}", [(SYS, "STARTUP.SYS"),
-                                                    (sound[name], sound[name].name)])
-            panel = write_smf(RUNS / f"{name}.mid", common_events() + actions[name])
-            jobs.append((name, image, panel, capture_times[name]))
-
-        def go(job: tuple[str, Path, Path, list[float]]) -> tuple[str, list[Event]]:
-            name, image, panel, times = job
-            extra = ["-autoboot_script", str(PROBE)]
+            env = {"PLAYBACK_WATCH_FROM": str(V - 1)}
             if name == "fine":
-                extra += ["-wavwrite", str(RUNS / name / "audition.wav")]
-            run("vailixi", times, RUNS / name, floppy=image, panel=panel,
-                rompath=ROMS, extra=extra)
-            # Require the final snapshot marker before parsing so an
-            # incomplete trace can never be accepted as a negative result.
-            log = RUNS / name / "wave_playback.log"
-            marker = f"SNAP t={times[-1]:.6f}"
-            deadline = time.monotonic() + 5.0
-            while time.monotonic() < deadline:
-                if log.is_file() and marker in log.read_text():
-                    break
-                time.sleep(0.02)
-            else:
-                raise RuntimeError(f"{name}: playback probe did not flush {marker}")
-            return name, parse_events(log)
+                # 170 ms windows around each audition instead of a whole-run WAV.
+                env["PLAYBACK_WAV"] = ";".join(f"{V + k - 0.02}:{V + k + 0.15}:audition{k}.wav"
+                                               for k in (2, 4))
+            cases[name] = h.Case(events=h.wave_events(actions[name]), times=capture_times[name],
+                                 files=[(sound[name], sound[name].name)],
+                                 parts=("wave_playback",), env=env)
+        return cases
 
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            cls.results = dict(pool.map(go, jobs))
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.logs = {}
+        for (prof, case), _ in cls.results.items():
+            log = RUNS / prof / case / "wave_playback.log"
+            times = cls.cases_times(prof, case)
+            # MAME has exited and the log is closed: no polling.  A missing
+            # final snapshot means the probe failed, never a negative result.
+            h.require_marker(log, f"SNAP t={times[-1]:.6f}")
+            cls.logs[(prof, case)] = parse_events(log)
 
-    def events(self, case: str, kind: str) -> list[dict[str, int | float | str]]:
-        return [event.values for event in self.results[case] if event.kind == kind]
+    @classmethod
+    def cases_times(cls, prof: str, case: str) -> list[float]:
+        return [s["time"] for s in cls.results[(prof, case)]]
 
-    def assert_restored(self, case: str, start: int, end: int, length: int) -> None:
-        snapshots = self.events(case, "SNAP")
+    # ------------------------------------------------------------------
+
+    def runs(self, case: str) -> list[tuple[str, list[Event]]]:
+        found = [(p, log) for (p, c), log in self.logs.items() if c == case]
+        self.assertTrue(found, f"case {case} did not run")
+        return found
+
+    @staticmethod
+    def kind(log: list[Event], kind: str, start: float = 0.0, end: float = float("inf")) -> list[dict]:
+        return [e.values for e in log if e.kind == kind and start <= float(e.values.get("t", 0.0)) < end]
+
+    def assert_restored(self, log, start: int, end: int, length: int) -> None:
+        snapshots = self.kind(log, "SNAP")
         self.assertGreaterEqual(len(snapshots), 2)
         for snapshot in snapshots:
             self.assertEqual((snapshot["start"], snapshot["end"], snapshot["len"]),
                              (start, end, length))
 
-    def requested_intervals(self, case: str) -> list[tuple[int, int]]:
-        writes = self.events(case, "BOUNDWRITE")
+    def requested_intervals(self, log) -> list[tuple[int, int, float, float]]:
+        """(start, end, t_mutate, t_restore) for each temporary record mutation."""
+        writes = self.kind(log, "BOUNDWRITE")
         self.assertEqual(len(writes) % 8, 0, writes)
-        snapshots = self.events(case, "SNAP")
+        snapshots = self.kind(log, "SNAP")
         self.assertTrue(snapshots)
         original = (int(snapshots[0]["start"]), int(snapshots[0]["end"]))
         intervals = []
         for offset in range(0, len(writes), 8):
             temporary, restored = writes[offset:offset + 4], writes[offset + 4:offset + 8]
-            self.assertEqual([w["phys"] for w in temporary],
-                             [0x3A72F4, 0x3A72F6, 0x3A72F8, 0x3A72FA])
-            self.assertEqual([w["phys"] for w in restored],
-                             [0x3A72F4, 0x3A72F6, 0x3A72F8, 0x3A72FA])
+            self.assertEqual([w["phys"] for w in temporary], BOUND_WORDS)
+            self.assertEqual([w["phys"] for w in restored], BOUND_WORDS)
             self.assertEqual([w["mask"] for w in temporary + restored], [0xFFFF] * 8)
             start = int(temporary[0]["data"]) | (int(temporary[1]["data"]) << 16)
             end = int(temporary[2]["data"]) | (int(temporary[3]["data"]) << 16)
-            intervals.append((start, end))
             restored_start = int(restored[0]["data"]) | (int(restored[1]["data"]) << 16)
             restored_end = int(restored[2]["data"]) | (int(restored[3]["data"]) << 16)
             self.assertEqual((restored_start, restored_end), original)
+            intervals.append((start, end, float(temporary[-1]["t"]), float(restored[0]["t"])))
         return intervals
 
-    def assert_calls(self, case: str, intervals: list[tuple[int, int]]) -> int:
-        self.assertEqual(self.requested_intervals(case), intervals)
-        calls = self.events(case, "CE9")
-        # Some MAME builds expose instruction prefetch taps and some expose
-        # only data-space reads.  Bound writes immediately before D1F7 plus
-        # full-word DSP starts remain the portable proof.  When CE9 fetches
-        # are exposed, check the entry and its live record as well.
-        self.assertIn(len(calls), (0, len(intervals)))
-        self.assertEqual([(c["start"], c["end"]) for c in calls], intervals if calls else [])
-        for call in calls:
-            self.assertEqual((call["cs"], call["ip"], call["phys"], call["index"], call["xa"]),
-                             ("CFC6", "0CE9", 0x3D0949, 0, 1))
-        snapshots = self.events(case, "SNAP")
+    def assert_player_read(self, log, start: int, end: int, t0: float, t1: float) -> None:
+        """CFC6:0CE9 itself read these start/end dwords in [t0, t1].
+
+        CE9 compares the high words (signed) and reads the low end word only
+        when they are equal, so with equal high words all four words must be
+        read; otherwise the end's low word may be skipped.  Every read of the
+        bounds in the window, by any code, must return the requested values.
+        """
+        reads = self.kind(log, "BOUNDREAD", t0, t1 + 1e-9)
+        want = {0x3A72F4: start & 0xFFFF, 0x3A72F6: start >> 16,
+                0x3A72F8: end & 0xFFFF, 0x3A72FA: end >> 16}
+        for r in reads:
+            self.assertEqual(int(r["data"]), want[r["phys"]], r)
+        player = {r["phys"] for r in reads
+                  if r["cs"] == "CFC6" and 0x0CE9 <= int(r["ip"], 16) < 0x0D75}
+        required = set(want) if start >> 16 == end >> 16 else set(want) - {0x3A72F8}
+        self.assertTrue(required <= player, f"CE9 read {sorted(player)} in [{t0}, {t1}]")
+
+    def assert_calls(self, log, intervals: list[tuple[int, int]]) -> int:
+        requested = self.requested_intervals(log)
+        self.assertEqual([(a, b) for a, b, _, _ in requested], intervals)
+        for a, b, t0, t1 in requested:
+            self.assert_player_read(log, a, b, t0, t1)
+        # Every stock-player read belongs to one of the temporary mutations.
+        reads = [r for r in self.kind(log, "BOUNDREAD") if r["cs"] == "CFC6"]
+        self.assertTrue(all(any(t0 <= float(r["t"]) <= t1 for _, _, t0, t1 in requested)
+                            for r in reads), reads)
+        snapshots = self.kind(log, "SNAP")
         self.assertTrue(snapshots)
-        wave_base = int(snapshots[0]["wave"])
-        self.assertTrue(all(int(c["wave"]) == wave_base for c in calls))
-        return wave_base
+        return int(snapshots[0]["wave"])
+
+    def assert_lifecycles(self, log, frames: list[int]) -> None:
+        """Each started channel: exactly one D21F stop, 0 < dt <= frames/44100 + one tick."""
+        starts = self.kind(log, "STARTREG")
+        self.assertEqual(len(starts), len(frames), starts)
+        for start, n in zip(starts, frames):
+            later = [s["t"] for s in starts if s["ch"] == start["ch"] and s["t"] > start["t"]]
+            stops = self.kind(log, "D21F", start["t"], min(later, default=float("inf")))
+            stops = [s for s in stops if s["ch"] == start["ch"]]
+            self.assertEqual(len(stops), 1, (start, stops))
+            dt = float(stops[0]["t"]) - float(start["t"])
+            self.assertGreater(dt, 0.0)
+            self.assertLessEqual(dt, n / RATE + TICK, (start, stops[0], n))
+
+    # ------------------------------------------------------------------
 
     def test_full_trim_and_explicit_stop(self) -> None:
-        wave_base = self.assert_calls("full_stop", [(MONO_START, MONO_END)])
-        starts = self.events("full_stop", "STARTREG")
-        self.assertEqual([(event["start"], event["type"]) for event in starts],
-                         [(wave_base + MONO_START, 0)])
-        stops = self.events("full_stop", "D21F")
-        self.assertEqual([stop["ch"] for stop in stops], list(range(32)))
-        self.assertLess(float(stops[-1]["t"]) - float(stops[0]["t"]), 0.002)
-        self.assert_restored("full_stop", MONO_START, MONO_END, MONO_LEN)
+        for prof, log in self.runs("full_stop"):
+            with self.subTest(profile=prof):
+                wave_base = self.assert_calls(log, [(MONO_START, MONO_END)])
+                starts = self.kind(log, "STARTREG")
+                self.assertEqual([(e["start"], e["type"]) for e in starts],
+                                 [(wave_base + MONO_START, 0)])
+                stops = self.kind(log, "D21F")
+                self.assertEqual([stop["ch"] for stop in stops], list(range(32)))
+                self.assertLess(float(stops[-1]["t"]) - float(stops[0]["t"]), 0.002)
+                # The explicit second press (0.3 s later) stops it early.
+                self.assert_lifecycles(log, [MONO_END - MONO_START])
+                self.assertLess(float(stops[0]["t"]) - float(starts[0]["t"]), 0.35)
+                self.assert_restored(log, MONO_START, MONO_END, MONO_LEN)
 
     def test_fine_view_clips_both_sides(self) -> None:
         half_window = 120 * 16
-        intervals = [(MONO_START, MONO_START + half_window),
-                     (MONO_END - half_window, MONO_END)]
-        wave_base = self.assert_calls("fine", intervals)
-        self.assertEqual([event["start"] for event in self.events("fine", "STARTREG")],
-                         [wave_base + MONO_START, wave_base + MONO_END - half_window])
-        # Both 1,920-frame windows contain nonzero source material.  This
-        # catches an immediate lifecycle stop that otherwise looks correct in
-        # the bounds and start-address trace.
-        wav_path = RUNS / "fine/audition.wav"
-        with wave.open(str(wav_path)) as wav:
-            self.assertEqual((wav.getnchannels(), wav.getsampwidth(), wav.getframerate()),
-                             (11, 2, 48_000))
-            for start in (82.0, 84.0):
-                wav.setpos(round(start * wav.getframerate()))
-                raw = wav.readframes(round(0.03 * wav.getframerate()))
-                samples = struct.unpack(f"<{len(raw) // 2}h", raw)
-                nonzero = [sum(samples[i] != 0 for i in range(channel, len(samples), 11))
-                           for channel in (1, 2)]
-                self.assertTrue(all(count > 500 for count in nonzero), nonzero)
-        self.assert_restored("fine", MONO_START, MONO_END, MONO_LEN)
+        for prof, log in self.runs("fine"):
+            with self.subTest(profile=prof):
+                intervals = [(MONO_START, MONO_START + half_window),
+                             (MONO_END - half_window, MONO_END)]
+                wave_base = self.assert_calls(log, intervals)
+                self.assertEqual([e["start"] for e in self.kind(log, "STARTREG")],
+                                 [wave_base + MONO_START, wave_base + MONO_END - half_window])
+                self.assert_lifecycles(log, [half_window, half_window])
+                # Both 1,920-frame windows contain nonzero source material.
+                # This catches an immediate lifecycle stop that otherwise looks
+                # correct in the bounds and start-address trace.
+                windows = {e["file"]: e for e in self.kind(log, "WAVSTART")}
+                self.assertEqual(len(windows), 2)
+                for k in (2, 4):
+                    began = windows[f"audition{k}.wav"]
+                    self.assertEqual(began["ok"], 1)
+                    with wave.open(str(RUNS / prof / "fine" / f"audition{k}.wav")) as wav:
+                        self.assertEqual((wav.getnchannels(), wav.getsampwidth(), wav.getframerate()),
+                                         (11, 2, 48_000))
+                        key = V + k
+                        self.assertLess(float(began["t"]), key)
+                        wav.setpos(round((key - float(began["t"])) * wav.getframerate()))
+                        raw = wav.readframes(round(0.03 * wav.getframerate()))
+                    samples = struct.unpack(f"<{len(raw) // 2}h", raw)
+                    nonzero = [sum(samples[i] != 0 for i in range(channel, len(samples), 11))
+                               for channel in (1, 2)]
+                    self.assertTrue(all(count > 500 for count in nonzero), nonzero)
+                self.assert_restored(log, MONO_START, MONO_END, MONO_LEN)
 
     def test_selected_zone(self) -> None:
         step = MONO_LEN // 240
-        intervals = [(2 * step, MONO_LEN // 16 + 10 * step)]
-        wave_base = self.assert_calls("zone", intervals)
-        self.assertEqual([event["start"] for event in self.events("zone", "STARTREG")],
-                         [wave_base + 2 * step])
-        self.assert_restored("zone", MONO_START, MONO_END, MONO_LEN)
+        for prof, log in self.runs("zone"):
+            with self.subTest(profile=prof):
+                interval = (2 * step, MONO_LEN // 16 + 10 * step)
+                wave_base = self.assert_calls(log, [interval])
+                self.assertEqual([e["start"] for e in self.kind(log, "STARTREG")],
+                                 [wave_base + 2 * step])
+                self.assert_lifecycles(log, [interval[1] - interval[0]])
+                self.assert_restored(log, MONO_START, MONO_END, MONO_LEN)
 
     def test_stereo_starts_both_planes(self) -> None:
-        wave_base = self.assert_calls("stereo", [(STEREO_START, STEREO_END)])
-        starts = self.events("stereo", "STARTREG")
-        self.assertEqual([event["start"] for event in starts],
-                         [wave_base + STEREO_START,
-                          wave_base + STEREO_LEN + STEREO_START])
-        self.assertTrue(all(event["type"] == 0 for event in starts))
-        stops = self.events("stereo", "D21F")
-        self.assertEqual(len(stops), 2)
-        self.assertEqual({event["ch"] for event in stops}, {event["ch"] for event in starts})
-        self.assert_restored("stereo", STEREO_START, STEREO_END, STEREO_LEN)
+        for prof, log in self.runs("stereo"):
+            with self.subTest(profile=prof):
+                wave_base = self.assert_calls(log, [(STEREO_START, STEREO_END)])
+                starts = self.kind(log, "STARTREG")
+                self.assertEqual([e["start"] for e in starts],
+                                 [wave_base + STEREO_START, wave_base + STEREO_LEN + STEREO_START])
+                self.assertTrue(all(e["type"] == 0 for e in starts))
+                stops = self.kind(log, "D21F")
+                self.assertEqual(len(stops), 2)
+                self.assertEqual({e["ch"] for e in stops}, {e["ch"] for e in starts})
+                self.assert_lifecycles(log, [STEREO_END - STEREO_START] * 2)
+                self.assert_restored(log, STEREO_START, STEREO_END, STEREO_LEN)
 
     def test_empty_zone_is_rejected(self) -> None:
-        for kind in ("CE9", "STARTREG", "KEYON", "BOUNDWRITE", "D213", "D21F"):
-            self.assertEqual(self.events("empty", kind), [], kind)
-        self.assert_restored("empty", MONO_START, MONO_END, MONO_LEN)
+        zone_end = MONO_LEN // 16
+        for prof, log in self.runs("empty"):
+            with self.subTest(profile=prof):
+                # Nothing at all happens for the empty request ...
+                for kind in ("BOUNDREAD", "STARTREG", "KEYON", "BOUNDWRITE", "D213", "D21F"):
+                    self.assertEqual(self.kind(log, kind, V, V + 3.5), [], kind)
+                # ... while the same key, once the zone is non-empty, plays it.
+                positive = (zone_end - 10 * (MONO_LEN // 240), zone_end)
+                wave_base = self.assert_calls(log, [positive])
+                self.assertEqual([e["start"] for e in self.kind(log, "STARTREG")],
+                                 [wave_base + positive[0]])
+                self.assertGreater(self.kind(log, "STARTREG")[0]["t"], V + 6)
+                self.assert_lifecycles(log, [positive[1] - positive[0]])
+                self.assert_restored(log, MONO_START, MONO_END, MONO_LEN)
 
     def test_zoom_one_rejects_then_recovers(self) -> None:
-        intervals = [(MONO_START, MONO_START + 120),
-                     (MONO_START, MONO_START + 120 * 16)]
-        wave_base = self.assert_calls("short_recover", intervals)
-        starts = self.events("short_recover", "STARTREG")
-        self.assertEqual([event["start"] for event in starts], [wave_base + MONO_START])
-        self.assertGreater(float(starts[0]["t"]), 88.5)
-        self.assertEqual(len(self.events("short_recover", "D21F")), 1)
-        self.assert_restored("short_recover", MONO_START, MONO_END, MONO_LEN)
-
-        blocks = (RUNS / "short_recover/lcd_pixels.txt").read_text().split("@ ")[1:]
-        pixels = {block.split()[0]: block.splitlines()[1:65] for block in blocks}
-        points = [MONO_START, MONO_END, 0, 0]
-        self.assertEqual(pixels["86.500"],
-                         wave_ref.screen(sine441(), "SINE441",
-                                         wave_ref.View(points, fine=True, zoom=1,
-                                                       too_short=True)))
-        self.assertEqual(pixels["88.500"],
-                         wave_ref.screen(sine441(), "SINE441",
-                                         wave_ref.View(points, fine=True, zoom=16)))
+        for prof, log in self.runs("short_recover"):
+            with self.subTest(profile=prof):
+                intervals = [(MONO_START, MONO_START + 120), (MONO_START, MONO_START + 120 * 16)]
+                wave_base = self.assert_calls(log, intervals)
+                starts = self.kind(log, "STARTREG")
+                self.assertEqual([e["start"] for e in starts], [wave_base + MONO_START])
+                self.assertGreater(float(starts[0]["t"]), V + 8.5)
+                self.assertEqual(len(self.kind(log, "D21F")), 1)
+                self.assert_lifecycles(log, [120 * 16])
+                self.assert_restored(log, MONO_START, MONO_END, MONO_LEN)
+                pixels = h.lcd_pixels(RUNS / prof / "short_recover")
+                points = [MONO_START, MONO_END, 0, 0]
+                self.assertEqual(pixels[f"{V + 6.5:.3f}"],
+                                 wave_ref.screen(sine441(), "SINE441",
+                                                 wave_ref.View(points, fine=True, zoom=1,
+                                                               too_short=True)))
+                self.assertEqual(pixels[f"{V + 8.5:.3f}"],
+                                 wave_ref.screen(sine441(), "SINE441",
+                                                 wave_ref.View(points, fine=True, zoom=16)))
 
     def test_fine_end_at_record_length(self) -> None:
         half_window = 120 * 16
-        wave_base = self.assert_calls("fine_record_end",
-                                      [(MONO_LEN - half_window, MONO_LEN)])
-        self.assertEqual([event["start"] for event in self.events("fine_record_end", "STARTREG")],
-                         [wave_base + MONO_LEN - half_window])
-        self.assert_restored("fine_record_end", MONO_START, MONO_LEN, MONO_LEN)
+        for prof, log in self.runs("fine_record_end"):
+            with self.subTest(profile=prof):
+                wave_base = self.assert_calls(log, [(MONO_LEN - half_window, MONO_LEN)])
+                self.assertEqual([e["start"] for e in self.kind(log, "STARTREG")],
+                                 [wave_base + MONO_LEN - half_window])
+                self.assert_lifecycles(log, [half_window])
+                self.assert_restored(log, MONO_START, MONO_LEN, MONO_LEN)
 
     def test_stock_plystp_hook_scope(self) -> None:
-        self.assertEqual(self.events("stock_exit", "BOUNDWRITE"), [])
-        starts = self.events("stock_exit", "STARTREG")
-        self.assertEqual(len(starts), 1)
-        snapshots = self.events("stock_exit", "SNAP")
-        self.assertEqual(starts[0]["start"], snapshots[0]["wave"] + MONO_START)
-        releases = self.events("stock_exit", "D213")
-        stops = self.events("stock_exit", "D21F")
-        self.assertEqual((len(releases), len(stops)), (1, 1))
-        elapsed = float(stops[0]["t"]) - float(starts[0]["t"])
-        self.assertGreater(elapsed, 0.70)
-        self.assertLess(elapsed, 0.75)
-        self.assertAlmostEqual(float(stops[0]["t"]) - float(releases[0]["t"]), 0.020,
-                               delta=0.002)
-        self.assert_restored("stock_exit", MONO_START, MONO_END, MONO_LEN)
+        for prof, log in self.runs("stock_exit"):
+            with self.subTest(profile=prof):
+                self.assertEqual(self.kind(log, "BOUNDWRITE"), [])
+                starts = self.kind(log, "STARTREG")
+                self.assertEqual(len(starts), 1)
+                snapshots = self.kind(log, "SNAP")
+                self.assertEqual(starts[0]["start"], snapshots[0]["wave"] + MONO_START)
+                # The stock caller hands CE9 the record's own bounds.
+                self.assert_player_read(log, MONO_START, MONO_END, V, starts[0]["t"])
+                releases = self.kind(log, "D213")
+                stops = self.kind(log, "D21F")
+                self.assertEqual((len(releases), len(stops)), (1, 1))
+                elapsed = float(stops[0]["t"]) - float(starts[0]["t"])
+                self.assertGreater(elapsed, 0.70)
+                self.assertLess(elapsed, 0.75)
+                self.assertAlmostEqual(float(stops[0]["t"]) - float(releases[0]["t"]), 0.020,
+                                       delta=0.002)
+                self.assert_restored(log, MONO_START, MONO_END, MONO_LEN)
 
 
 if __name__ == "__main__":

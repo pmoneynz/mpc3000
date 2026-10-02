@@ -64,6 +64,11 @@ mute_ui:
         call mute_ui_context
 .dispatch:
         mov bl, [cs:mu_key]
+        ; An Apply All prompt is open for exactly one key: read and clear it.
+        xor ax, ax
+        xchg ax, [cs:mu_confirm]
+        or al, al
+        jnz .confirm
         cmp bl, '0'
         jb .not_digit
         cmp bl, '9'
@@ -90,6 +95,7 @@ mute_ui:
         je .pad_event
         cmp bl, 'N'
         je .midi_event
+.cancel:
         mov si, modes
 .mode:  mov al, [cs:si]
         inc si
@@ -130,9 +136,44 @@ mute_ui:
         jae .redraw
         mov [cs:mu_pad], al
         jmp .redraw
+; Soft Key 1 only asks. Like the stock Delete Sound <DEL ALL SNDS!> prompt,
+; the confirm is a different soft key from the one that opened it.
 .all:   call mute_ui_selected_group
+        inc ax
+        mov ah, [cs:mu_program]
+        mov [cs:mu_confirm], ax         ; group+1, program named by the prompt
+        call mute_ui_draw               ; formats the digits and group text
+        mov ax, [cs:mu_program_digits]
+        mov [cs:mu_ask_program], ax
+        ; Replace glyph rows 0-6 and 57-63; the fields and pad grid stay.
+        xor ax, ax
+        mov di, FB
+        mov cx, ROW*7/2
+        rep stosw
+        mov di, FB+ROW*57
+        mov cx, ROW*7/2
+        rep stosw
+        xor bx, bx
+        mov si, mu_ask
+        call text
+        mov bx, 37
+        mov si, mu_group_text
+        call text
+        mov ax, 57
+        mov bx, 20
+        mov si, mu_ask_keys
+        call text
+        jmp .blit
+; AL = group+1, AH = prompt program. Soft Key 3 applies only while that
+; program is still current; any other key cancels, and a mode key leaves.
+.confirm:
+        cmp bl, 'z'
+        jne .cancel
+        cmp ah, [cs:mu_program]
+        jne .redraw
+        dec ax
         mov dl, al
-        mov al, [cs:mu_program]
+        mov al, ah
         call mute_apply_all
         jmp .redraw
 .adjust:
@@ -229,7 +270,7 @@ mute_ui:
         call mute_set_group
 .redraw:
         call mute_ui_draw
-        call 0xC4C8:0x0F0D
+.blit:  call 0xC4C8:0x0F0D
         jmp .key
 
 ; AX value in [0,DX], BL +/- and CX repeat. Saturating unsigned arithmetic.
@@ -462,6 +503,9 @@ mu_grid: db 'A 01-16:---- ---- ---- ----',0
          db 'C 33-48:---- ---- ---- ----',0
          db 'D 49-64:---- ---- ---- ----',0
 mu_apply: db '<Apply All>',0
+mu_ask: db 'Program '
+mu_ask_program: db '01: set all 64 pads to group ',0  ; + mu_group_text
+mu_ask_keys: db '<Do it>     <Cancel>',0  ; Soft Keys 3 and 4
 mu_off: db 'OFF'
 mu_on: db 'ON '
 mu_focus_rows: dw 8,8,16,16
@@ -475,5 +519,6 @@ mu_number: db 0
 mu_key: db 0
 align 2
 mu_repeat: dw 1
+mu_confirm: dw 0                        ; nonzero only for the key after Apply All
 mu_notes: times 64 db 0
 mu_alias: times 64 db 0

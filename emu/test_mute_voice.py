@@ -1,12 +1,15 @@
 """End-to-end MUTE GROUPS voice tests through stock PGM/SND loading and pads.
 
-Run from the repository root after building BENCH06/WAVEHW:
+Run from the repository root:
 
     python3 -m unittest emu.test_mute_voice -v
 
-The fixtures derive from a PGM saved by the native Disk UI.  Lua only
-observes execution and RAM writes; it does not seed program, sound, mute, or
-voice state.
+The capture payload is built from the current sources by emu.harness (its
+SHA-256 is logged).  The fixtures derive from a PGM saved by the native Disk
+UI.  Lua only observes execution and RAM writes; it does not seed program,
+sound, mute, or voice state.  Tag writes are counted only when the cave
+itself (CS=F07D) writes them: the loader's copy of the cave (CS=6900) also
+writes every tag byte at boot.
 """
 from __future__ import annotations
 
@@ -14,21 +17,19 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 import re
-import time
 import unittest
 
-from emu import test_mpc3k as base
+from emu import harness as h
 from emu import pgm as pgm_fixture
 from emu.mpc3k import run
 from emu.panel import dial, key_tap, pad_hit, panel_pad, write_smf
-from emu.snd import disk, sine, snd
+from emu.snd import sine, snd
 
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "build/emu/mute-voice-tests"
-SYS = ROOT / "build/mods/WAVEHW.SYS"
+SYS = ROOT / "build/mods/WAVEHW.SYS"          # legacy default for symbols()/observer()
 MAP = ROOT / "build/mods/wavehw.cave.map"
-ROMS = ROOT / "build/roms-wavehw-composite"
 TEMPLATE = ROOT / "emu/fixtures/mute-native-blank.PGM"
 LUA = ROOT / "emu/lua/mute_voice.lua"
 
@@ -125,13 +126,13 @@ class MuteVoice(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        if missing := base.missing_tools():
-            raise unittest.SkipTest("emulator tests need: " + ", ".join(missing))
-        required = (SYS, MAP, ROMS / "composite.json", TEMPLATE, LUA)
-        if missing := [str(path) for path in required if not path.is_file()]:
-            raise unittest.SkipTest("current BENCH06 artifacts are missing: " + ", ".join(missing))
+        profile = h.payload("capture")
+        if not TEMPLATE.is_file():
+            h.unavailable(f"native PGM fixture is missing: {TEMPLATE}")
         RUNS.mkdir(parents=True, exist_ok=True)
-        probe = observer()
+        profile.record(RUNS)
+        cls.payload_hash = profile.sha256
+        probe = h.observer(profile, RUNS / "observe.lua", ["mute_voice"])
 
         definitions: dict[str, tuple[Path, Path, Path | None, float]] = {}
         mono = RUNS / "TEST.SND"
@@ -154,9 +155,8 @@ class MuteVoice(unittest.TestCase):
                           enabled=enabled, groups=groups,
                           assigned_notes=assigned_notes, layers=layers,
                           note_off=note_off, cutoff=cutoff, duplicate=duplicate)
-            image = disk(f"mute-voice-{name}", [(SYS, "STARTUP.SYS"),
-                                                (program, "MUTE.PGM"),
-                                                (sound, "TEST.SND")])
+            image = h.wave_disk(profile, f"mute-voice-{name}", [(program, "MUTE.PGM"),
+                                                                 (sound, "TEST.SND")])
             actions = load_actions() + (panel_extra or [])
             for pad, at, hold in hits:
                 actions += pad_hit(panel_pad(pad), at, hold=hold)
@@ -210,9 +210,8 @@ class MuteVoice(unittest.TestCase):
         # hit another pad.  Equal group numbers remain isolated by program tag.
         isolation_program = program_fixture(
             RUNS / "program_isolation.PGM", mono, enabled=True, groups={0: 1, 1: 1})
-        isolation_image = disk("mute-voice-program-isolation",
-                               [(SYS, "STARTUP.SYS"),
-                                (isolation_program, "MUTE.PGM"), (mono, "TEST.SND")])
+        isolation_image = h.wave_disk(profile, "mute-voice-program-isolation",
+                                      [(isolation_program, "MUTE.PGM"), (mono, "TEST.SND")])
         isolation = load_actions()
         for at, key in ((74.0, "program_sounds"), (76.0, "4"), (78.0, "2"),
                         (80.0, "down")):
@@ -234,17 +233,11 @@ class MuteVoice(unittest.TestCase):
                 # those media slots as midiin1, midiin2, and midiin3.
                 extra += ["-midiin1", str(external)]
             run("vailixi", [74.0, end - 1.0, end], RUNS / name,
-                floppy=image, panel=panel, rompath=ROMS,
+                floppy=image, panel=panel, rompath=profile.rompath,
                 extra=extra)
             log = RUNS / name / "mute_voice.log"
-            marker = f"SNAP t={end:.6f}"
-            deadline = time.monotonic() + 5.0
-            while time.monotonic() < deadline:
-                if log.is_file() and marker in log.read_text():
-                    break
-                time.sleep(0.02)
-            else:
-                raise RuntimeError(f"{name}: mute probe did not flush {marker}")
+            # MAME has exited, so the log is complete; no polling.
+            h.require_marker(log, f"SNAP t={end:.6f}")
             return name, parse_events(log)
 
         with ThreadPoolExecutor(max_workers=4) as pool:
@@ -256,15 +249,25 @@ class MuteVoice(unittest.TestCase):
     def custom_stops(self, case: str) -> list[dict[str, int | float | str]]:
         return [event for event in self.events(case, "STOP") if event["caller_cs"] == "F07D"]
 
+    def firmware_tags(self, case: str) -> list[dict[str, int | float | str]]:
+        """Tag writes made by the cave code itself, not the loader's copy."""
+        return [event for event in self.events(case, "TAGWRITE") if event["cs"] == "F07D"]
+
     def allocations(self, case: str) -> list[dict[str, int | float | str]]:
-        return [event for event in self.events(case, "TAGWRITE")
+        return [event for event in self.firmware_tags(case)
                 if event["table"] == "program" and event["value"] != 0
                 and event["t"] >= 74.0]
 
     def test_disabled_tags_but_does_not_choke(self) -> None:
-        self.assertEqual(len(self.events("disabled", "KEYON")), 2)
+        starts = self.events("disabled", "KEYON")
+        self.assertEqual(len(starts), 2)
         self.assertEqual(self.custom_stops("disabled"), [])
-        self.assertGreaterEqual(len(self.events("disabled", "TAGWRITE")), 4)
+        # Each voice start tags its channel with the program (1) and its
+        # zero-based pad, each written once by the cave before key-on.
+        tags = [(t["table"], t["ch"], t["value"]) for t in self.firmware_tags("disabled")
+                if t["t"] >= 74.0]
+        self.assertEqual(tags, [("program", starts[0]["ch"], 1), ("pad", starts[0]["ch"], 0),
+                                ("program", starts[1]["ch"], 1), ("pad", starts[1]["ch"], 1)])
 
     def test_same_group_different_pad_chokes_exact_prior_channel(self) -> None:
         starts = self.events("same_group", "KEYON")
@@ -316,10 +319,15 @@ class MuteVoice(unittest.TestCase):
         self.assertLess(stops[0]["t"], starts[1]["t"])
 
     def test_external_midi_uses_the_shared_hooks(self) -> None:
+        # The notes arrive on MIDI In 1 (-midiin1, MAME slot mdin); the panel
+        # link carries only the load keys, never a pad frame.
         starts = self.events("midi", "KEYON")
         stops = self.custom_stops("midi")
         self.assertEqual(len(starts), 2)
         self.assertEqual([event["ch"] for event in stops], [starts[0]["ch"]])
+        for start, sent in zip(starts, (75.0, 75.5)):
+            self.assertGreater(start["t"], sent)
+            self.assertLess(start["t"], sent + 0.02)
 
     def test_duplicate_note_mapping_uses_first_pad_alias(self) -> None:
         self.assertEqual(len(self.events("duplicate_alias", "KEYON")), 2)

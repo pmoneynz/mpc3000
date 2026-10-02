@@ -84,8 +84,9 @@ The generic bounds `0x27C92`, `7C92`, `FFB8`, and `F07A` do not apply.
 The bench marker must not use the old generic patch at file `0x21110`:
 that range is the customer's license and reaches the physical serial
 boundary.  `WAVE_CAPTURE_20261001` instead replaces the same-length
-27-byte version object at `[0x210F5,0x21110)` with the current `WAVE BENCH 03`
-followed by 14 NUL bytes.  This preserves the license and serial objects.
+27-byte version object at `[0x210F5,0x21110)` with the marker text that
+`mods/WAVE.args` plants at `0x21110` (currently `WAVE BENCH 06`), padded
+with NUL bytes.  This preserves the license and serial objects.
 
 ## WAVE RAM objects
 
@@ -176,21 +177,54 @@ payload.  A matching address alone is not a compatibility proof.
    captured `[0x30000,0x74000)`;
 3. use the physical RAM constants in the table above;
 4. preserve the license and serial, using only the 27-byte version object
-   for `WAVE BENCH 02`;
+   for the bench marker;
 5. verify physical hook old bytes and cave fill before patching;
 6. embed or check the physical high-BIOS identity rather than accepting a
    generic 3.50 checksum;
 7. describe any generated 512 KiB diagnostic/comparison image as a
    composite with the two uncaptured holes.
 
+`mods/build_wave_physical.py` meets these and also (software checks, run on
+every build):
+
+- generates its hook list from `mods/WAVE.args` through an explicit
+  translation: the marker relocation above; DGROUP data patches only by a
+  declared move that equals generic minus two from `0x2113F` (today
+  `0x25E92 -> 0x25E90`); DGROUP word operands inside hook old bytes only
+  where declared with their generic value (today `0x39A03`+3 `E40A`;
+  `0x39E0D`+2/+9/+20 `EDB5`, +16 `35A2`, +24 `3781`; `0x3A49F`+1 `EDB5`).
+  Code-patch new bytes must be `EA`/`9A` to a cave label plus NOP fill, or
+  a reviewed verbatim entry (`0x488B6` `6A 0A`).  The translated old bytes
+  are then verified against the captured image;
+- checks every direct far CALL/JMP in the assembled capture cave (found at
+  NASM-listed instruction boundaries; indirect far transfers are rejected).
+  The capture and generic caves are paired transfer by transfer.  Each
+  captured target must equal its generic target, or be the documented AMX
+  translation (BIOS window, linear minus `0xA`), and the 64 bytes at the
+  captured target must equal the 64 bytes at the generic target except for
+  DGROUP word operands (generic `>= 113F`, captured = generic − 2) and far
+  pointers into the BIOS window shifted by `−0xA`.  Targets outside captured
+  OS code/BIOS, or in captured code at linear `[0x6B700,0x70800)`, fail.
+  The current cave has 84 far transfers to 60 distinct targets; 59 are the
+  same `CS:IP` in both images and one is `FB00:06B9 -> FB00:06AF`
+  (`QUEUE_UNGET`, linear `0x7B6B9 -> 0x7B6AF`).  None is flagged.  The list
+  is in `build/mods/WAVEHW.json` under `far_targets`.  This is a byte
+  comparison of entry windows, not an all-paths proof of the routines;
+- checks the guarded BIOS's own reset immediates against the shipped DGROUP
+  size: `MOV CX,7C90` at `FAC0:0084` (opcode linear `0x7AC84`, immediate
+  `0x7AC85`) and `MOV DI,7C90` at `FAC0:013D` (immediate `0x7AD3E`), XA=1,
+  third PGR; and checks that the stub's embedded guard bytes have the pinned
+  `BIOS.BIN` SHA-256.
+
 Hardware wave-transfer completion and speed, framebuffer aliasing on all
 paths, LC7981 glass behavior, stereo plane identity, and physical execution
 of the rebuilt WAVE profile remain **UNDETERMINED**.  The captures resolve
 software compatibility inputs; they do not constitute that execution.
 
-## Frozen build audit
+## Frozen build audit (historical, BENCH 02)
 
-Independent read-only inspection of the frozen outputs found no software
+This audit describes the BENCH 02 outputs, not the current build.
+Independent read-only inspection of those frozen outputs found no software
 build blocker:
 
 - `WAVEHW.SYS` is 343,376 bytes, SHA-256
@@ -207,17 +241,26 @@ build blocker:
 - The captured BIOS occurs exactly once in the stub.  The emitted guard
   compares `0x4000` aligned words from `F800:0000`, increments both source
   indexes by two, and finishes before either relocated OS copy begins.
-- The physical cave is the same length as the generic cave and differs at
-  exactly eight operand bytes: mode, option, zone start, zone end, two busy
-  references, and two framebuffer references.  Those are precisely the
-  six physical constants above; labels and instruction lengths are stable.
+- The BENCH 02 physical cave was the same length as the generic cave and
+  differed at exactly eight operand bytes (mode, option, zone start, zone
+  end, two busy references, two framebuffer references).  The current
+  BENCH 06 caves are both 12,042 bytes and differ at 48 bytes, every one
+  inside an operand of a `WAVE_CAPTURE_20261001` constant: `CHOP_OPT_0..9`
+  10, `ZONE_ST` 5, `ZONE_EN` 5, `NUM_EDITING` 4, `CHOP_DO` 4, `FB` 3,
+  `BUSY` 2, `KEY_REPEAT` 2, `MUTE_PROGRAM` 2, and one each for `MODE`,
+  `OPTION`, `LIST_SELECTION`, `KEY_QUEUE`, `QUEUE_UNGET`, `CHOP_DO_LABEL`,
+  `MUTE_CURRENT_PROGRAM`, `MUTE_PAD`, `MUTE_NOTE`, `MUTE_NOTE_MIDI`,
+  `MUTE_RECORD`.  Labels and instruction lengths are stable.
 - For load segment `7000`, the DGROUP source ends at 20-bit `0x7FD30`,
   before destination `0x80100`.  The code source begins at `0x7FD30` and
   the existing high-to-low chunk copy remains overlap-safe.  Segment
   `6900` has more separation.
 
 The five focused profile MAME tests and the independent FAT, extraction,
-and both-load-segment relocation checks also passed.  These are software
+and both-load-segment relocation checks also passed for BENCH 02.
+`WAVEHW.img` is now packed deterministically (zeroed directory times and
+`+0C..+13`), so its hash is a function of its inputs; the BENCH 02 image
+hash above came from the earlier mtools packer.  These are software
 tests; the physical-execution boundaries above remain open.
 
 ## Physical display follow-up

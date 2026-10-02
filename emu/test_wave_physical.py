@@ -3,42 +3,28 @@
 Run: python3 -m unittest emu.test_wave_physical -v
 This is a composite emulator fixture, not a full physical ROM dump or a
 physical LCD/panel qualification. No fixture chips are written under 07-rom.
+The payload and the composite romset come from emu.harness: built from the
+current sources into a test-private directory.  build/mods (the release
+WAVEHW.SYS/.img/-validation.json) is never touched.
 """
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
-import hashlib
-import json
 from pathlib import Path
-import shutil
 import unittest
 
+from emu import harness as h
 from emu import test_mpc3k as base
 from emu.mpc3k import run
-from emu.romset import build as romset
 from emu.panel import write_smf
-from emu.snd import disk, snd, sine441, stereo1
-from mods import build_mod_sys as mod
-from mods import build_wave_physical as profile
+from emu.snd import snd, sine441, stereo1
 
-ROOT = profile.ROOT
+ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / 'build/emu/wavehw-tests'
 
 
-def composite() -> Path:
-    dest = ROOT / 'build/roms-wavehw-composite'
-    shutil.copytree(romset(), dest, dirs_exist_ok=True)
-    image = bytearray(mod.linear())
-    capture = profile.inputs()
-    image[0x20000:0x74000] = capture[0x20000:0x74000]
-    image[0x78000:] = capture[0x78000:]
-    (dest / 'mpc3000/3.50 vailixi lse.bin').write_bytes(image[::2])
-    (dest / 'mpc3000/3.50 vailixi mso.bin').write_bytes(image[1::2])
-    (dest / 'composite.json').write_text(json.dumps({
-        'physical_ranges': [[0x20000, 0x74000], [0x78000, 0x80000]],
-        'reference_substituted_unobserved_ranges': [[0, 0x20000], [0x74000, 0x78000]],
-        'sha256': hashlib.sha256(image).hexdigest()}, indent=2) + '\n')
-    return dest
+def composite(dest: Path = ROOT / 'build/roms-wavehw-composite') -> Path:
+    """Legacy entry point: write the composite romset to `dest`."""
+    return h.composite_roms(dest)
 
 
 class WavePhysical(unittest.TestCase):
@@ -46,16 +32,11 @@ class WavePhysical(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if missing := base.missing_tools():
-            raise unittest.SkipTest(str(missing))
-        if not profile.APP.exists() or not profile.HIGH.exists():
-            raise unittest.SkipTest('verified physical captures are required')
-        profile.build()
-        rompath = composite()
+        profile = h.payload('capture')
         RUNS.mkdir(parents=True, exist_ok=True)
+        profile.record(RUNS)
         cls.addClassCleanup(setattr, base, 'RUNS', base.RUNS)
         base.RUNS = RUNS
-        sysfile = mod.OUT / 'WAVEHW.SYS'
         disks = {}
         for name, sound, planes, start, end in (
             ('wave_view', 'SINE441', sine441(), base.WAVE_START, base.WAVE_END),
@@ -63,23 +44,23 @@ class WavePhysical(unittest.TestCase):
             ('wave_edges', 'EDGE', [[12345]], 0, 1)):
             src = RUNS / f'{sound}.SND'
             src.write_bytes(snd(sound, planes, start=start, end=end))
-            disks[name] = disk('physical-' + name, [(sysfile, 'STARTUP.SYS'), (src, src.name)])
-        disks['wave_no_sound'] = disk('physical-empty', [(sysfile, 'STARTUP.SYS')])
-        edge = base.wave_edge_script(mod.OUT / 'wavehw.cave.map')
+            disks[name] = h.wave_disk(profile, 'physical-' + name, [(src, src.name)])
+        disks['wave_no_sound'] = h.wave_disk(profile, 'physical-empty')
+        edge = base.wave_edge_script(profile, RUNS)
 
-        def go(name):
+        def go(name, image):
             kw = dict(base.CASES[name])
-            kw['floppy'] = disks[name]
-            kw['rompath'] = rompath
+            kw['floppy'] = image
+            kw['rompath'] = profile.rompath
             if 'panel' in kw:
                 kw['panel'] = write_smf(RUNS / f'{name}.mid', [e for ev in kw['panel'] for e in ev])
             if name == 'wave_edges':
                 kw['extra'] = ['-autoboot_script', str(edge)]
-            return name, run(kw.pop('bios'), kw.pop('times'), RUNS / name, **kw)
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            cls.results = dict(pool.map(go, disks))
-        # Negative test uses final payload without any guard substitution.
-        negative = disk('physical-guard-negative', [(sysfile, 'STARTUP.SYS')])
+            return run(kw.pop('bios'), kw.pop('times'), RUNS / name, **kw)
+        cls.results = h.run_parallel(disks, go)
+        # Negative test: the final payload on the stock reference EPROMs,
+        # without any guard substitution, must refuse to start.
+        negative = h.wave_disk(profile, 'physical-guard-negative')
         before = negative.read_bytes()
         cls.rejected = run('vailixi', [10, 35, 65], RUNS / 'guard-negative', floppy=negative)
         cls.negative_unchanged = negative.read_bytes() == before

@@ -2,10 +2,10 @@
 ; Evidence: notes/waveform_phase0.md, notes/waveform_engine.md.
 ; Pixel contract: emu/wave_ref.py (screen()).
 ;
-; Hooks (mods/WAVE.args):
-;   B060:0422 help_gate  field editor's Help test; on Edit Sound, return 'H'
-;   B99A:085A page_key   Edit Sound key dispatch, plus 'H' -> view
-; DS = 8010 (DGROUP) in both hooked routines and throughout.
+; Hooks: mods/WAVE.args. This file holds the view entry (help_gate at
+; B060:0422, page_key at B99A:085A); the included files hold the zone, CHOP,
+; audition and mute-group hooks.
+; DS = 8010 (DGROUP) in the hooked routines and throughout.
 ; C convention inside: preserve SI, DI, BP, DS.
 ; cpu 186: the stock OS uses PUSH imm (68 iw at B000:0015).
 
@@ -292,7 +292,9 @@ view:
         ret
 
 ; Scan if the columns changed, then draw. Fine: centred on the selected point.
-; Plane R (stereo) is plane B at wave + len.
+; Plane R (stereo) is plane B at wave + len. Full and fine keep separate
+; column arrays: full stays valid (full_ok) across fine visits until view entry
+; or a plane change; fine is rescanned on every redraw.
 refresh:
         mov ax, [cs:wbase]
         mov dx, [cs:wbase+2]
@@ -302,13 +304,14 @@ refresh:
         adc dx, [cs:len+2]
 .w:     mov [cs:wave], ax
         mov [cs:wave+2], dx
+        mov word [cs:cols], tops
         cmp byte [cs:fine], 0
         je .full
+        mov word [cs:cols], ftops
         mov al, [cs:sel]
         call point
         mov [cs:center], ax
         mov [cs:center+2], dx
-        mov byte [cs:full_ok], 0
         call scan
         jmp draw
 .full:  cmp byte [cs:full_ok], 0
@@ -607,17 +610,18 @@ scan:
         mov [cs:vmin], dx
         jmp .run
 .done:  mov bx, [cs:col]
+        mov si, [cs:cols]
         mov cl, 11
         mov ax, [cs:vmax]
         sar ax, cl
         neg ax
         add ax, MID
-        mov [cs:tops+bx], al
+        mov [cs:si+bx], al              ; top row
         mov ax, [cs:vmin]
         sar ax, cl
         neg ax
         add ax, MID
-        mov [cs:bots+bx], al
+        mov [cs:si+bx+COLS], al         ; bottom row
         inc bx
         mov [cs:col], bx
         cmp bx, COLS
@@ -626,21 +630,49 @@ scan:
 
 ; ---------------------------------------------------------------- draw
 
-; XOR the pixels x = BX .. BX+CX-1 on rows AX .. AX+DX-1.
+; XOR the pixels x = BX .. BX+CX-1 on rows AX .. AX+DX-1 (AX < 64, CX and
+; DX >= 1). One mask per framebuffer byte the span touches, then ROW steps
+; down the rows. Keeps BX, CX, SI, BP, DS, ES; clobbers AX, DX, DI, flags.
 invert:
-.y:     push bx
+        push bp
+        push bx
         push cx
-.x:     push cx
-        call pixel
-        xor [di], cl
-        pop cx
-        inc bx
-        loop .x
+        push si
+        mov bp, bx
+        add bp, cx                      ; BP = end x
+        mov si, dx                      ; SI = rows
+        mov dl, ROW
+        mul dl
+        add ax, FB
+        mov dx, ax                      ; DX = first row, x = 0
+.byte:  mov cx, bp
+        mov di, bx
+        and di, 7                       ; DI = first bit in this byte
+        sub bx, di                      ; BX = x of the byte's bit 7
+        sub cx, bx
+        cmp cx, 8
+        jbe .end
+        mov cx, 8                       ; CX = bits up to the end (1..8)
+.end:   mov ax, 0xFF00
+        shr ax, cl                      ; AL = the leftmost CX bits
+        mov cx, di
+        mov ah, 0xFF
+        shr ah, cl                      ; AH = bits from the first on
+        and al, ah
+        mov di, bx
+        shr di, 3
+        add di, dx
+        mov cx, si
+.row:   xor [di], al
+        add di, ROW
+        loop .row
+        add bx, 8
+        cmp bx, bp
+        jb .byte
+        pop si
         pop cx
         pop bx
-        inc ax
-        dec dx
-        jnz .y
+        pop bp
         ret
 
 ; DI = framebuffer byte, CL = bit mask of pixel (BX, AX). Keeps AX, BX, DX.
@@ -691,27 +723,26 @@ text:
         shl si, 1
         sub si, dx                      ; 7 bytes per glyph
         add si, font
-        push ax
+        call pixel                      ; DI, CL = the glyph's top-left pixel
         mov dh, 7
 .r:     mov dl, [cs:si]
         inc si
-        push bx
+        push di
+        push cx
         mov ch, 5
 .b:     test dl, 0x10
         jz .nb
-        push dx
-        call pixel
         or [di], cl
-        pop dx
 .nb:    shl dl, 1
-        inc bx
+        ror cl, 1                       ; past bit 0: next byte, bit 7
+        adc di, 0
         dec ch
         jnz .b
-        pop bx
-        inc ax
+        pop cx
+        pop di
+        add di, ROW
         dec dh
         jnz .r
-        pop ax
         add bx, 6
         pop si
         jmp .ch
@@ -782,13 +813,14 @@ draw:
         mov cx, ROW * 64 / 2
         xor ax, ax
         rep stosw
+        mov si, [cs:cols]               ; the active mode's column arrays
         xor bx, bx
-.x:     mov al, [cs:tops+bx]
+.x:     mov al, [cs:si+bx]
         xor ah, ah
         call pixel
         mov al, cl
-        mov cl, [cs:bots+bx]
-        sub cl, [cs:tops+bx]
+        mov cl, [cs:si+bx+COLS]
+        sub cl, [cs:si+bx]
         inc cl
         xor ch, ch
 .y:     or [di], al
@@ -808,14 +840,15 @@ draw:
         call point
         mov [cs:pb], ax
         mov [cs:pb+2], dx
-        xor si, si
+        xor si, si                      ; bound and the column end never
+        mov di, -1                      ; decrease: the columns are one run
 .rc:    mov cx, si
         call bound
         cmp dx, [cs:pb+2]               ; first sample <= b ?
-        jg .rn
+        jg .rv                          ; no: nor any later column
         jl .r1
         cmp ax, [cs:pb]
-        ja .rn
+        ja .rv
 .r1:    mov cx, si
         inc cx
         cmp byte [cs:fine], 0
@@ -833,15 +866,21 @@ draw:
         jg .rx
         cmp ax, [cs:pa]
         jbe .rn
-.rx:    mov bx, si
-        mov cx, 1
-        mov ax, TOP
-        mov dx, BOT - TOP + 1
-        call invert
+.rx:    cmp di, -1                      ; DI = first column of the run
+        jne .rn
+        mov di, si
 .rn:    inc si
         cmp si, COLS
         jb .rc
-        cmp byte [cs:fine], 0           ; fine: centre cursor at the point
+.rv:    cmp di, -1                      ; run = [DI, SI)
+        je .rz
+        mov bx, di
+        mov cx, si
+        sub cx, di
+        mov ax, TOP
+        mov dx, BOT - TOP + 1
+        call invert
+.rz:    cmp byte [cs:fine], 0           ; fine: centre cursor at the point
         je .t
         mov bx, COLS / 2
         mov cx, 1
@@ -1016,6 +1055,7 @@ zoom:   dw 0
 key_repeat: dw 1
 rem:    dw 0
 lab:    dw 0
+cols:   dw tops                         ; tops (full) or ftops (fine)
 sel:    db 0
 fine:   db 0
 full_ok: db 0
@@ -1038,7 +1078,9 @@ bstart: dd 0
 bend:   dd 0
 vmax:   dw 0
 vmin:   dw 0
-tops:   times COLS db 0
+tops:   times COLS db 0             ; full view; bots = tops + COLS
 bots:   times COLS db 0
+ftops:  times COLS db 0             ; fine view; fbots = ftops + COLS
+fbots:  times COLS db 0
 name:   times 17 db 0
 num:    times 11 db 0

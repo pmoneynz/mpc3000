@@ -10,7 +10,15 @@ CHOP_ERR_EMPTY equ -0x0101
 CHOP_ERR_MAP equ -0x0102
 CHOP_ERR_SHORT equ -0x0103
 
+; Stock Edit Sound safety bytes.  Every stock Do handler refuses through
+; B99A:1595 when [A7AE] (transport state, meaning HYPOTHESIS) and the
+; "safe lock" setting [862F] are both non-zero (B99A:0B2F..0B3D).  The
+; copy wrapper B99A:1728 mutes through D980:000C while [8629] is set.  The
+; capture shifts all three DGROUP operands by -2 (B99A:0B2F, B99A:1732).
 %ifdef WAVE_CAPTURE_20261001
+CHOP_SEQ_STATE equ 0xA7AC
+CHOP_SAFE_LOCK equ 0x862D
+CHOP_MUTE_EDIT equ 0x8627
 CHOP_DO        equ 0xEDB3
 CHOP_DO_LABEL  equ 0x377F
 CHOP_OPT_0     equ 0x3630
@@ -24,6 +32,9 @@ CHOP_OPT_7     equ 0x36A2
 CHOP_OPT_8     equ 0x36B3
 CHOP_OPT_9     equ 0x36C0
 %else
+CHOP_SEQ_STATE equ 0xA7AE
+CHOP_SAFE_LOCK equ 0x862F
+CHOP_MUTE_EDIT equ 0x8629
 CHOP_DO        equ 0xEDB5
 CHOP_DO_LABEL  equ 0x3781
 CHOP_OPT_0     equ 0x3632
@@ -67,6 +78,12 @@ chop_do_dispatch:
         jbe .stock
         cmp bx, 10
         jne .leave
+        ; The stock handlers' safe-lock refusal, before any state is touched.
+        cmp byte [CHOP_SEQ_STATE], 0
+        je .unlocked
+        cmp byte [CHOP_SAFE_LOCK], 0
+        jne .leave
+.unlocked:
         ; Keep the page's current selection even when an old map is rejected.
         ; zones_source may belong to a different sound on this error path.
         xor ax, ax
@@ -115,7 +132,9 @@ chop_do_dispatch:
         add sp, 10
         ; Allocation fills the lowest free record, so rebuilding the sorted
         ; list can shift the selection. Find the previous record before redraw uses
-        ; [BP-2] as the selected list position.
+        ; [BP-2] as the selected list position.  Like stock B99A:04E9, also
+        ; save it as the word global read by the next page entry; positions
+        ; are 0..127 (B99A:282A), so BX equals stock's CBW form.
         or ax, ax
         jle .redraw
         mov cx, ax
@@ -132,6 +151,7 @@ chop_do_dispatch:
         jmp .redraw
 .source_found:
         mov [bp-2], bl
+        mov [LIST_SELECTION], bx
 .redraw:
         call 0xB99A:0x16BB
 .leave: jmp 0xB99A:0x1595
@@ -309,6 +329,10 @@ chop_create_all:
         jmp .return
 
 .resources_ok:
+        ; Read-only preflight passed.  Mute as stock B99A:1732 does before
+        ; any naming, allocation or wave-memory work; both exits unmute.
+        mov al, 1
+        call chop_mute
         mov byte [cs:chop_zone], 0
 .create_zone:
         xor bx, bx
@@ -407,10 +431,8 @@ chop_create_all:
         mov al, [cs:chop_zone]
         cmp al, [cs:zones_count]
         jb .create_zone
-        call 0xD0C0:0x086F
-        call chop_refresh_source_base
         mov word [cs:chop_result], 0
-        jmp .return
+        jmp .rollback_done
 
 .rollback:
         mov [cs:chop_result], ax
@@ -428,9 +450,14 @@ chop_create_all:
         call 0xD0C0:0x0B19
         add sp, 6
         jmp .rollback_one
+        ; Success and rollback share this tail.  Stock unmutes after its
+        ; final 086F on success (B99A:1945) and directly after a failed
+        ; allocation (B99A:181F); every post-mute exit passes here.
 .rollback_done:
         call 0xD0C0:0x086F
         call chop_refresh_source_base
+        mov al, 0
+        call chop_mute
 
 .return:
         pop es
@@ -473,6 +500,17 @@ chop_refresh_source_base:
         mov [cs:wbase], ax
         mov [cs:wbase+2], dx
         ret
+
+; AL = 1 mutes, 0 unmutes, only while the stock "Mute audio during EDIT SND
+; processes" setting is on.  D980:000C writes port 6A and clobbers AL.
+chop_mute:
+        cmp byte [CHOP_MUTE_EDIT], 0
+        je .done
+        cbw
+        push ax
+        call 0xD980:0x000C
+        add sp, 2
+.done:  ret
 
 chop_copy_plane:
         push word [cs:chop_count+2]

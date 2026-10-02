@@ -1,41 +1,39 @@
-"""Real panel execution of shared ZONE editing and CHOP ZONE.
+"""Real panel execution of shared ZONE editing.
 
-Build the capture-specific WAVEHW payload before running this suite. Every
-case loads a disposable SND through the stock disk UI. The observer only
-reads RAM and PCM; no zone data or input fields are injected.
+Run: python3 -m unittest emu.test_wave_zones -v
+
+The payload is built from the current sources by emu.harness (capture
+profile for every case, generic for the GENERIC subset).  Every case loads a
+disposable SND through the stock disk UI.  The observers only read RAM; no
+zone data or input fields are injected.  Times are emulated seconds; the wave
+view is open from harness.VIEW.
 """
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
-import hashlib
-import json
 from pathlib import Path
-import re
 import unittest
 
-from emu import test_mpc3k as base
+from emu import harness as h
 from emu import wave_ref
-from emu.mpc3k import run
-from emu.panel import dial, key_tap, write_smf
-from emu.snd import disk, sine441, snd, stereo1
+from emu.harness import VIEW as V, burst, taps, zone_rows
+from emu.panel import dial
+from emu.snd import sine441, snd, stereo1
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "build/emu/wave-zones-tests"
+WIDE = 65911
 
-
-def taps(*items: tuple[float, str]) -> list:
-    return [event for at, key in items for event in key_tap(key, at)]
-
-
-def symbols(map_path: Path | None = None) -> dict[str, int]:
-    return {m[3]: int(m[1], 16) for m in re.finditer(
-        r"^\s*([0-9A-Fa-f]+)\s+([0-9A-Fa-f]+)\s+(\S+)$",
-        (map_path or ROOT / "build/mods/wavehw.cave.map").read_text(), re.M)}
+# Legacy helpers kept for suites that import them from here.
+symbols = h.symbols
 
 
 def observer(run_dir: Path = RUNS, map_path: Path | None = None) -> Path:
+    """Legacy zone observer for an explicit map (default: the release capture map).
+
+    New suites use harness.run_case(), which builds the payload under test.
+    """
     names = ("zones_valid", "zones_current", "zones_count", "onview", "sel", "zones_bounds", "zoom")
-    offsets = symbols(map_path)
+    offsets = symbols(map_path or ROOT / "build/mods/wavehw.cave.map")
     path = run_dir / "observe.lua"
     script = (ROOT / "emu/lua/wave_zones.lua").read_text().replace(
         'dofile(debug.getinfo(1, "S").source:match("^@(.*/)") .. "snddump.lua")',
@@ -45,134 +43,181 @@ def observer(run_dir: Path = RUNS, map_path: Path | None = None) -> Path:
     return path
 
 
-def zone_rows(name: str) -> list[dict]:
-    return [json.loads(line) for line in (RUNS / name / "zones.jsonl").read_text().splitlines()]
+def four_zones(at: float = V + 1) -> list:
+    """Mono: Right x3 reaches the zone count; the wheel takes it 16 -> 4."""
+    return taps((at, "right"), (at + 1, "right"), (at + 2, "right")) + dial(-12, at + 3)
 
 
-class WaveZones(unittest.TestCase):
+class WaveZones(h.EmuSuite):
+    RUNS = RUNS
+    GENERIC = frozenset({"shared", "resume", "repeat_batch", "wide_partition"})
+
     @classmethod
-    def setUpClass(cls):
-        if missing := base.missing_tools():
-            raise unittest.SkipTest(str(missing))
-        RUNS.mkdir(parents=True, exist_ok=True)
-        cls.payload_hash = hashlib.sha256((ROOT / "build/mods/WAVEHW.SYS").read_bytes()).hexdigest()
-        probe = observer()
-        # Mono navigation: Start, End, current zone, total count.
-        four = taps((81, "right"), (82, "right"), (83, "right")) + dial(-12, 84)
+    def cases(cls, profile, runs):
+        four = four_zones()
         definitions = {
-            "shared": (sine441(), four + taps((87, "left"), (88, "+"), (89, "left"),
-                           (90, "+"), (91, "right"), (92, "+")),
-                       [80, 86, 88.5, 90.5, 93]),
-            "count_reset": (sine441(), four + taps((87, "left"), (88, "left"),
-                           (89, "+"), (90, "right"), (91, "right"), (92, "+")),
-                       [86, 89.5, 93]),
-            "resume": (sine441(), four + taps((87, "left"), (88, "+"),
-                           (89, "soft4"), (92, "help")), [86, 88.5, 93]),
-            "new_session": (sine441(), four + taps((87, "main_screen"),
-                           (89, "program_sounds"), (90.5, "6"), (92, "help")), [86, 93]),
-            "stereo_focus": (stereo1(), taps((81, "right"), (82, "right"),
-                           (83, "+"), (84, "right"), (85, "+"), (86, "right")),
-                       [80, 83.5, 85.5, 87]),
-            "count_limits": (sine441(), taps((81, "right"), (82, "right"), (83, "right"),
-                           (84, "+")) + dial(-20, 85) + dial(20, 89), [84.5, 87, 91]),
-            "repeat_batch": (sine441(), taps((81, "right"), (82, "right"), (83, "right"))
-                           + dial(-5, 84, gap=.05) + taps((86, "left"))
-                           + dial(5, 87, gap=.05), [85, 88]),
-            "wide_partition": ([[((i * 257) & 65535) - 32768 for i in range(65911)]],
-                       four, [80, 86]),
-            "numeric_zone": (sine441(), four + taps((87, "left"), (88, "+"),
-                           (89, "left"), (90, "left"), (91, "0"), (92, "right"),
-                           (93, "4"), (93.3, "0"), (93.6, "0"), (94, "right"),
-                           (95, "0"), (96, "enter")), [90.5, 96.5]),
-            "edge_clamps": (sine441(), four + taps((87, "left"), (88, "+"),
-                           (89, "left")) + dial(100, 90, gap=0.1)
-                           + taps((102, "left")) + dial(-100, 103, gap=0.1), [88.5, 101, 114]),
+            "shared": (sine441(), four + taps((V + 7, "left"), (V + 8, "+"), (V + 9, "left"),
+                                              (V + 10, "+"), (V + 11, "right"), (V + 12, "+")),
+                       [V, V + 6, V + 8.5, V + 10.5, V + 13]),
+            "count_reset": (sine441(), four + taps((V + 7, "left"), (V + 8, "left"), (V + 9, "+"),
+                                                   (V + 10, "right"), (V + 11, "right"), (V + 12, "+")),
+                            [V + 6, V + 9.5, V + 13]),
+            # Exit to the stock page and reopen with Help.  V+10.5 is the stock
+            # page (text mode): a positive control that the view really closed.
+            "resume": (sine441(), four + taps((V + 7, "left"), (V + 8, "+"), (V + 9, "soft4"),
+                                              (V + 12, "help")),
+                       [V + 6, V + 8.5, V + 10.5, V + 13]),
+            "new_session": (sine441(), four + taps((V + 7, "main_screen"), (V + 9, "program_sounds"),
+                                                   (V + 10.5, "6"), (V + 12, "help")),
+                            [V + 6, V + 10, V + 13]),
+            "stereo_focus": (stereo1(), taps((V + 1, "right"), (V + 2, "right"), (V + 3, "+"),
+                                             (V + 4, "right"), (V + 5, "+"), (V + 6, "right")),
+                             [V, V + 3.5, V + 5.5, V + 7]),
+            "count_limits": (sine441(), taps((V + 1, "right"), (V + 2, "right"), (V + 3, "right"),
+                                             (V + 4, "+")) + dial(-20, V + 5) + dial(20, V + 9),
+                             [V + 4.5, V + 7, V + 11]),
+            # Wheel bursts 1 ms apart: the stock reader coalesces them, so the
+            # zone code must apply the whole repeat count (and clamp) at once.
+            # Nine events = one read at once + the eight-entry key queue.
+            "repeat_batch": (sine441(), four + burst(9, V + 6)          # count 4 -> 13
+                             + taps((V + 8, "left")) + burst(9, V + 9)   # current 1 -> 10
+                             + burst(-9, V + 11)                         # current 10 -> 1
+                             + burst(5, V + 13)                          # current 1 -> 6
+                             + taps((V + 15, "right")) + burst(9, V + 16)  # count 13 -> 16 (clamp)
+                             + burst(-9, V + 18)                         # count 16 -> 7
+                             + taps((V + 20, "left")) + burst(-9, V + 21),  # current 6 -> 1 (clamp)
+                             [V + 5.5, V + 7.5, V + 10.5, V + 12.5, V + 14.5, V + 17.5, V + 19.5,
+                              V + 22.5]),
+            "wide_partition": ([[((i * 257) & 65535) - 32768 for i in range(WIDE)]], four,
+                               [V, V + 6]),
+            "numeric_zone": (sine441(), four + taps((V + 7, "left"), (V + 8, "+"), (V + 9, "left"),
+                                                    (V + 10, "left"), (V + 11, "0"), (V + 12, "right"),
+                                                    (V + 13, "4"), (V + 13.3, "0"), (V + 13.6, "0"),
+                                                    (V + 14, "right"), (V + 15, "0"), (V + 16, "enter")),
+                             [V + 10.5, V + 16.5]),
+            "edge_clamps": (sine441(), four + taps((V + 7, "left"), (V + 8, "+"), (V + 9, "left"))
+                            + dial(100, V + 10, gap=0.1) + taps((V + 22, "left"))
+                            + dial(-100, V + 23, gap=0.1), [V + 8.5, V + 21, V + 34]),
         }
         cases = {}
         for name, (planes, events, times) in definitions.items():
-            src = RUNS / f"{name}.SND"
+            src = runs / f"{name}.SND"
             src.write_bytes(snd(name.upper()[:16], planes))
-            img = disk(f"wave-zones-{name}", [(ROOT / "build/mods/WAVEHW.SYS", "STARTUP.SYS"),
-                                             (src, "TEST.SND")])
-            settings = dict(base.CASES["wave_view"])
-            settings.update(times=times, floppy=img, panel=write_smf(RUNS / f"{name}.mid", events),
-                            rompath=ROOT / "build/roms-wavehw-composite",
-                            extra=["-autoboot_script", str(probe)])
-            settings["press"] = [v for v in settings["press"] if v[0] <= 77.5]
-            cases[name] = settings
-
-        def execute(item):
-            name, kw = item
-            return name, run(kw.pop("bios"), kw.pop("times"), RUNS / name, **kw)
-
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            cls.results = dict(pool.map(execute, cases.items()))
+            cases[name] = h.Case(events=h.wave_events(events), times=times,
+                                 files=[(src, "TEST.SND")], env={"SNDDUMP_PCM": "0"})
+        return cases
 
     def test_count_and_shared_edge(self):
-        initial, four, selected, edited, neighbor = zone_rows("shared")
-        self.assertEqual(initial["bounds"], [55125 * i // 16 for i in range(17)])
-        self.assertEqual(four["bounds"][:5], [55125 * i // 4 for i in range(5)])
-        self.assertEqual((selected["current"], selected["count"]), (2, 4))
-        expected = [0, 13781, 27562 + 229, 41343, 55125]
-        self.assertEqual(edited["bounds"][:5], expected)
-        self.assertEqual(neighbor["current"], 3)
-        self.assertEqual(neighbor["bounds"][:5], expected)
-        blocks = (RUNS / "shared/lcd_pixels.txt").read_text().split("@ ")[1:]
-        pixels = {b.split()[0]: b.splitlines()[1:65] for b in blocks}
-        self.assertEqual(pixels["88.500"], wave_ref.screen(sine441(), "TEST",
-                         wave_ref.View([0, 55125, 13781, 27562], sel=2,
-                                       zone_current=2, zone_count=4, zone_focus=2)))
-        self.assertEqual(pixels["86.000"], wave_ref.screen(sine441(), "TEST",
-                         wave_ref.View([0, 55125, 0, 13781], sel=2,
-                                       zone_count=4, zone_focus=3)))
+        for prof, d, _ in self.each("shared"):
+            with self.subTest(profile=prof):
+                r = zone_rows(d)
+                initial, four, selected, edited, neighbor = (r[t] for t in sorted(r))
+                self.assertEqual(initial["bounds"], [55125 * i // 16 for i in range(17)])
+                self.assertEqual(four["bounds"][:5], [55125 * i // 4 for i in range(5)])
+                self.assertEqual((selected["current"], selected["count"]), (2, 4))
+                expected = [0, 13781, 27562 + 229, 41343, 55125]
+                self.assertEqual(edited["bounds"][:5], expected)
+                self.assertEqual(neighbor["current"], 3)
+                self.assertEqual(neighbor["bounds"][:5], expected)
+                pixels = h.lcd_pixels(d)
+                self.assertEqual(pixels[f"{V + 8.5:.3f}"], wave_ref.screen(sine441(), "TEST",
+                                 wave_ref.View([0, 55125, 13781, 27562], sel=2,
+                                               zone_current=2, zone_count=4, zone_focus=2)))
+                self.assertEqual(pixels[f"{V + 6:.3f}"], wave_ref.screen(sine441(), "TEST",
+                                 wave_ref.View([0, 55125, 0, 13781], sel=2,
+                                               zone_count=4, zone_focus=3)))
 
     def test_count_change_resets_manual_boundaries(self):
-        four, edited, reset = zone_rows("count_reset")
-        self.assertNotEqual(four["bounds"][:5], edited["bounds"][:5])
-        self.assertEqual(reset["count"], 5)
-        self.assertEqual(reset["bounds"][:6], [55125 * i // 5 for i in range(6)])
+        for prof, d, _ in self.each("count_reset"):
+            with self.subTest(profile=prof):
+                four, edited, reset = (zone_rows(d)[t] for t in (V + 6, V + 9.5, V + 13))
+                self.assertNotEqual(four["bounds"][:5], edited["bounds"][:5])
+                self.assertEqual(reset["count"], 5)
+                self.assertEqual(reset["bounds"][:6], [55125 * i // 5 for i in range(6)])
 
     def test_exit_to_stock_and_reopen_preserves_map(self):
-        _, before, after = zone_rows("resume")
-        self.assertEqual((after["current"], after["count"], after["bounds"]),
-                         (before["current"], before["count"], before["bounds"]))
+        for prof, d, screens in self.each("resume"):
+            with self.subTest(profile=prof):
+                r = zone_rows(d)
+                before, after = r[V + 8.5], r[V + 13]
+                self.assertEqual((before["current"], before["count"]), (2, 4))
+                # Positive control: the view did close (stock text page) and
+                # did reopen (graphics showing the retained zone 2 of 4).
+                self.assertNotIn("mode=32", screens[2]["head"])
+                self.assertIn("Edit Snd:TEST", screens[2]["rows"][0])
+                self.assertIn("mode=32", screens[3]["head"])
+                self.assertEqual(h.lcd_pixels(d)[f"{V + 13:.3f}"], wave_ref.screen(
+                    sine441(), "TEST", wave_ref.View([0, 55125, 13781, 27562],
+                                                       zone_current=2, zone_count=4)))
+                self.assertEqual((after["valid"], after["current"], after["count"], after["bounds"]),
+                                 (1, before["current"], before["count"], before["bounds"]))
 
     def test_leaving_edit_sound_invalidates_session(self):
-        before, after = zone_rows("new_session")
-        self.assertEqual(before["count"], 4)
-        self.assertEqual((after["current"], after["count"]), (1, 16))
+        for prof, d, screens in self.each("new_session"):
+            with self.subTest(profile=prof):
+                r = zone_rows(d)
+                self.assertEqual(r[V + 6]["count"], 4)
+                self.assertNotIn("mode=32", screens[1]["head"])    # really left the view
+                self.assertEqual((r[V + 13]["current"], r[V + 13]["count"]), (1, 16))
+                self.assertEqual(r[V + 13]["bounds"], [55125 * i // 16 for i in range(17)])
+                self.assertIn("mode=32", screens[2]["head"])
 
     def test_stereo_view_remains_separate_from_zone_selection(self):
-        _, view, zone, count = zone_rows("stereo_focus")
-        self.assertEqual((view["focus"], view["current"]), (1, 1))
-        self.assertEqual((zone["focus"], zone["current"]), (2, 2))
-        self.assertEqual(count["focus"], 3)
+        for prof, d, _ in self.each("stereo_focus"):
+            with self.subTest(profile=prof):
+                r = zone_rows(d)
+                view, zone, count = r[V + 3.5], r[V + 5.5], r[V + 7]
+                self.assertEqual((view["focus"], view["current"]), (1, 1))
+                self.assertEqual((zone["focus"], zone["current"]), (2, 2))
+                self.assertEqual(count["focus"], 3)
 
     def test_count_is_bounded_one_through_sixteen(self):
-        top, bottom, top_again = zone_rows("count_limits")
-        self.assertEqual([top["count"], bottom["count"], top_again["count"]], [16, 1, 16])
-        self.assertEqual(bottom["bounds"][:2], [0, 55125])
+        for prof, d, _ in self.each("count_limits"):
+            with self.subTest(profile=prof):
+                r = zone_rows(d)
+                top, bottom, top_again = r[V + 4.5], r[V + 7], r[V + 11]
+                self.assertEqual([top["count"], bottom["count"], top_again["count"]], [16, 1, 16])
+                self.assertEqual(bottom["bounds"][:2], [0, 55125])
 
-    def test_fast_wheel_batches_apply_every_zone_step(self):
-        count, current = zone_rows("repeat_batch")
-        self.assertEqual((count["current"], count["count"]), (1, 11))
-        self.assertEqual((current["current"], current["count"]), (6, 11))
+    def test_coalesced_wheel_bursts_apply_every_zone_step(self):
+        for prof, d, _ in self.each("repeat_batch"):
+            with self.subTest(profile=prof):
+                r = zone_rows(d)
+                self.assertEqual([(r[t]["current"], r[t]["count"]) for t in sorted(r)],
+                                 [(1, 4), (1, 13), (10, 13), (1, 13), (6, 13), (6, 16), (6, 7),
+                                  (1, 7)])
+                self.assertEqual(r[V + 19.5]["bounds"][:8], [55125 * i // 7 for i in range(8)])
+                # Coalescing really happened: the stock reader handed the
+                # cave counts above one, and every burst drew fewer screens
+                # than it had events.
+                for at, events in ((V + 6, 9), (V + 9, 9), (V + 11, 9), (V + 13, 5),
+                                   (V + 16, 9), (V + 18, 9), (V + 21, 9)):
+                    counts = h.repeats(d, start=at, end=at + 1)
+                    self.assertEqual(sum(counts), events, (at, counts))
+                    self.assertGreater(max(counts), 1, (at, counts))
+                    self.assertLess(h.blits(d, at, at + 1), events, at)
 
     def test_division_preserves_remainder_above_16_bit_length(self):
-        initial, four = zone_rows("wide_partition")
-        self.assertEqual(initial["bounds"], [65911 * i // 16 for i in range(17)])
-        self.assertEqual(four["bounds"][:5], [65911 * i // 4 for i in range(5)])
+        for prof, d, _ in self.each("wide_partition"):
+            with self.subTest(profile=prof):
+                r = zone_rows(d)
+                self.assertEqual(r[V]["bounds"], [WIDE * i // 16 for i in range(17)])
+                self.assertEqual(r[V + 6]["bounds"][:5], [WIDE * i // 4 for i in range(5)])
 
     def test_stock_numeric_edit_updates_the_shared_zone_boundary(self):
-        before, after = zone_rows("numeric_zone")
-        self.assertEqual(before["bounds"][:5], [0, 13781, 27562, 41343, 55125])
-        self.assertEqual(after["bounds"][:5], [0, 17640, 27562, 41343, 55125])
+        for prof, d, _ in self.each("numeric_zone"):
+            with self.subTest(profile=prof):
+                r = zone_rows(d)
+                self.assertEqual(r[V + 10.5]["bounds"][:5], [0, 13781, 27562, 41343, 55125])
+                self.assertEqual(r[V + 16.5]["bounds"][:5], [0, 17640, 27562, 41343, 55125])
 
     def test_zone_edits_cannot_cross_neighboring_boundaries(self):
-        before, end, start = zone_rows("edge_clamps")
-        self.assertEqual(before["current"], 2)
-        self.assertEqual(end["bounds"][:5], [0, 13781, 41343, 41343, 55125])
-        self.assertEqual(start["bounds"][:5], [0, 0, 41343, 41343, 55125])
+        for prof, d, _ in self.each("edge_clamps"):
+            with self.subTest(profile=prof):
+                r = zone_rows(d)
+                self.assertEqual(r[V + 8.5]["current"], 2)
+                self.assertEqual(r[V + 21]["bounds"][:5], [0, 13781, 41343, 41343, 55125])
+                self.assertEqual(r[V + 34]["bounds"][:5], [0, 0, 41343, 41343, 55125])
 
 
 if __name__ == "__main__":

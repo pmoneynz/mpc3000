@@ -8,8 +8,9 @@
 ; Before the waveform first enters graphics mode, the caller must save the
 ; Edit Sound character shadow with B1B1:004F.  This routine returns to text
 ; mode, restores that shadow with B1B1:0055, refreshes the live stock fields,
-; optionally queues the digit already read by the graphics loop, and runs a
-; bounded loop made from the stock numeric-editor primitives.
+; and runs a bounded loop made from the stock numeric-editor primitives.  A
+; digit already read by the graphics loop is that loop's first key, ahead of
+; anything still in the stock key queue.
 ;
 ; AX = 0 for a normal return to the waveform. Up from an End component
 ; commits the entry and returns '^' for the waveform's zone shortcut.
@@ -55,17 +56,6 @@ stock_numeric:
         mov [cs:numeric_field], al
         call numeric_select_field
 
-        ; The graphics loop has already consumed the first digit.  Put it
-        ; back into the stock keyboard queue.  BL=0 is the Enter-triggered
-        ; path and deliberately opens the seconds field without input.
-        xor ah, ah
-        mov al, [cs:numeric_first]
-        or al, al
-        jz .input
-        push ax
-        call 0xD6E0:0x0075
-        add sp, 2
-
 .input:
         ; Match B060's numeric cursor: shape 3 before entry, 2 while typing.
         mov ax, 3
@@ -76,9 +66,19 @@ stock_numeric:
         push ax
         call 0xB1B1:0x0008
         add sp, 2
+        ; The graphics loop has already read the first digit through
+        ; BDE3:000E.  Dispatch it as this pass's key instead of queueing it:
+        ; D6E0:0075 appends at the FIFO tail, behind any key typed during the
+        ; mode switch and redraw above.  BL=0 (Enter) reads normally and so
+        ; opens the seconds field without input.
+        mov al, [cs:numeric_first]
+        mov byte [cs:numeric_first], 0
+        or al, al
+        jnz .have_key
         push 0
         call 0xBDE3:0x000E              ; normalized key after global filter
         add sp, 2
+.have_key:
         mov [cs:numeric_key], al
         push 0
         call 0xB1B1:0x0008              ; hide the cursor while dispatching

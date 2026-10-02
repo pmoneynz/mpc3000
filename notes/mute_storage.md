@@ -139,8 +139,9 @@ assignments.  Apply All writes the selected value to `+01..+20` and does not
 change `enabled`.
 
 The table belongs in the payload assembled at `F07D:0000` (linear cave
-`[0x707D0,0x74000)`).  The final candidate combined WAVE/MUTE payload assembled
-on 2026-10-01 uses 12,042 of 14,384 cave bytes, leaving 2,342.  It contains a
+`[0x707D0,0x74000)`).  After the range checks below, the combined WAVE/MUTE
+payload assembled on 2026-10-01 uses 12,026 of 14,384 cave bytes (both
+profiles), leaving 2,358; the previous candidate used 12,042.  It contains a
 792-byte live table and a 792-byte transactional staging table.  Exact label offsets must
 always come from the current assembler map.  Under the third PGR they are
 writable RAM at physical
@@ -260,9 +261,10 @@ F3 A5          REP MOVSW         ; source SI -> destination ES:DI
 
 At this point source program is `[BP-1]-1` and destination is `[BP-2]-1`.
 Replace these nine bytes with `JMPF copy_hook` plus four NOPs; the hook
-executes the original record copy, invalidates destination voice tags, copies
-33 mod bytes from source to
-destination, and far-jumps to `C887:19FB`.  Address forms are linear
+executes the original record copy, range-checks both indices, invalidates
+destination voice tags, copies 33 mod bytes from source to
+destination, and far-jumps to `C887:19FB`.  Flags and AX/BX/DX/SI/DI are
+restored; CX leaves as 0, as after the stock `REP MOVSW`.  Address forms are linear
 `0x4A262`, logical `0xCA262`, stock/mod physical
 `0x0CA262`/`0x3CA262`, capture offset `0x2A262`.  The nine bytes are
 identical in both profiles.
@@ -280,6 +282,196 @@ that accessor rather than assuming `note-0x23`; duplicate note assignments
 resolve to the first slot by the proven loop.  Whether a panel event retains
 a distinct physical-pad identity remains the named hardware boundary
 `U-PANEL-ROM` / `U-TE7774`.
+
+## Index bounds and range checks
+
+`mute_state_bx` does not validate its argument.  The three hooks that take a
+one-based program number from a stock frame now test `number-1 < 24`
+(unsigned, so 0 is rejected) before any mod-state work:
+
+| Hook | Index | Out-of-range action |
+|---|---|---|
+| `mute_program_copy_hook` (`C887:19F2`) | source `[BP-1]-1`, destination `[BP-2]-1` (bytes) | stock copy already done; skip voice-tag forget and the 33-byte copy |
+| `mute_pgm_load_close` (`C20F:0412`) | `[caller BP+0Ah]-1` (byte, as `C20F` uses it) | `mute_close_only`: stock `CEE6:0086` close, return its AX/DX; no forget, clear, trailer read or commit |
+| `mute_pgm_save_close` (`E7F5:09FE`) | `[caller BP+06h]-1` (word, as `E7F5:07B0` uses it) | `mute_close_only`; no trailer is written, so the file is the stock `0x1200` bytes |
+
+The APS wrappers were already bounded: they clamp the stock count byte
+`[caller BP-3]` to `<= 24` and loop over `0..count-1`.
+
+**PROVEN (code, all stock callers):** an out-of-range value is not reachable
+from stock Vailixi 3.50; the checks are defensive.  Generic addresses, XA=1;
+20-bit = stock 24-bit (second PGR, identity), mod 24-bit = `0x300000 | 20-bit`
+(third PGR):
+
+- *Copy.* `[BP-1]` and `[BP-2]` are stack locals of the `C887` copy screen.
+  Their only direct writers are `C887:17A7` / `C887:1827` (linear
+  `0x4A017` / `0x4A097`), which store `[E60E]+1`.  Each is then registered at
+  `C887:17BB` / `183B` through `B354:03B1(label, &slot, 2, 1, 0x18, 8)`
+  (linear `0x338F1`, 20-bit `0xB38F1`), which builds a type-0 numeric field
+  at `B354:02BB` with min `+9` = 1, max `+B` = 24, flags `+D` = 8 (byte), no
+  callback.  `B060:021C` (linear `0x3081C`) loads the field pointer into
+  `[7D41]` and its type into `[7D78]`.  For type 0, the commit path
+  `B060:0715` (linear `0x30D15`) and the key handler `B31B:0007` write only
+  through `B31B:0214` (linear `0x333C4`), which clamps signed to `[min,max]`
+  and stores a byte at `B31B:033B` (flag 8).  The other writes through
+  `[7D41]` (`B060:07E0` string copy, type 1; `B2A0:01D5` dword, type 5) are
+  type-guarded: the commit at `B060:0735..0751` and the key dispatch at
+  `B060:0621..0631` (table `B060:0701`, type 0 → `B31B:0007`, type 5 →
+  `B2A0:0007`) both select on `type & 0x0F`.  The hook is reached only from
+  `C887:19E9`, after key `0x78`.
+- *PGM load.* `C20F:0003` has two callers.  The startup loader
+  `B000:02C8` (linear `0x302C8`) passes its counter `n`, tested
+  `n <= 0x18` at `B000:02B9` and started at 1.  The Disk page
+  `B509:01CB` (linear `0x3525B`, 20-bit `0xB525B`) passes 0, which selects the
+  interactive arm: `C20F:0041..0046` stores `[E60E]+1` and `C20F:005A`
+  registers the same 1..24 byte field.  No other instruction in
+  `C20F:0003..04F5` writes `[BP+0Ah]`.
+- *PGM save.* The only caller of `E7F5:079D` is `CB10:10C4` (as `E86E:000D`,
+  linear `0x4C1C4`), pushing word `[BP-0Ah]` of `CB10:0261`.  Dispatch
+  `CB10:0279..0287` and `CB10:0FE7..0FF5` both index by the unmodified
+  argument `[BP+6]`; option 4 runs `CB10:04AB`, whose `CB10:04C5..04CB`
+  stores word `[E60E]+1` (AH=0) and whose `CB10:04DF` registers the 1..24
+  byte field.  The byte write-back leaves the high byte 0.
+- *`[E60E]` (capture `[E60C]`).* Direct writers in the image:
+  `CA45:002C` (linear `0x4A47C`) after `CA45:000B..0015` rejects indices
+  outside `0..23`; linear `0x4F67C` (`CF37:030C`) stores 0; linear `0x51905`
+  (20-bit `0xD1905`) restores the value that function read at linear
+  `0x518A4`.  Writers through aliases or block moves were not searched;
+  that residual is **UNDETERMINED** but does not affect the field clamp,
+  which bounds every value the user can commit.
+
+Every window above is byte-identical in the capture except DGROUP
+displacements shifted by −2 (checked byte-by-byte against `ROMAPP.BIN`); the
+one other difference in `CB10:0261..10FD`, the far call at `CB10:1047`, is in
+the option-1 branch and not on these paths.
+
+**PROVEN (emulator, fault injection):** `emu/test_mute_range.py` sets the
+caller's one-based index to 25 only while the cave hook runs
+(`emu/lua/mute_range_inject.lua`), zeroes `mute_staging` (the address
+`mute_state_bx(24)` returns), and restores the index at the stock return
+site (`C887:19FB`; `C20F:0417`; `E86E:0273` = `E7F5:0A03`, linear `0x68953`).
+With the checks: copy and load leave `mute_staging` zero and all 24 states
+unchanged, the load shows no error, and the save writes exactly `0x1200`
+bytes.  Against the previous payload all three tests fail: the copy writes
+Program 1's state into `mute_staging`, the load commits the trailer there,
+and the save writes a 4,657-byte file.
+
+## Staging buffer
+
+**UNDETERMINED, not changed:** whether stock scratch RAM can replace the
+792-byte `mute_staging`.  `CF0C:0073` (linear `0x4F133`) takes a far
+buffer (`LDS DX,[BP+6]`), so a buffer at `A2AE:0000` would be accepted by
+the wrapper; whether the BIOS `INT 41` AX=4 read has placement limits is not
+established.  `A2AE:0000..47FF` is not a single-owner buffer: the image has
+297 immediate `A2AE` segment loads, and `A2AE:0000` is passed as a disk
+buffer to `CF0C:0073` (linear `0x574BB`, `0x58597`), to `E7F5:03E5` with
+`0x43D0` bytes (linear `0x3ECA3`), to `CF92:000C` (linear `0x69242`), and
+others.  Proving that none of them, nor any interrupt- or task-driven path,
+owns `A2AE:0000..0317` at the PGM/APS close points needs an execution-context
+classification of all 297 sites; that was not done.  Reading the trailer
+straight into the live table and re-clearing on failure would expose
+unvalidated bytes to the note-on path during the read, so it was rejected.
+`CF0C` exposes only sequential read/write wrappers (AX=4/5 at `CF0C:0073` /
+`0096`) besides the generic `CF0C:0006`; no seek wrapper was found, so a
+validate-then-re-read pass is not available either.
+
+The saving actually taken is small and safe: 186 immediate shifts
+(`SHL AX,5`, `SHR AL,4`) replace repeated single-bit shifts in this file,
+which more than pays for the range checks (cave 12,042 → 12,026 bytes).
+The V53 executes these encodings already in `mods/mute_ui.inc`.
+
+## Near-full media
+
+Generic addresses, XA=1; 20-bit = stock 24-bit (second PGR), mod 24-bit =
+`0x300000 | 20-bit` (third PGR); capture offset = linear − `0x20000`.
+
+**PROVEN (code): what the Save page shows and what it enforces are
+different constants.**
+
+- *Display.* `CB10:13C3` (linear `0x4C4C3`) computes free space as
+  `floor(free bytes / 1024)` from `CF0C:0056` (`INT 41` AX=8).  The page
+  setup stores the size estimate in `[BP-4]` and draws it as `Size`: PGM
+  `CB10:1207` (linear `0x4C307`), 5 KB plus the rounded size of the sounds
+  when `[8625]` selects them; APS `CB10:12BD` (linear `0x4C3BD`), stock
+  46 KB, plus sounds.  That AX=8 returns cluster count and cluster size is
+  **HYPOTHESIS**; the displayed `Free` matches `floor(clusters*512/1024)` in
+  every run.
+- *Gate.* On `<Do it>` (key `0x78`), `CB10:0E4A..0E5D` overwrites `[BP-4]`
+  with a constant: `CB10:0E52` (linear `0x4BF52`) `MOV WORD [BP-4],5` for
+  option 4 (PGM), `CB10:0E5D` (linear `0x4BF5D`) `MOV WORD [BP-4],0x2A`
+  (42 KB) for option 5 (APS).  If the file already exists,
+  `CB10:0ED1..0F04` refuses with `F900` when free + old size is below
+  `[BP-4]`, deletes it, and re-reads free space at `CB10:0F9B`.  Either way
+  `CB10:0FC8..0FD3` (linear `0x4C0C8`) refuses with `F900` when `[BP-4]`
+  exceeds free.  The sounds term of the display estimate is not part of this
+  gate.  For the APS, the stock gate (42 KB) and display (46 KB) are both
+  below the stock 24-program file (48,531 bytes, 95 clusters).
+
+Cluster arithmetic, 512-byte clusters: the APS with trailer is 48,531 + 808
+= 49,339 bytes = 97 clusters (49,664 bytes).  A 49 KB gate requires
+`floor(n*512/1024) >= 49`, that is `n >= 98` free clusters; it refuses 97,
+where the file would have fit, by one cluster.  48 KB would admit 96
+clusters, which is too few, so 49 KB is the smallest whole-KB gate that is
+safe.  For the PGM, 4,657 bytes = 10 clusters, and the stock 5 KB gate
+requires exactly 10.
+
+### Defect as observed before the fix
+
+**PROVEN (emulator, 1.44 MB FAT12, free space set by a filler file).**
+Stock gates; mod payload with trailers:
+
+| Case | Free clusters | Result |
+|---|---:|---|
+| APS, stock OS | 95, 96 | saved; 48,531 bytes; FAT consistent |
+| APS, mod | 95 | error box `FF04` (the stock "not formatted ... or possibly bad" text); entry 48,640 bytes = stock + 16-byte header + 93 payload bytes; FAT consistent; reloads as a legacy APS |
+| APS, mod | 96 | error box `FF04`; directory entry size 0, cluster 0; all 96 allocated clusters lost |
+| APS, mod | 97 | saved; 49,339 bytes |
+
+The stock OS shows the same size-0/lost-chain result when its own APS does
+not fit (94 free clusters, exploratory run).  So the corruption comes from
+how the BIOS handles a failed write, and the trailer widened the window in
+which that happens.  Why one failed write leaves a consistent entry and
+another a lost chain is **UNDETERMINED**.
+
+### Fix
+
+Three code patches in `mods/WAVE.args` raise the APS figure from 46/42 KB to
+49 KB.  Bytes were checked identical in generic Vailixi and in `ROMAPP.BIN`;
+the whole `CB10:12BD..12E7` window differs only at the DGROUP byte
+`[8625]`→`[8623]`.
+
+| Role | `CS:IP` | Linear | 20-bit | mod 24-bit | capture offset | Bytes |
+|---|---|---:|---:|---:|---:|---|
+| gate, enforced | `CB10:0E5D` | `0x4BF5D` | `0xCBF5D` | `0x3CBF5D` | `0x2BF5D` | `C7 46 FC 2A 00` → `C7 46 FC 31 00` |
+| display, no sounds | `CB10:12C4` | `0x4C3C4` | `0xCC3C4` | `0x3CC3C4` | `0x2C3C4` | `B8 2E 00` → `B8 31 00` |
+| display, with sounds | `CB10:12E3` | `0x4C3E3` | `0xCC3E3` | `0x3CC3E3` | `0x2C3E3` | `05 2E 00` → `05 31 00` |
+
+The two display patches alone do not change behaviour.  In an emulator run
+with only them, the page showed `Size: 49K` / `Free: 48K` at 96 free clusters,
+saved anyway, and lost the file exactly as before.  The `CB10:0E5D` gate
+patch is required.  `CB10:12E3` adds 49 KB to the rounded sound total for
+the display only.  Whether each `.SND` written by "with sounds" has its own
+free-space check is **UNDETERMINED**.
+
+### Result after the fix
+
+**PROVEN (emulator, `emu/test_mute_disk_full.py`, payload with all three
+patches):**
+
+| Case | Free clusters | Result |
+|---|---:|---|
+| PGM, mod | 9 | `Size 5K` / `Free 4K`; `F900` "not enough room"; nothing written; FAT unchanged |
+| PGM, mod | 10 | saved; 4,657 bytes; chain 10 clusters; trailer decodes |
+| APS, mod | 95, 96, 97 | `Size 49K` / `Free 47K, 48K, 48K`; `F900` "not enough room"; no entry; directory and both FATs byte-identical to before |
+| APS, mod | 98 | saved; 49,339 bytes; 1 cluster left; FAT consistent; trailer holds the two configured states and 22 clear ones |
+| APS, stock OS | 96 | saved; 48,531 bytes; FAT consistent |
+
+None of the tested levels left a lost cluster or a zero-size entry.
+
+Still unobserved: clusters of 2 KB or more, where a whole-KB gate does not
+bound the cluster count; a PGM or APS saved together with sounds; saving over
+an existing file on a near-full disk; and the same paths on a real floppy
+drive.
 
 ## Execution evidence
 
@@ -306,16 +498,26 @@ The durable test log is `build/wavebench06-mute-persistence-tests.log` and the
 test source is `emu/test_mute_persistence.py`.  `tools/verify_boot_slice.py`
 also passed all 171 stock-image checks after the final build.
 
+After the range checks (2026-10-01, captured-profile `build/mods/WAVEHW.SYS`
+SHA-256 `917ef453d5a3e1411fb0d245b4d6e09063d7231f9859300c76f7e797bd56cafa`,
+before merging other workers' changes): `emu.test_mute_persistence` 4/4,
+`emu.test_mute_lifecycle` 2/2, `emu.test_mute_ui` 7/7,
+`emu.test_mute_range` 3/3, and `emu.test_mute_disk_full` 8/8 (one expected
+failure, the APS defect) passed.  With the three APS patches, the reworked
+`emu.test_mute_disk_full` passed 6/6 and `emu.test_mute_persistence` 4/4.
+
 ## Remaining boundary
 
 - PGM and APS fixed-size program persistence is **PROVEN** statically.  A
   hardware save/load round trip of the implemented trailer is deferred.
 - The stock `.ALL` save path is **PROVEN** sequence/song-only and therefore
   outside MUTE GROUPS program persistence.
-- Near-full-media free-space estimates do not include the 49-byte PGM trailer
-  or `16+33*N`-byte APS trailer.  The write wrapper returns the first trailer
-  write error through the stock branch and still closes the handle, but exact
-  media cleanup behavior on such a failure remains a deferred observation.
+- Near-full media: observed in the emulator ("Near-full media" above).  The
+  PGM trailer fits the stock gate.  The APS trailer is covered only when the
+  `CB10:0E5D` gate patch is present.  Real-drive behaviour of the BIOS
+  failed-write path is a deferred physical observation.
+- The staging buffer stays in the cave until the ownership of
+  `A2AE:0000..0317` at the close points is established.
 
 **PROVEN (real-menu lifecycle):** `emu.test_mute_lifecycle` copies Program 1
 with Enabled=1, pads 1–63 in group 4 and pad 64 in group 2 into Program 24.

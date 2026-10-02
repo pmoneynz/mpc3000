@@ -41,6 +41,9 @@ zones_page_entry:
 ; list at SS:[BP-BC].  Stock restores a sorted-list position from a global,
 ; but CHOP ZONE can insert names before the selected source.  On the one-shot
 ; waveform re-entry, resolve the retained source record to its new position.
+; A found position is also written to the word global, as stock B99A:04E9
+; does (CBW of 0..127 = BX), so the stock `cmp [E40A],di` at 006B keeps it
+; and a later fresh page entry restores the same Sound.
 ; AH, BX and CX retain the stock seam's incoming values.
 zones_list_ready:
         mov di, ax
@@ -65,6 +68,7 @@ zones_list_ready:
         inc bx
         jmp .scan
 .found:mov cl, bl
+        mov [LIST_SELECTION], bx
 .not_found:
         mov al, cl
         pop si

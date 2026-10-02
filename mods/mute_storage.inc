@@ -55,10 +55,7 @@ mute_get_group:
         and al, 0x0F
         pop si
         ret
-.high:  shr al, 1
-        shr al, 1
-        shr al, 1
-        shr al, 1
+.high:  shr al, 4
         pop si
         ret
 .invalid:
@@ -100,10 +97,7 @@ mute_set_group:
         jmp .done
 .high:  and al, 0x0F
         mov ah, dl
-        shl ah, 1
-        shl ah, 1
-        shl ah, 1
-        shl ah, 1
+        shl ah, 4
         or al, ah
         mov [cs:bx+1], al
 .done: pop si
@@ -119,10 +113,7 @@ mute_apply_all:
         inc bx
         mov al, dl
         mov ah, dl
-        shl ah, 1
-        shl ah, 1
-        shl ah, 1
-        shl ah, 1
+        shl ah, 4
         or al, ah
         mov cx, MUTE_STORAGE_GROUP_BYTES
 .fill: mov [cs:bx], al
@@ -135,11 +126,7 @@ mute_apply_all:
 mute_state_bx:
         xor ah, ah
         mov bx, ax
-        shl ax, 1
-        shl ax, 1
-        shl ax, 1
-        shl ax, 1
-        shl ax, 1
+        shl ax, 5
         add bx, ax                         ; program * 33
         add bx, mute_states
         ret
@@ -185,6 +172,9 @@ mute_program_init_hook:
 ;   B9 BF 03 1E 8E D8 F3 A5 1F
 ; Preserve the stock full-record copy, then copy the source program's mod
 ; state.  Source=[BP-1]-1, destination=[BP-2]-1 on this proven UI arm.
+; Both are numeric fields clamped to 1..24 by B31B:0214, so the range test
+; is defensive.  An out-of-range index skips only the mod-state work; the
+; stock copy has already run and CX is still its final 0.
 mute_program_copy_hook:
         mov cx, 0x03BF
         push ds
@@ -197,24 +187,28 @@ mute_program_copy_hook:
         push dx
         push si
         push di
-        mov al, [bp-2]
-        dec al
-        call mute_forget_program
         mov al, [bp-1]
-        dec al
+        dec al                             ; 0 wraps to FF and is rejected
+        cmp al, MUTE_STORAGE_PROGRAM_COUNT
+        jae .skip
         call mute_state_bx
         mov si, bx
         mov al, [bp-2]
         dec al
+        cmp al, MUTE_STORAGE_PROGRAM_COUNT
+        jae .skip
         call mute_state_bx
         mov di, bx
+        mov al, [bp-2]
+        dec al
+        call mute_forget_program           ; preserves SI and DI
         mov cx, MUTE_STORAGE_STATE_BYTES
 .copy: mov al, [cs:si]
         mov [cs:di], al
         inc si
         inc di
         loop .copy
-        pop di
+.skip: pop di
         pop si
         pop dx
         pop bx
@@ -226,6 +220,20 @@ mute_program_copy_hook:
 
 ; These four far cdecl wrappers replace CEE6:0086 close calls.  The caller
 ; has already pushed the handle at [BP+6] and still performs ADD SP,2.
+; The PGM wrappers range-check their one-based program argument.  Every
+; stock caller supplies 1..24 (notes/mute_storage.md), so the check is
+; defensive: an out-of-range value performs exactly the stock close and
+; returns its AX/DX, with no trailer read, write, or state change.
+
+; Wrapper tail: BP is the wrapper frame with SI and DI pushed.
+mute_close_only:
+        push word [bp+6]
+        call 0xCEE6:0x0086
+        add sp, 2
+        pop di
+        pop si
+        pop bp
+        retf
 
 ; PGM load close: C20F:0412, linear 0x42502.
 mute_pgm_load_close:
@@ -237,15 +245,15 @@ mute_pgm_load_close:
         ; Do not use the asynchronously mutable selected-program byte here.
         mov bx, [bp]
         mov al, [ss:bx+0x0A]
-        dec al
+        dec al                             ; 0 wraps to FF and is rejected
+        cmp al, MUTE_STORAGE_PROGRAM_COUNT
+        jae mute_close_only
+        xor ah, ah
+        mov si, ax                         ; preserved by both callees
         call mute_forget_program
-        mov bx, [bp]
-        mov al, [ss:bx+0x0A]
-        dec al
+        mov ax, si
         call mute_clear_program
-        mov bx, [bp]
-        mov al, [ss:bx+0x0A]
-        dec al
+        mov ax, si
         call mute_state_bx
         mov di, bx
         mov ax, [bp+6]
@@ -283,11 +291,7 @@ mute_aps_load_close:
 .shape: mov [cs:mute_aps_header+14], ax
         mov dx, ax
         mov cx, ax
-        shl ax, 1
-        shl ax, 1
-        shl ax, 1
-        shl ax, 1
-        shl ax, 1
+        shl ax, 5
         add cx, ax                         ; count * 33
         mov ax, [bp+6]
         mov si, mute_aps_header
@@ -305,9 +309,13 @@ mute_pgm_save_close:
         push si
         push di
         ; E7F5:079D's stable one-based source is [caller BP+06h].
+        ; The stock body reads this argument as a word (E7F5:07B0), so test
+        ; the word; 0 wraps to FFFF and is rejected.
         mov bx, [bp]
-        mov al, [ss:bx+0x06]
-        dec al
+        mov ax, [ss:bx+0x06]
+        dec ax
+        cmp ax, MUTE_STORAGE_PROGRAM_COUNT
+        jae mute_close_only
         call mute_state_bx
         mov di, bx
         mov ax, [bp+6]
@@ -334,11 +342,7 @@ mute_aps_save_close:
         xor ax, ax
 .shape: mov [cs:mute_aps_header+14], ax
         mov cx, ax
-        shl ax, 1
-        shl ax, 1
-        shl ax, 1
-        shl ax, 1
-        shl ax, 1
+        shl ax, 5
         add cx, ax                         ; count * 33
         mov ax, [bp+6]
         mov si, mute_aps_header
@@ -490,10 +494,7 @@ mute_validate_staging:
         cmp al, 4
         ja .bad
         mov al, ah
-        shr al, 1
-        shr al, 1
-        shr al, 1
-        shr al, 1
+        shr al, 4
         cmp al, 4
         ja .bad
         inc si

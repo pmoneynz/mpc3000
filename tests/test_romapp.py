@@ -17,22 +17,30 @@ import build_romapp as r  # noqa: E402
 
 
 @unittest.skipIf(shutil.which("nasm") is None, "needs nasm")
+@unittest.skipUnless(r.CAPTURED_BIOS.exists(),
+                     "needs the preserved physical capture build/hardware/2026-10-01-romdump/BIOS.BIN")
 class RomappTests(unittest.TestCase):
+    """Builds into a temporary directory; build/mods release artifacts are untouched."""
+
     @classmethod
     def setUpClass(cls) -> None:
-        cls.manifest = r.build()
-        cls.payload = r.SYS_PATH.read_bytes()
+        cls.tempdir = tempfile.TemporaryDirectory()
+        cls.out = Path(cls.tempdir.name) / "out"
+        cls.sys_path = cls.out / r.SYS_PATH.name
+        cls.img_path = cls.out / r.IMG_PATH.name
+        cls.manifest_path = cls.out / r.MANIFEST_PATH.name
+        cls.manifest = r.build(cls.out)
+        cls.payload = cls.sys_path.read_bytes()
         cls.body = cls.payload[32:]
-        cls.image = r.IMG_PATH.read_bytes()
+        cls.image = cls.img_path.read_bytes()
         cls.labels = {name: int(value, 16) for name, value in cls.manifest["labels"].items()}
 
         generic = r.fat12.interleave(r.fat12.LS_PATH.read_bytes(),
                                      r.fat12.MS_PATH.read_bytes())[0x78000:0x80000]
-        cls.tempdir = tempfile.TemporaryDirectory()
         cls.generic_path = Path(cls.tempdir.name) / "generic-high.bin"
         cls.generic_path.write_bytes(generic)
         cls.generic_body, cls.generic_labels = r.assemble(
-            cls.generic_path, "romapp-test-generic"
+            cls.generic_path, "romapp-test-generic", cls.out
         )
 
     @classmethod
@@ -86,35 +94,35 @@ class RomappTests(unittest.TestCase):
     @unittest.skipIf(any(shutil.which(tool) is None for tool in ("mdir", "mcopy")),
                      "needs mtools")
     def test_mtools_extracts_final_payload_and_sentinel(self) -> None:
-        listing = subprocess.run(["mdir", "-i", str(r.IMG_PATH), "::"], check=True,
+        listing = subprocess.run(["mdir", "-i", str(self.img_path), "::"], check=True,
                                  capture_output=True, text=True).stdout
         self.assertIn("STARTUP  SYS", listing)
         self.assertIn("ROMAPP   BIN", listing)
         with tempfile.TemporaryDirectory() as directory:
             sys_path = Path(directory) / "STARTUP.SYS"
             output_path = Path(directory) / "ROMAPP.BIN"
-            subprocess.run(["mcopy", "-i", str(r.IMG_PATH), "::STARTUP.SYS",
+            subprocess.run(["mcopy", "-i", str(self.img_path), "::STARTUP.SYS",
                             str(sys_path)], check=True)
-            subprocess.run(["mcopy", "-i", str(r.IMG_PATH), "::ROMAPP.BIN",
+            subprocess.run(["mcopy", "-i", str(self.img_path), "::ROMAPP.BIN",
                             str(output_path)], check=True)
             self.assertEqual(sys_path.read_bytes(), self.payload)
             self.assertEqual(output_path.read_bytes(), r.SENTINEL)
 
     def test_final_manifest_hashes_current_outputs(self) -> None:
-        manifest = json.loads(r.MANIFEST_PATH.read_text())
-        self.assertEqual(manifest["payload"]["sha256"], r.sha256(r.SYS_PATH.read_bytes()))
-        self.assertEqual(manifest["image"]["sha256"], r.sha256(r.IMG_PATH.read_bytes()))
+        manifest = json.loads(self.manifest_path.read_text())
+        self.assertEqual(manifest["payload"]["sha256"], r.sha256(self.sys_path.read_bytes()))
+        self.assertEqual(manifest["image"]["sha256"], r.sha256(self.img_path.read_bytes()))
         self.assertEqual(manifest["scope"]["captured_linear_file_range"],
                          ["0x20000", "0x74000"])
         self.assertEqual(manifest["scope"]["remaining_uncaptured_linear_ranges"],
                          [["0x00000", "0x20000"], ["0x74000", "0x78000"]])
 
     def test_fixture_builder_cannot_overwrite_physical_candidate(self) -> None:
-        before = (r.SYS_PATH.read_bytes(), r.IMG_PATH.read_bytes())
+        before = (self.sys_path.read_bytes(), self.img_path.read_bytes())
         with self.assertRaises(ValueError):
-            r.build_test_fixture(self.generic_path, "ROMAPP")
-        r.build_test_fixture(self.generic_path, "ROMAPP-TEST-GENERIC")
-        self.assertEqual((r.SYS_PATH.read_bytes(), r.IMG_PATH.read_bytes()), before)
+            r.build_test_fixture(self.generic_path, "ROMAPP", self.out)
+        r.build_test_fixture(self.generic_path, "ROMAPP-TEST-GENERIC", self.out)
+        self.assertEqual((self.sys_path.read_bytes(), self.img_path.read_bytes()), before)
 
 
 if __name__ == "__main__":

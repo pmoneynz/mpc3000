@@ -67,8 +67,9 @@ image sits in the pool. **PROVEN (trace)**.
 
 ## 3. Toolchain and layout
 
-Required on the build host: `python3`, `nasm`, `mtools` (`mformat`, `mcopy`),
-and, for testing, the pinned MAME build ([`emu/README.md`](emu/README.md);
+Required on the build host: `python3` and `nasm`; the builders pack their own
+FAT12 images. The emulator tests also need `mtools` (`mformat`, `mcopy`,
+`mtype`) and, for testing, the pinned MAME build ([`emu/README.md`](emu/README.md);
 binary path in `MPC3K_MAME`). All paths below are relative to this repo.
 
 | Path | Role |

@@ -24,76 +24,42 @@ The one changed byte is linear file 0x21100, the ``0`` in ``Vailixi 3.50``.
 
 from __future__ import annotations
 
-import hashlib
 import struct
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]
-LS_PATH = REPO / "07-rom" / "Vailixi 3.50" / "3.50 Vailixi (LSE).BIN"
-MS_PATH = REPO / "07-rom" / "Vailixi 3.50" / "3.50 Vailixi (MSO).BIN"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import buildkit as kit  # noqa: E402
+
+REPO = kit.ROOT
+LS_PATH = kit.LS350_PATH
+MS_PATH = kit.MS350_PATH
 OUT_DIR = REPO / "build" / "mods"
 
-CHIP_SIZE = 262144
+CHIP_SIZE = kit.CHIP_SIZE
 STRING_FILE = 0x210F5
 STRING_LEN = 26
 PATCH_INDEX = 11  # '0' of "3.50"
 PATCH_FROM = 0x30
 PATCH_TO = 0x31
 
-# BIOS geometry slot 2, F800:034F. Mount (F800:0F38) selects the slot by
-# sectors/track only; the other fields are kept equal to the slot anyway.
-# 1.44 MiB: 512-byte sectors, 1 sector/cluster, 1 reserved, 2 FATs,
-# 224 root entries, 2880 sectors, media F0, 9 sectors/FAT, 18 sectors/track,
-# 2 heads, 0 hidden.
-BIOS_BPB = bytes(
-    [
-        0x00,
-        0x02,
-        0x01,
-        0x01,
-        0x00,
-        0x02,
-        0xE0,
-        0x00,
-        0x40,
-        0x0B,
-        0xF0,
-        0x09,
-        0x00,
-        0x12,
-        0x00,
-        0x02,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-    ]
-)
-
-BPS = 512
-SECTORS = 2880
-RESERVED = 1
-FAT_COUNT = 2
-ROOT_ENTRIES = 224
-SECTORS_PER_FAT = 9
-ROOT_SECTORS = (ROOT_ENTRIES * 32) // BPS
-DATA_START = RESERVED + FAT_COUNT * SECTORS_PER_FAT + ROOT_SECTORS
+# FAT12 geometry: BIOS slot 2 at F800:034F (see buildkit.BIOS_BPB).
+BIOS_BPB = kit.BIOS_BPB
+BPS = kit.BPS
+SECTORS = kit.SECTORS
+RESERVED = kit.RESERVED
+FAT_COUNT = kit.FAT_COUNT
+ROOT_ENTRIES = kit.ROOT_ENTRIES
+SECTORS_PER_FAT = kit.SECTORS_PER_FAT
+ROOT_SECTORS = kit.ROOT_SECTORS
+DATA_START = kit.DATA_START
 IMAGE_BYTES = 0x100
+VOLUME_ID = b"\x50\x35\x43\x4E"   # volume id, not interpreted by the matcher
+VOLUME_LABEL = b"VAILIXI350 "      # 11-byte label
 
-
-def sha256(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def interleave(ls: bytes, ms: bytes) -> bytes:
-    if len(ls) != CHIP_SIZE or len(ms) != CHIP_SIZE:
-        raise ValueError(f"chip size {len(ls)}/{len(ms)}, expected {CHIP_SIZE}")
-    out = bytearray(CHIP_SIZE * 2)
-    out[0::2] = ls
-    out[1::2] = ms
-    return bytes(out)
+sha256 = kit.sha256
+interleave = kit.interleave
+fat12_set = kit.fat12_set
 
 
 def version_string(linear: bytes) -> bytes:
@@ -182,31 +148,7 @@ def pack_mz(image: bytes) -> bytes:
     SS:SP = 0:0 makes FB93:0066 keep the stack it already switched to
     0040:69C4; the stub then replaces SS:SP with CS:0100.
     """
-    header_paras = 2
-    header = bytearray(header_paras * 16)
-    file_size = len(header) + len(image)
-    pages = (file_size + 511) // 512
-    last = file_size % 512
-    struct.pack_into(
-        "<14H",
-        header,
-        0,
-        0x5A4D,  # magic
-        last,  # e_cblp
-        pages,  # e_cp
-        0,  # e_crlc
-        header_paras,  # e_cparhdr
-        0,  # e_minalloc
-        0xFFFF,  # e_maxalloc
-        0,  # e_ss
-        0,  # e_sp
-        0,  # e_csum
-        0,  # e_ip
-        0,  # e_cs
-        0x1C,  # e_lfarlc
-        0,  # e_ovno
-    )
-    blob = bytes(header) + image
+    blob = kit.pack_mz(image)
     accept_mz(blob)
     return blob
 
@@ -238,64 +180,21 @@ def accept_mz(blob: bytes) -> None:
         raise ValueError(f"entry/stack {cs:04X}:{ip:04X} {ss:04X}:{sp:04X}")
 
 
-def fat12_set(fat: bytearray, cluster: int, value: int) -> None:
-    offset = cluster + (cluster // 2)
-    if cluster & 1:
-        fat[offset] = (fat[offset] & 0x0F) | ((value & 0x0F) << 4)
-        fat[offset + 1] = (value >> 4) & 0xFF
-    else:
-        fat[offset] = value & 0xFF
-        fat[offset + 1] = (fat[offset + 1] & 0xF0) | ((value >> 8) & 0x0F)
-
-
 def pack_floppy(payload: bytes) -> bytes:
-    if len(BIOS_BPB) != 21:
-        raise ValueError("BPB length")
-    if struct.unpack_from("<H", BIOS_BPB, 0x0D)[0] != 18:
-        raise ValueError("geometry slot is selected by sectors/track == 18")
     if DATA_START != 33:
         raise ValueError(f"data start {DATA_START}")
     if len(payload) > BPS:
         raise ValueError("payload exceeds one cluster; extend the FAT chain")
-
-    disk = bytearray(SECTORS * BPS)
-    disk[0:3] = b"\xeb\x3c\x90"
-    disk[3:11] = b"MPC3KCAN"
-    disk[11:32] = BIOS_BPB
-    disk[0x26] = 0x29
-    disk[0x27:0x2B] = b"\x50\x35\x43\x4E"  # volume id, not interpreted by the matcher
-    disk[0x2B:0x36] = b"VAILIXI350 "  # 11-byte label; a short slice would shrink the image
-    disk[0x36:0x3E] = b"FAT12   "
-    disk[0x1FE:0x200] = b"\x55\xaa"
-    if disk[11:32] != BIOS_BPB:
+    image, _ = kit.pack_fat12([("STARTUP.SYS", payload)], oem=b"MPC3KCAN",
+                              volume_id=VOLUME_ID, label=VOLUME_LABEL)
+    if image[11:32] != BIOS_BPB:
         raise ValueError("boot BPB drifted from the BIOS table")
-
-    fat = bytearray(SECTORS_PER_FAT * BPS)
-    fat[0:3] = b"\xf0\xff\xff"
-    fat12_set(fat, 2, 0xFFF)
-    for copy in range(FAT_COUNT):
-        start = (RESERVED + copy * SECTORS_PER_FAT) * BPS
-        disk[start : start + len(fat)] = fat
-
-    ent = bytearray(32)
-    ent[0:8] = b"STARTUP "
-    ent[8:11] = b"SYS"
-    ent[11] = 0x20
-    struct.pack_into("<H", ent, 26, 2)
-    struct.pack_into("<I", ent, 28, len(payload))
-    root_off = (RESERVED + FAT_COUNT * SECTORS_PER_FAT) * BPS
-    disk[root_off : root_off + 32] = ent
-
-    data_off = DATA_START * BPS
-    disk[data_off : data_off + len(payload)] = payload
-    if len(disk) != SECTORS * BPS:
-        raise ValueError(f"image shrank to {len(disk)}")
-    return bytes(disk)
+    return image
 
 
 def directory_matches(image: bytes) -> None:
     """Replay F800:136C against the normalized pattern STARTUP.SYS."""
-    root_off = (RESERVED + FAT_COUNT * SECTORS_PER_FAT) * BPS
+    root_off = kit.ROOT_OFFSET
     ent = image[root_off : root_off + 32]
     if ent[11] & 0x1E:
         raise ValueError("attribute would be skipped")
@@ -307,8 +206,9 @@ def directory_matches(image: bytes) -> None:
         raise ValueError("8.3 name")
 
 
-def main() -> int:
-    linear = interleave(LS_PATH.read_bytes(), MS_PATH.read_bytes())
+def main(out: Path | None = None) -> int:
+    out_dir = OUT_DIR if out is None else out
+    linear = kit.vailixi350()
     rom_bpb = linear[0x7834F : 0x7834F + 21]
     if rom_bpb != BIOS_BPB:
         raise ValueError(f"BIOS geometry slot drifted: {rom_bpb.hex()}")
@@ -324,11 +224,10 @@ def main() -> int:
     if b"Vailixi 3.51 (---/--/----)" not in payload:
         raise ValueError("canary string missing")
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    sys_path = OUT_DIR / "STARTUP.SYS"
-    img_path = OUT_DIR / "vailixi350-canary.img"
-    sys_path.write_bytes(payload)
-    img_path.write_bytes(floppy)
+    sys_path = out_dir / "STARTUP.SYS"
+    img_path = out_dir / "vailixi350-canary.img"
+    kit.write_atomic(sys_path, payload)
+    kit.write_atomic(img_path, floppy)
 
     print(f"source string file 0x{STRING_FILE:05X} {original.decode()}")
     print(f"patched byte     file 0x{STRING_FILE + PATCH_INDEX:05X} 0x{PATCH_FROM:02X} -> 0x{PATCH_TO:02X}")

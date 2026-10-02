@@ -3,40 +3,40 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
-import re
 import struct
-import subprocess
+import sys
+import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-ROM = ROOT / "07-rom" / "Vailixi 3.50"
-LS_PATH = ROM / "3.50 Vailixi (LSE).BIN"
-MS_PATH = ROM / "3.50 Vailixi (MSO).BIN"
-ROM312 = ROOT / "07-rom" / "v3.12"
-LS312_PATH = ROM312 / "MPC312LS.BIN"
-MS312_PATH = ROM312 / "MPC312MS.BIN"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import buildkit as kit  # noqa: E402
+
+ROOT = kit.ROOT
+ROM = kit.ROM350
+LS_PATH = kit.LS350_PATH
+MS_PATH = kit.MS350_PATH
+ROM312 = kit.ROM312
+LS312_PATH = kit.LS312_PATH
+MS312_PATH = kit.MS312_PATH
 ASM = ROOT / "mods" / "romcheck.asm"
 OUT = ROOT / "build" / "mods"
 SYS_PATH = OUT / "ROMCHECK.SYS"
 IMG_PATH = OUT / "ROMCHECK.img"
 MANIFEST_PATH = OUT / "ROMCHECK.json"
 BIOS_RANGE = (0x78000, 0x80000)
-FAT12_ROOT_OFFSET = 19 * 512
+FAT12_ROOT_OFFSET = kit.ROOT_OFFSET
 
-
-def sha256(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
+sha256 = kit.sha256
+word_sum = kit.word_sum
+pack_mz = kit.pack_mz
+parse_map = kit.parse_map
 
 
 def interleave(ls_path: Path, ms_path: Path) -> bytes:
-    ls, ms = ls_path.read_bytes(), ms_path.read_bytes()
-    if len(ls) != 0x40000 or len(ms) != 0x40000:
-        raise ValueError(f"chip size {len(ls)}/{len(ms)}, expected 262144")
-    image = bytearray(0x80000)
-    image[0::2], image[1::2] = ls, ms
-    return bytes(image)
+    """Linear image of a chip pair; the Vailixi 3.50 pair is hash-pinned."""
+    digest = kit.VAILIXI350_SHA256 if (ls_path, ms_path) == (LS_PATH, MS_PATH) else None
+    return kit.linear(ls_path, ms_path, digest)
 
 
 def crc16_ccitt_false(data: bytes) -> int:
@@ -46,12 +46,6 @@ def crc16_ccitt_false(data: bytes) -> int:
         for _ in range(8):
             crc = ((crc << 1) ^ 0x1021) & 0xFFFF if crc & 0x8000 else (crc << 1) & 0xFFFF
     return crc
-
-
-def word_sum(data: bytes) -> int:
-    if len(data) & 1:
-        raise ValueError("word sum needs an even byte count")
-    return sum(struct.unpack(f"<{len(data) // 2}H", data)) & 0xFFFF
 
 
 def compare_summary(reference: bytes, actual: bytes) -> dict[str, object]:
@@ -98,29 +92,16 @@ def screen_expectation(reference: bytes, actual: bytes) -> dict[str, object]:
     return summary | {"report_rows": rows}
 
 
-def parse_map(path: Path) -> dict[str, int]:
-    labels: dict[str, int] = {}
-    pattern = re.compile(r"^\s*([0-9A-Fa-f]+)\s+([0-9A-Fa-f]+)\s+(\S+)\s*$")
-    for line in path.read_text().splitlines():
-        match = pattern.match(line)
-        if match:
-            labels[match[3]] = int(match[2], 16)
-    return labels
-
-
-def assemble(reference: bytes) -> tuple[bytes, dict[str, int]]:
-    OUT.mkdir(parents=True, exist_ok=True)
-    expected_path = OUT / "romcheck_expected.bin"
-    raw_path = OUT / "romcheck.bin"
-    map_path = OUT / "romcheck.map"
-    pre_path = OUT / "romcheck_map.inc"
-    expected_path.write_bytes(reference)
-    pre_path.write_text(f"[map symbols {map_path}]\n")
-    define = f'-DEXPECTED_BIN="{expected_path}"'
-    subprocess.run(["nasm", "-f", "bin", define, "-P", str(pre_path), "-o", str(raw_path), str(ASM)],
-                   cwd=ROOT, check=True)
-    body = bytearray(raw_path.read_bytes())
-    labels = parse_map(map_path)
+def assemble(reference: bytes, out: Path | None = None) -> tuple[bytes, dict[str, int]]:
+    out = OUT if out is None else out
+    with tempfile.TemporaryDirectory(prefix="romcheck-") as scratch:
+        expected_path = Path(scratch) / "romcheck_expected.bin"
+        expected_path.write_bytes(reference)
+        asm = kit.assemble(ASM, defines={"EXPECTED_BIN": kit.nasm_string(expected_path)},
+                           publish_bin=out / "romcheck.bin", publish_map=out / "romcheck.map")
+    kit.write_atomic(out / "romcheck_expected.bin", reference)
+    body = bytearray(asm.code)
+    labels = asm.labels
     required = {"expected_sum", "expected_crc", "expected_bios", "expected_bios_end", "stack_top"}
     if missing := required - labels.keys():
         raise ValueError(f"NASM map lacks labels: {sorted(missing)}")
@@ -137,33 +118,23 @@ def assemble(reference: bytes) -> tuple[bytes, dict[str, int]]:
     return bytes(body), labels
 
 
-def pack_mz(body: bytes) -> bytes:
-    size = 32 + len(body)
-    header = struct.pack("<14H", 0x5A4D, size % 512, (size + 511) // 512, 0, 2, 0, 0xFFFF,
-                         0, 0, 0, 0, 0, 0x1C, 0)
-    return header.ljust(32, b"\0") + body
+def pack_image(payload: bytes) -> bytes:
+    image, _ = kit.pack_fat12([("STARTUP.SYS", payload)], oem=b"MPC3KCHK",
+                              volume_id=b"RCHK", label=b"ROMCHECK   ")
+    return image
 
 
-def normalize_startup_dirent(image: bytes) -> bytes:
-    """Clear mtools metadata where the MPC stores filename characters 9-16."""
-    disk = bytearray(image)
-    entry = disk[FAT12_ROOT_OFFSET:FAT12_ROOT_OFFSET + 32]
-    if entry[:11] != b"STARTUP SYS" or entry[11] != 0x20:
-        raise ValueError("STARTUP.SYS is not the first normal root entry")
-    disk[FAT12_ROOT_OFFSET + 0x0C:FAT12_ROOT_OFFSET + 0x14] = bytes(8)
-    return bytes(disk)
-
-
-def build() -> dict[str, object]:
+def build(out: Path | None = None) -> dict[str, object]:
+    out = OUT if out is None else out
+    sys_path, img_path, manifest_path = out / SYS_PATH.name, out / IMG_PATH.name, out / MANIFEST_PATH.name
     linear = interleave(LS_PATH, MS_PATH)
     reference = linear[BIOS_RANGE[0]:BIOS_RANGE[1]]
-    body, labels = assemble(reference)
+    body, labels = assemble(reference, out)
     payload = pack_mz(body)
-    SYS_PATH.write_bytes(payload)
-    IMG_PATH.unlink(missing_ok=True)
-    subprocess.run(["mformat", "-C", "-f", "1440", "-i", str(IMG_PATH), "::"], check=True)
-    subprocess.run(["mcopy", "-i", str(IMG_PATH), str(SYS_PATH), "::STARTUP.SYS"], check=True)
-    IMG_PATH.write_bytes(normalize_startup_dirent(IMG_PATH.read_bytes()))
+    kit.validate_mz(payload)
+    image = pack_image(payload)
+    kit.write_atomic(sys_path, payload)
+    kit.write_atomic(img_path, image)
 
     linear312 = interleave(LS312_PATH, MS312_PATH)
     bios312 = linear312[BIOS_RANGE[0]:BIOS_RANGE[1]]
@@ -178,9 +149,9 @@ def build() -> dict[str, object]:
             "ls_sha256": sha256(LS_PATH.read_bytes()),
             "ms_sha256": sha256(MS_PATH.read_bytes()),
         },
-        "payload": {"path": str(SYS_PATH.relative_to(ROOT)), "size": len(payload), "sha256": sha256(payload)},
-        "image": {"path": str(IMG_PATH.relative_to(ROOT)), "size": IMG_PATH.stat().st_size,
-                  "sha256": sha256(IMG_PATH.read_bytes()), "disk_name": "STARTUP.SYS"},
+        "payload": {"path": kit.relpath(sys_path), "size": len(payload), "sha256": sha256(payload)},
+        "image": {"path": kit.relpath(img_path), "size": len(image),
+                  "sha256": sha256(image), "disk_name": "STARTUP.SYS"},
         "labels": {name: f"0x{labels[name]:04X}" for name in sorted(labels) if name in {
             "start", "stack_bottom", "stack_top", "expected_sum", "expected_crc", "expected_bios",
             "expected_bios_end"}},
@@ -189,7 +160,7 @@ def build() -> dict[str, object]:
             "stock_3_12": screen_expectation(reference, bios312),
         },
     }
-    MANIFEST_PATH.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    kit.write_atomic(manifest_path, (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode())
     return manifest
 
 

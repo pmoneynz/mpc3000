@@ -46,6 +46,52 @@ operations.  Value 10 runs the backend.  Other values leave through
 `B99A:1595`.  **PROVEN** control-flow shape; choice 10 executes in both generic and
 capture-profile MAME tests.
 
+## Stock safety settings
+
+Both settings live on Other > `<Extra>` ("Extra System Parameters", field
+code at linear `0x4880A..0x4883C`, 20-bit `0xC880A`, under XA=1 second PGR).
+
+| Byte (generic / capture) | Label (DGROUP / linear) | Default | Stock use |
+|---|---|---|---|
+| `8010:862F` / `862D` | `5D3E` / `0x25D3E`, "EDIT SND '<Do> SOFT KEY 4' safe lock:" | 1, `C6 06 2F 86 01` at `0x3236E` | Do guard |
+| `8010:8629` / `8627` | `5D18` / `0x25D18`, "Mute audio during EDIT SND processes:" | 1, `C6 06 29 86 01` at `0x3235A` | mute |
+| `8010:A7AE` / `A7AC` | none | — | Do guard; transport state, **HYPOTHESIS** |
+
+**Safe lock.**  All ten stock Do handlers (jump table `CS:15D0`) contain
+`cmp byte [A7AE],0 / jz go / cmp byte [862F],0 / jz go / jmp 1595`.  For
+handler 0 it is at `B99A:0B2F..0B3F`, linear `0x3A4CF`, 20-bit `0xBA4CF`, 24-bit
+`0x0BA4CF` (stock second PGR) / `0x3BA4CF` (Route A third PGR).  The other
+nine copies are at `CS:0BAD, 0C41, 0D6F, 0E9D, 0F98, 10D9, 121C, 139C, 13F8`;
+all ten exit to `B99A:1595`.  `chop_do_dispatch` repeats the same byte
+sequence first in its value-10 branch, so CHOP ZONE refuses before it reads
+the selection, the map or the allocator, and loops through `1595` with
+`[BP-1]=0` exactly like stock.  The map stays valid.  **PROVEN** by bytes in
+both images (captured handler bytes read `A7AC`/`862D`).  The meaning of
+`[A7AE]` is **HYPOTHESIS**: MAME shows 0 while stopped and 8, then 10, after
+Rec+Play; the guard is replicated, not reinterpreted.
+
+**Mute.**  The stock copy wrapper `B99A:1728` (linear `0x3B0C8`, 20-bit
+`0xBB0C8`) tests `[8629]` at `B99A:1732` and calls `D980:000C(1)` (linear
+`0x5980C`, 20-bit `0xD980C`, 24-bit `0x0D980C` / `0x3D980C`; `OUT 6Ah,00h`)
+before its TEMPORARY999 lookup.  It unmutes with `D980:000C(0)`
+(`OUT 6Ah,0Eh`) at two places: `B99A:181F` (linear `0x3B1BF`) right after a
+failed allocation, before the error text; and `B99A:1945` (linear
+`0x3B2E5`) on success, after both copies, `D0C0:086F` and the soft-key
+row redraw (`B1B1:005B` of DGROUP `37AE`, linear `0x237AE`), immediately before `xor ax,ax / retf`.  It re-reads `[8629]` at each
+site.  `D980:000C` is byte-identical in both images.  **PROVEN.**
+
+CHOP ZONE mutes at `.resources_ok`, after its read-only preflight and before
+the first `C6C2:173D`/`D0C0:0611`, and unmutes at the shared tail after
+`D0C0:086F` on success and after rollback.  Preflight refusals (stale map,
+empty/short zone, no records, no memory) never mute.  Differences from
+stock: stock mutes before its preflight; CHOP mutes after a preflight that
+only reads.  On allocator failure stock unmutes before showing the error with
+nothing to roll back; CHOP first deletes the records it created, runs
+`086F`, then unmutes, and the error text follows in the dispatcher.  Both
+unmute before any user-visible error.  MAME observes exactly
+`OUT 6Ah,00h` then `OUT 6Ah,0Eh` around a successful chop and no port-6A
+write on a safe-lock refusal.  Physical audio effect is **UNDETERMINED**.
+
 ## Stock machinery used by the backend
 
 | Routine | File / logical entry | Stock second-PGR / Route A 24-bit | Established contract |
@@ -132,8 +178,14 @@ cache so allocator compaction does not reset valid cuts on the next entry.
 It then rebuilds the page list, scans the new list for the live index captured
 before dispatch (including a rejected stale-map request), writes
 the new position to `[BP-2]`, and redraws.  This prevents lower-numbered free
-slots filled by the batch from changing the selected Sound.  **PROVEN** in
-source and the repeated-chop/source-selection MAME cases.
+slots filled by the batch from changing the selected Sound.  It also stores
+the position as the word `8010:E40A` (capture `E408`), the form stock writes
+at `B99A:04E9` (linear `0x39E89`) and `B99A:146E` (`0x3AE0E`):
+`cbw` of a position that `B99A:27F2` bounds to `0..127` (`cmp cl,80h` at
+`B99A:282A`, linear `0x3C1CA`), so `BX` equals it.  The next fresh Edit Sound
+entry reads that global at `B99A:0065` and therefore selects the source, not
+the ZONE name now at its old position.  **PROVEN** in source and the
+repeated-chop/source-selection and `emu/test_wave_chop_safety.py` MAME cases.
 
 The operation is transactional for preflight and allocator errors.
 `D0C0:0E50` and its `CF92` transfer have no error result, so wave-hardware
@@ -156,6 +208,12 @@ failure cannot be rolled back from software evidence.  That is an
   needed for its chop; preflight refuses without creating records.
 - A stereo result is saved through stock Disk, then loaded after a cold
   emulator restart and compared for exact metadata and both PCM planes.
+- `emu/test_wave_chop_safety.py`: with the sequencer started by real
+  Rec+Play and safe lock ON, CHOP creates nothing and writes no port 6A in
+  both profiles.  With safe lock turned OFF on Other > Extra while running,
+  or with the sequencer stopped, it creates 16 Sounds between one mute and
+  one unmute, and a fresh Edit Sound entry reselects the source.  All four
+  cases fail on the pre-change cave.
 - **PROVEN for the recorded executions:** see `emu/test_wave_chop.py`,
   `emu/test_wave_chop_generic.py`, `emu/test_wave_chop_save.py` and the final
   hash-pinned `build/mods/WAVEHW-validation.json` release record.

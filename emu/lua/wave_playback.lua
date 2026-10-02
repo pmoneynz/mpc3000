@@ -1,13 +1,21 @@
--- Evidence probe for the WAVE <Play X> path.
+-- Evidence probe for the WAVE <Ply/Stp> path.
 --
--- At each CFC6:0CE9 entry, record the exact sound-directory bounds consumed
--- by the stock player.  Also reconstruct the L7A1045's 48-bit DSP start
--- register from full 16-bit I/O writes, identify stock D21F channel stops,
--- and log writes/restored snapshots of sound record zero.
+-- Record every read of sound record zero's start/end dwords with the reader's
+-- CS:IP.  Reads by the stock player CFC6:0CE9 (CS=CFC6, IP in [0CE9,0D75))
+-- are the proof that the player consumed the bounds (instruction-fetch taps are not
+-- exposed by this MAME build, so an entry tap would see nothing).  Also
+-- reconstruct the L7A1045's 48-bit DSP start register from full 16-bit I/O
+-- writes, identify stock D213 releases and D21F channel stops at their exact
+-- OUT instructions, log writes/restored snapshots of sound record zero, and
+-- optionally record short WAV windows of the mixed output.
 --
--- Runtime address mode is XA=1 with the third PGR table.  The execution tap
--- therefore names the 24-bit physical CE9 address, 0x3D0949, rather than the
--- 20-bit address 0xD0949.  The record is RAM at A2AE:4800 (physical 0x3A72E0).
+-- Runtime address mode is XA=1 with the third PGR (Route A, both profiles).
+-- The record is RAM at A2AE:4800 (physical 0x3A72E0), so its bounds are
+-- physical 0x3A72F4..0x3A72FB.
+--
+-- Env: PLAYBACK_WATCH_FROM (emulated s) starts BOUNDWRITE/BOUNDREAD logging
+-- after the SND load; PLAYBACK_WAV is "start:stop:file;..." windows recorded
+-- with machine.sound:start_recording (WAVSTART/WAVSTOP give the exact times).
 
 local machine = manager.machine
 local cpu = machine.devices[":maincpu"]
@@ -54,24 +62,19 @@ local function record(kind, t)
 	log:flush()
 end
 
--- A program-space read tap sees V53 instruction prefetches.  Restrict the
--- callback further with live CS:IP so data reads in the same physical range
--- cannot be mistaken for a player call.
-local last_ce9 = -1
-local ce9_tap = prog:install_read_tap(0x3d0948, 0x3d0951, "wave_ce9", function(offset, data, mask)
+local watch_from = tonumber(os.getenv("PLAYBACK_WATCH_FROM") or "0")
+
+-- Every word read of the record-zero bounds, with the reader's CS:IP.  The
+-- tests pick out the stock player body (CFC6, IP in [0CE9,0D75)).  The Lua
+-- observers' own read_u8 calls also trigger this tap (as byte lanes, with
+-- whatever CS:IP the CPU happens to be at), so only full-word reads, the
+-- form the player uses, are logged.
+local read_tap = prog:install_read_tap(0x3a72f4, 0x3a72fb, "wave_bound_read", function(offset, data, mask)
+	if now() < watch_from then return end
 	local cs, ip = csip()
-	local t = now()
-	-- The first aligned prefetch word contains entry byte 0x3D0949.  CURPC's
-	-- Lua wrapper is useful for reporting, but the translated fetch address is
-	-- the reliable executed-entry discriminator.
-	if cs == 0xcfc6 and tonumber(offset) == 0x3d0948 and t - last_ce9 > 0.000001 then
-		last_ce9 = t
-		local ss, sp = tonumber(cpu.state["SS0"].value), tonumber(cpu.state["SP"].value)
-		local index = rd16(ss, (sp + 4) & 0xffff)
-		log:write(string.format(
-			"CE9 t=%.6f cs=%04X ip=%04X phys=3D0949 index=%u start=%u end=%u len=%u wave=%08X xa=%u\n",
-			t, cs, ip, index, rd32(0xa2ae, 0x4814), rd32(0xa2ae, 0x4818),
-			rd32(0xa2ae, 0x481c), rd32(0xa2ae, 0x4820), cpu.state["XA"].value))
+	if mask & 0xffff == 0xffff then
+		log:write(string.format("BOUNDREAD t=%.6f cs=%04X ip=%04X phys=%06X data=%04X mask=%04X\n",
+			now(), cs, ip, offset, data & 0xffff, mask & 0xffff))
 		log:flush()
 	end
 end)
@@ -80,7 +83,7 @@ end)
 -- load exactly one sound, so every audition mutation and restoration lands
 -- here.  The tap provides the writer CS:IP and the complete 16-bit bus value.
 local bounds_tap = prog:install_write_tap(0x3a72f4, 0x3a72fb, "wave_bounds", function(offset, data, mask)
-	if now() >= 79.0 then
+	if now() >= watch_from then
 		local cs, ip = csip()
 		log:write(string.format(
 			"BOUNDWRITE t=%.6f cs=%04X ip=%04X phys=%06X data=%04X mask=%04X\n",
@@ -107,10 +110,13 @@ local dsp_tap = iosp:install_write_tap(0x60, 0x6f, "wave_dsp", function(offset, 
 	if offset == 0x60 then
 		if mask & 0x00ff ~= 0 then selected_channel = data & 0x1f end
 		if mask & 0xff00 ~= 0 then selected_reg = (data >> 8) & 0x0f end
-		if cs == 0xd21f and ip == 0x001c then
+		-- D21F:001C is OUT DX,AX with AX = 0x0400 + channel (register 4
+		-- select); D213:001B is the release's register select.  Match the
+		-- instruction and its full-word operand form, not just CS:IP.
+		if cs == 0xd21f and ip == 0x001c and mask == 0xffff and (data >> 8) & 0xff == 0x04 then
 			log:write(string.format("D21F t=%.6f ch=%u data=%04X mask=%04X\n",
 				now(), data & 0x1f, data & 0xffff, mask & 0xffff))
-		elseif cs == 0xd213 and ip == 0x001b then
+		elseif cs == 0xd213 and ip == 0x001b and mask == 0xffff and (data >> 8) & 0xff == 0x04 then
 			log:write(string.format("D213 t=%.6f ch=%u data=%04X mask=%04X\n",
 				now(), data & 0x1f, data & 0xffff, mask & 0xffff))
 		end
@@ -146,7 +152,7 @@ end
 local snapshot_index = 1
 
 emu.register_periodic(function()
-	ce9_tap:reinstall()
+	read_tap:reinstall()
 	bounds_tap:reinstall()
 	dsp_tap:reinstall()
 	if snapshot_index <= #snapshots and now() >= snapshots[snapshot_index] then
@@ -155,5 +161,27 @@ emu.register_periodic(function()
 	end
 end)
 
-wave_playback_keep_alive = {ce9_tap, bounds_tap, dsp_tap}
+-- Short WAV windows instead of a whole-run -wavwrite file.
+local windows = {}
+for item in string.gmatch(os.getenv("PLAYBACK_WAV") or "", "[^;]+") do
+	local a, b, f = string.match(item, "^([^:]+):([^:]+):(.+)$")
+	windows[#windows + 1] = { start = tonumber(a), stop = tonumber(b), file = f, state = 0 }
+end
+emu.register_periodic(function()
+	local t = now()
+	for _, w in ipairs(windows) do
+		if w.state == 0 and t >= w.start then
+			local ok = machine.sound:start_recording(out .. "/" .. w.file)
+			log:write(string.format("WAVSTART t=%.6f file=%s ok=%d\n", t, w.file, ok and 1 or 0))
+			w.state = 1
+		elseif w.state == 1 and t >= w.stop then
+			machine.sound:stop_recording()
+			log:write(string.format("WAVSTOP t=%.6f file=%s\n", t, w.file))
+			w.state = 2
+		end
+	end
+	log:flush()
+end)
+
+wave_playback_keep_alive = {read_tap, bounds_tap, dsp_tap}
 dofile(debug.getinfo(1, "S").source:match("^@(.*/)") .. "../probe.lua")

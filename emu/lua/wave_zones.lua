@@ -29,7 +29,7 @@ emu.register_periodic(function()
     end
     log:write("]}\n")
     log:flush()
-    local records = assert(io.open(string.format("%s/records_%.0f.bin", out, times[next_time]), "wb"))
+    local records = assert(io.open(string.format("%s/records_%g.bin", out, times[next_time]), "wb"))
     for i = 0, 128 * 0x24 - 1 do
         records:write(string.char(prog:read_u8(phys(0xa2ae, 0x4800 + i))))
     end
