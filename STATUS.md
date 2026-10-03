@@ -1,5 +1,11 @@
 # Audited project status
 
+**2026-10-03 WAVE BENCH 07 built (not deployed):** BENCH 06 plus the review
+fixes. Payload `2cea7a48...79fb`, image `dc953ab5...a057`. PROVEN in MAME:
+135 emulator tests (22 suites, no skips), 67 builder tests, 171 boot checks,
+release-image boot, near-full APS refusal. Physical behaviour is
+UNDETERMINED; the bench procedure is notes/bench07_checklist.md.
+
 **2026-10-02 review fixes merged (not yet built as a release):** an
 adversarial review of BENCH 06 and its fixes are in the sources. CHOP ZONE now
 honours the stock Edit Sound safe lock and mute-audio settings and keeps the

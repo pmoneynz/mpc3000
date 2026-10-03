@@ -1,5 +1,33 @@
 # Waveform bench: 2026-10-01
 
+## BENCH 07: review fixes, ready for the bench (2026-10-03)
+
+BENCH 07 is BENCH 06 plus the review fixes (PR `pmoneynz/mpc3000#1`): CHOP ZONE
+safe lock and mute-audio, numeric digit order, task-safe mute context,
+Apply All confirmation, the 49 KB APS save budget, and the faster wave
+redraw. Only the bench marker changed after the merged verification.
+
+**PROVEN (MAME):** 135 emulator tests in 22 suites with skips forbidden,
+67 builder tests, 171 boot-slice checks; the suites' payloads are
+byte-identical to the release files. The release image itself boots to
+`WAVE BENCH 07`, loads SINE441, and draws the wave view and Mute Groups page
+(`build/emu/bench07-release-smoke`). `build/check_wavehw_layout.py` passes.
+A near-full image (97 free clusters) refuses an APS save with `F900`
+and leaves the disk unchanged; a PGM save succeeds.
+
+- Payload SHA-256: `2cea7a481948b1273e0484c6aa03eb4f667c4318cc658a9ac6d7cbf8b0b879fb`.
+- Image SHA-256: `dc953ab5314c4136b4510d5612eee7f589fdc5c9b1da02ecfb952fa4753da057`
+  (`STARTUP.SYS`, `SINE441.SND`, `STEREO1.SND`, `DRUMS.SND`).
+- Generic `WAVE.SYS`: `28514aa1427308bbfa60a9140c780f9514e3ff72908c5c30a659812cb8eda0f9`.
+- Near-full image: `build/mods/WAVEHW-NEARFULL.img`.
+- Validation: `build/mods/WAVEHW-validation.json`; BENCH 06 files archived in
+  `build/mods/archive-bench06/`.
+- Cave: 12,804 of 14,384 bytes.
+
+First image from the builders' own FAT12 packer for a WAVE payload. Not yet
+deployed; BENCH 05 remains on the USB. **UNDETERMINED:** all physical
+behaviour. Bench procedure: [bench07_checklist.md](bench07_checklist.md).
+
 ## BENCH 06: mute groups and direct End/Zone navigation
 
 Program/Sounds → **0. Mute groups** opens four program-scoped groups. Each
