@@ -11,7 +11,37 @@ to this machine's captured ROM; any other machine stops at `Mod ROM mismatch`.
 Hashes and test logs: `build/mods/WAVEHW.json`, `build/mods/WAVEHW-validation.json`.
 
 Optional second image: `build/mods/WAVEHW-NEARFULL.img` (same `STARTUP.SYS`,
-plus a filler file leaving exactly 97 free 512-byte clusters), for item 10.
+plus a filler file leaving exactly 97 free 512-byte clusters), for item 10;
+the deploy script adds it as `Disk_03.IMG`.
+
+## Fast-track session (about 45 minutes)
+
+Run the gates in order; each one is release-blocking. Stop at the first
+failure, photograph it, and roll back (below) unless it is cosmetic. Items
+not listed here are follow-ups, not release blockers.
+
+| Gate | Items | Time | Pass means |
+|---|---|---|---|
+| 0 Deploy and boot | deploy script, item 1 | 5 min | `WAVE BENCH 07` banner, Play/Record reached |
+| 1 Data safety | item 10 (first three boxes) | 15 min | PGM/APS save and reload with groups; the stock OS loads the same files cleanly |
+| 2 Mute groups | item 8 (first five boxes), item 9 | 10 min | choke works on the real voices; Apply All asks and cancels |
+| 3 Wave and CHOP | item 2 (first box), items 4 and 7 (first two boxes), item 3 (second box) | 10 min | digits in order; CHOP works stopped and is refused while running; Fine→Full is quick |
+| 4 Stability | item 11 (first box) | 5 min | no hang or stray Record Ready |
+
+Deploy with the FlashFloppy USB mounted at `/Volumes/MPC3000`:
+
+```bash
+python3 build/deploy_wavebench07_usb.py
+```
+
+It backs up to `build/usb_backup/wavebench07-<date>/`, replaces only
+`Disk_01.IMG`, adds the near-full image as `Disk_03.IMG` if that slot is
+free, reads everything back and ejects. **Rollback:** copy that backup's
+`Disk_01.IMG` onto the USB (BENCH 05).
+
+Follow-ups, if time remains: item 5 (fast wheel), the audition-overlap and
+MIDI boxes of item 8, item 6, safe lock off in item 7, and the near-full disk
+in item 10 (needs `Disk_03.IMG` selected in `IMAGE_A.CFG` before power-on).
 
 ## Before you start
 
@@ -20,12 +50,8 @@ plus a filler file leaving exactly 97 free 512-byte clusters), for item 10.
 - [ ] Back up the USB's current `Disk_01.IMG` (BENCH 05) and `IMAGE_A.CFG`.
       Earlier images are preserved in `build/mods/archive-bench06/` and
       `build/mods/wavebench0*-preserved/`.
-- [ ] Copy `build/mods/WAVEHW.img` onto the mounted USB filesystem as
-      `Disk_01.IMG` (replace the file; do not write the block device). Optionally
-      copy `WAVEHW-NEARFULL.img` as `Disk_02.IMG`. Keep slot 1 selected in
-      `IMAGE_A.CFG`, eject safely, then move the USB to the MPC.
-      `build/deploy_wavehw_usb.py` still pins the BENCH 06 hashes and will refuse
-      this image; copy by hand or update its hashes first.
+- [ ] Run `python3 build/deploy_wavebench07_usb.py` with the USB mounted (see
+      the fast-track section). It keeps slot 1 selected and ejects the USB.
 
 For each item, record: pass / fail / not tested, a photo of the LCD where it
 says **photo**, and anything unexpected (hang, wrong screen, noise, slow redraw).
@@ -131,8 +157,8 @@ Program/Sounds → 1. Then Program/Sounds → 0.
       the USB, load the saved PGM and APS. **Expected:** they load without
       error; pad/sound assignments are intact (the mute trailer is ignored).
       If FlashFloppy will not mount after boot, record that and skip.
-- [ ] Optional, **near-full disk** (`Disk_02.IMG` = `WAVEHW-NEARFULL.img`; boot
-      with slot 2 selected): save all programs (APS). **Expected:**
+- [ ] Optional, **near-full disk** (`Disk_03.IMG` = `WAVEHW-NEARFULL.img`; boot
+      with slot 3 selected in `IMAGE_A.CFG`, then set it back to `Disk_01.IMG`): save all programs (APS). **Expected:**
       `not enough room` / `F900`, nothing written. Save one PGM: it succeeds.
       Bring the USB back so `Disk_02.IMG` can be checked for FAT damage.
 
