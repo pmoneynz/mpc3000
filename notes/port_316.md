@@ -110,12 +110,43 @@ The builder's own loader simulation agrees at both `L`. Builder:
   verbatim in 3.16 at 29–63%; `CFC6:0CE9` (audition entry) matches image
   `0x21BBF` exactly over 0x8C bytes.
 
+## Results of the first full build (2026-10-05, MAME, one execution per set)
+
+`python3 mods/build_wave316.py`: `WAVE316.SYS` 470,944 bytes, SHA-256
+`c5fda657b9e8c8514dc2c5c34e8a6c8d481dc54cdb420c9c61f75ecd6245a5ef`; cave
+12,896 bytes at home paragraph `7E00` (logical `0xE7000–0xEA260` with
+`L = 0x6900`, `0xEE000–0xF1260` with `L = 0x7000`); 7,123 relocations (132
+added, 7 removed inside replaced hook bytes). The builder's checks passed: 87
+cave far transfers each name a profile target whose first instructions have
+the same shapes as the Vailixi routine; 113 relocated cave words, all known
+segments; loader simulation at both `L`.
+
+**PROVEN (MAME) on `default` (3.12), `vailixi`, `v311` and `v308`:**
+
+- Boot banner `WAVE BENCH 08`; Play/Record; SINE441 loads from the image.
+- Program/Sounds → 6 → Help opens the wave view; its 240×64 pixels equal
+  `emu.wave_ref.screen` exactly (0 differing pixels on every set). Exit returns
+  to Edit Sound. Program/Sounds → 0 opens Mute Groups; Soft Key 4 returns.
+- The cave is relocated at its home; the pool-end immediate reads `68FF` with
+  `L = 0x6900` and stays `6FFF` with `L = 0x7000`.
+- Pool fix: after recording a sequence, Song shows its screen and later keys
+  work on all four sets; with `L = 0x6900` no pool write reaches logical
+  `0x69000–0x6FFFF` after entry and image bytes `0x0000–0x6FFF` are unchanged.
+  Stock `M3K316.SYS` hangs at this step on `default` and `vailixi`
+  (`<scratchpad>/port/work-memprobe/song_wave316.log`, `runs/song_ab_*`).
+
+**Not yet run on 3.16:** the emulator suites (zones, CHOP, numeric,
+playback, mute UI/voice/persistence, disk full); see
+[port_316_harness_brief.md](port_316_harness_brief.md). Physical behaviour is
+**UNDETERMINED**.
+
 ## Status
 
 | Work | State |
 |---|---|
-| Hook/target/data mapping, seven feature packages | in progress |
-| Memory above 3.16's extent, all four EPROM sets, MAME | in progress |
-| Cave source profile refactor (byte-identical Vailixi builds) | in progress |
+| Hook/target/data mapping, seven feature packages | done, cross-checked |
+| Memory above 3.16's extent, all four EPROM sets, MAME | no access in 355 s of heavy use |
+| Cave source profile refactor (byte-identical Vailixi builds) | done |
 | Route C builder core and loader simulation | proven in MAME with a probe cave |
-| Full cave build, harness profile, tests | waiting on mapping |
+| Full build, smoke, pixel check, pool fix | done (MAME) |
+| Emulator suites on 3.16, all four sets | next |
