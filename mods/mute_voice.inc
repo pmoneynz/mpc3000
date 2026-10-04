@@ -136,6 +136,13 @@ mute_voice_alloc_wrapper:
         jb .scan
 
 .allocate:
+        ; AMX resource 1 does not nest: a reserve by its owner is a no-op and
+        ; the owner's release frees it (Vailixi FB81:0089/00C7, 3.16
+        ; 4840:0083/00C1).  D21F:0008 reserves and releases around itself, so
+        ; every channel stop made while CFC6:0B2D holds the lock (taken at
+        ; 0B30) drops it.  Take it back before the allocator; if it is still
+        ; ours this call changes nothing.
+        FCALL T_D1F7_0126
         push word [bp+0x0E]             ; channel excluded from voice steal
         push word [bp+0x0C]             ; Cutoff note 2
         push word [bp+0x0A]             ; Cutoff note 1
@@ -143,6 +150,9 @@ mute_voice_alloc_wrapper:
         push word [bp+0x06]             ; Poly enum
         FCALL T_CF37_0002
         add sp, 10
+        push ax                         ; the allocator's own MONO/Cutoff
+        FCALL T_D1F7_0126               ; stops can drop the lock again; hold
+        pop ax                          ; it for the tags and 0B2D's start
 
         cmp ax, MUTE_VOICE_COUNT
         jae .done                       ; defensive: stock normally returns 0..31

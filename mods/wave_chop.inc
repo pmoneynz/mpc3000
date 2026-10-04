@@ -9,16 +9,18 @@ CHOP_ERR_EMPTY equ -0x0101
 CHOP_ERR_MAP equ -0x0102
 CHOP_ERR_SHORT equ -0x0103
 
-; Stock Edit Sound safety bytes (CHOP_SEQ_STATE, CHOP_SAFE_LOCK and
-; CHOP_MUTE_EDIT in profile.inc).  Every stock Do handler refuses through
-; B99A:1595 when [A7AE] (transport state, meaning HYPOTHESIS) and the
-; "safe lock" setting [862F] are both non-zero (B99A:0B2F..0B3D).  The
-; copy wrapper B99A:1728 mutes through D980:000C while [8629] is set.
+; Stock Edit Sound safety (Vailixi profiles, CHOP_HAS_SAFE_LOCK and
+; CHOP_HAS_EDIT_MUTE).  Every stock Do handler refuses through B99A:1595
+; when [A7AE] (transport state, meaning HYPOTHESIS) and the "safe lock"
+; setting [862F] are both non-zero (B99A:0B2F..0B3D).  The copy wrapper
+; B99A:1728 mutes through D980:000C while [8629] is set.  OS 3.16 has
+; neither setting and never mutes in Edit Sound, so its profile leaves both
+; out (notes/port_316.md).
 
-; Replaces B99A:[046D,048F).  The stock ten-entry choice field is rebuilt
-; with an eleventh entry.  Width remains the stock 16 characters.
+; Replaces B99A:[046D,048F).  The stock choice field (CHOP_STOCK_OPTIONS
+; entries) is rebuilt with CHOP ZONE appended.  Width remains 16 characters.
 chop_do_field:
-        cmp byte [CHOP_DO], 11
+        cmp byte [CHOP_DO], CHOP_STOCK_OPTIONS+1
         jb .index_ok
         mov byte [CHOP_DO], 0
 .index_ok:
@@ -34,23 +36,25 @@ chop_do_field:
         add sp, 14
         FJMP T_B99A_048F
 
-; Replaces B99A:[0AFF,0B0D).  Values 0..9 rejoin the stock jump table;
-; value 10 creates all mapped zones, refreshes the page's sound list, and
-; reports a negative result through the same stock error path as Copy Zone.
+; Replaces B99A:[0AFF,0B0D).  Stock values rejoin the stock jump table;
+; value CHOP_STOCK_OPTIONS creates all mapped zones, refreshes the page's
+; sound list, and reports a negative result through the stock error path.
 chop_do_dispatch:
         mov al, [CHOP_DO]
         xor ah, ah
         mov bx, ax
-        cmp bx, 9
+        cmp bx, CHOP_STOCK_OPTIONS-1
         jbe .stock
-        cmp bx, 10
+        cmp bx, CHOP_STOCK_OPTIONS
         jne .leave
+%ifdef CHOP_HAS_SAFE_LOCK
         ; The stock handlers' safe-lock refusal, before any state is touched.
         cmp byte [CHOP_SEQ_STATE], 0
         je .unlocked
         cmp byte [CHOP_SAFE_LOCK], 0
         jne .leave
 .unlocked:
+%endif
         ; Keep the page's current selection even when an old map is rejected.
         ; zones_source may belong to a different sound on this error path.
         xor ax, ax
@@ -277,6 +281,11 @@ chop_create_all:
         cmp si, cx
         jb .validate_zone
 
+%ifdef CHOP_REBUILD_FIRST
+        ; 3.16 rebuilds allocation extents only after its own operations,
+        ; not at Edit Sound entry as Vailixi does (B99A:0024).
+        FCALL T_D0C0_086F
+%endif
         FCALL T_D0C0_084D
         xor dx, dx
         mov dl, [cs:zones_count]
@@ -318,12 +327,16 @@ chop_create_all:
         mov [cs:chop_count], ax
         mov [cs:chop_count+2], dx
 
+%ifdef CHOP_OWN_NAMES
+        call chop_make_name
+%else
         push 1
         push strict word CAVE_SEG
         RELOC_PREV
         push chop_name
         FCALL T_C6C2_173D
         add sp, 6
+%endif
 
         xor ax, ax
         mov al, [cs:chop_source_stereo]
@@ -475,13 +488,51 @@ chop_refresh_source_base:
 ; AL = 1 mutes, 0 unmutes, only while the stock "Mute audio during EDIT SND
 ; processes" setting is on.  D980:000C writes port 6A and clobbers AL.
 chop_mute:
+%ifdef CHOP_HAS_EDIT_MUTE
         cmp byte [CHOP_MUTE_EDIT], 0
         je .done
         cbw
         push ax
         FCALL T_D980_000C
         add sp, 2
+%endif
 .done:  ret
+
+%ifdef CHOP_OWN_NAMES
+; Stock 3.16 can only name "soundNNN" (1849:173F takes no mode), so build
+; "ZONEnnn" + 9 spaces in chop_name: the next counter value whose name
+; T_D0C0_0D17 does not find (index >= 0 found, -4 free).  At most 128
+; Sounds exist, so a free name is reached well within 1000 tries.
+; Preserves BX, CX, SI, DI.
+chop_make_name:
+        push bx
+        push cx
+        push di
+        mov word [cs:chop_name_tries], 1000
+.try:   mov ax, [cs:chop_name_counter]
+        cmp ax, 999
+        jbe .format
+        xor ax, ax
+.format:
+        mov dx, ax
+        inc dx
+        mov [cs:chop_name_counter], dx
+        mov di, chop_name+4
+        mov cx, 3
+        call digits
+        push cs
+        push chop_name
+        FCALL T_D0C0_0D17
+        add sp, 4
+        or ax, ax
+        js .free
+        dec word [cs:chop_name_tries]
+        jnz .try
+.free:  pop di
+        pop cx
+        pop bx
+        ret
+%endif
 
 chop_copy_plane:
         push word [cs:chop_count+2]
@@ -519,36 +570,13 @@ chop_show_status:
 ; Far string pointers: offset word, then its segment word.
 align 2
 chop_do_options:
-        dw CHOP_OPT_0
+%assign CHOP_I 0
+%rep CHOP_STOCK_OPTIONS
+        dw CHOP_OPT_%[CHOP_I]
         dw DGROUP_SEG
         RELOC_PREV
-        dw CHOP_OPT_1
-        dw DGROUP_SEG
-        RELOC_PREV
-        dw CHOP_OPT_2
-        dw DGROUP_SEG
-        RELOC_PREV
-        dw CHOP_OPT_3
-        dw DGROUP_SEG
-        RELOC_PREV
-        dw CHOP_OPT_4
-        dw DGROUP_SEG
-        RELOC_PREV
-        dw CHOP_OPT_5
-        dw DGROUP_SEG
-        RELOC_PREV
-        dw CHOP_OPT_6
-        dw DGROUP_SEG
-        RELOC_PREV
-        dw CHOP_OPT_7
-        dw DGROUP_SEG
-        RELOC_PREV
-        dw CHOP_OPT_8
-        dw DGROUP_SEG
-        RELOC_PREV
-        dw CHOP_OPT_9
-        dw DGROUP_SEG
-        RELOC_PREV
+%assign CHOP_I CHOP_I+1
+%endrep
         dw chop_do_text
         dw CAVE_SEG
         RELOC_PREV
@@ -574,4 +602,11 @@ chop_zone: db 0
 chop_created_count: db 0
 chop_selected_record: db 0
 chop_created: times ZONE_MAX db 0
+%ifdef CHOP_OWN_NAMES
+chop_name: db "ZONE000         ", 0      ; 16 characters, digits at +4
+align 2
+chop_name_counter: dw 0
+chop_name_tries: dw 0
+%else
 chop_name: times 17 db 0
+%endif

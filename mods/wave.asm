@@ -1072,3 +1072,8 @@ ftops:  times COLS db 0             ; fine view; fbots = ftops + COLS
 fbots:  times COLS db 0
 name:   times 17 db 0
 num:    times 11 db 0
+
+%ifdef PROFILE_316
+%include "entry316.inc"
+%endif
+cave_end:                               ; end of everything the 3.16 entry copies

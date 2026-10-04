@@ -96,6 +96,9 @@ CHOP_SAFE_LOCK equ 0x862D       ; EDIT SND <Do> safe lock setting
 CHOP_MUTE_EDIT equ 0x8627       ; mute audio during EDIT SND setting
 CHOP_DO        equ 0xEDB3       ; Do choice index
 CHOP_DO_LABEL  equ 0x377F       ; Do field label string
+%define CHOP_STOCK_OPTIONS 10       ; stock Do options COPY ZONE->TEMP .. REVERSE ZONE
+%define CHOP_HAS_SAFE_LOCK             ; stock Do handlers refuse on [SEQ]&&[SAFE_LOCK]
+%define CHOP_HAS_EDIT_MUTE             ; stock copy wrapper mutes while [MUTE_EDIT]
 CHOP_OPT_0     equ 0x3630       ; stock Do option strings 0..9
 CHOP_OPT_1     equ 0x3641
 CHOP_OPT_2     equ 0x3652
@@ -136,6 +139,7 @@ CHOP_OPT_9     equ 0x36C0
 MUTE_CURRENT_PROGRAM equ 0xE60C ; selected program 0..23 (generic E60E)
 %define T_CF37_0002 0xCF37:0x0002       ; voice allocator
 %define T_CFC6_0007 0xCFC6:0x0007       ; shared note-on engine (event far)
+%define T_D1F7_0126 0xD1F7:0x0126       ; reserve AMX resource 1 (allocation lock)
 %define T_D21F_0008 0xD21F:0x0008       ; one-channel stop (channel)
 %define T_D9F2_003D 0xD9F2:0x003D       ; first pad slot mapped to a note
 
