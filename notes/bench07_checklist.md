@@ -12,7 +12,7 @@ Hashes and test logs: `build/mods/WAVEHW.json`, `build/mods/WAVEHW-validation.js
 
 Optional second image: `build/mods/WAVEHW-NEARFULL.img` (same `STARTUP.SYS`,
 plus a filler file leaving exactly 97 free 512-byte clusters), for item 10;
-the deploy script adds it as `Disk_03.IMG`.
+the deploy script adds it in the first free slot (`Disk_06.IMG` on the current USB).
 
 ## Fast-track session (about 45 minutes)
 
@@ -35,13 +35,12 @@ python3 build/deploy_wavebench07_usb.py
 ```
 
 It backs up to `build/usb_backup/wavebench07-<date>/`, replaces only
-`Disk_01.IMG`, adds the near-full image as `Disk_03.IMG` if that slot is
-free, reads everything back and ejects. **Rollback:** copy that backup's
+`Disk_01.IMG`, adds the near-full image in the first free slot (`Disk_06.IMG`), reads everything back and ejects. **Rollback:** copy that backup's
 `Disk_01.IMG` onto the USB (BENCH 05).
 
 Follow-ups, if time remains: item 5 (fast wheel), the audition-overlap and
 MIDI boxes of item 8, item 6, safe lock off in item 7, and the near-full disk
-in item 10 (needs `Disk_03.IMG` selected in `IMAGE_A.CFG` before power-on).
+in item 10 (needs `Disk_06.IMG` selected in `IMAGE_A.CFG` before power-on).
 
 ## Before you start
 
@@ -157,10 +156,10 @@ Program/Sounds → 1. Then Program/Sounds → 0.
       the USB, load the saved PGM and APS. **Expected:** they load without
       error; pad/sound assignments are intact (the mute trailer is ignored).
       If FlashFloppy will not mount after boot, record that and skip.
-- [ ] Optional, **near-full disk** (`Disk_03.IMG` = `WAVEHW-NEARFULL.img`; boot
-      with slot 3 selected in `IMAGE_A.CFG`, then set it back to `Disk_01.IMG`): save all programs (APS). **Expected:**
+- [ ] Optional, **near-full disk** (`Disk_06.IMG` = `WAVEHW-NEARFULL.img`; boot
+      with it selected in `IMAGE_A.CFG`, then set it back to `Disk_01.IMG`): save all programs (APS). **Expected:**
       `not enough room` / `F900`, nothing written. Save one PGM: it succeeds.
-      Bring the USB back so `Disk_02.IMG` can be checked for FAT damage.
+      Bring the USB back so `Disk_06.IMG` can be checked for FAT damage.
 
 ## 11. Exits and stability
 
