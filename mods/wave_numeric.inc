@@ -23,12 +23,7 @@
 ; field; B31B:0007 parses and edits it; B060:0715 commits its entry buffer.
 ; The wrapper handles B31B's 0400h/0800h previous/next actions itself, so
 ; navigation cannot escape the selected point's three-field value.
-
-%ifdef WAVE_CAPTURE_20261001
-NUM_EDITING     equ 0x7D72              ; 0 while an entry buffer is active
-%else
-NUM_EDITING     equ 0x7D74
-%endif
+; NUM_EDITING (profile.inc) is 0 while an entry buffer is active.
 
 stock_numeric:
         push bp
@@ -46,8 +41,8 @@ stock_numeric:
 
         ; C4C8:0409 leaves graphics mode and clears the LCD.  INT 43 AX=6,
         ; through B1B1:0055, replays the Edit Sound shadow saved at entry.
-        call 0xC4C8:0x0409
-        call 0xB1B1:0x0055
+        FCALL T_C4C8_0409
+        FCALL T_B1B1_0055
         call numeric_sync_all
 
         mov al, [cs:numeric_sel]
@@ -64,7 +59,7 @@ stock_numeric:
         dec ax
 .cursor:
         push ax
-        call 0xB1B1:0x0008
+        FCALL T_B1B1_0008
         add sp, 2
         ; The graphics loop has already read the first digit through
         ; BDE3:000E.  Dispatch it as this pass's key instead of queueing it:
@@ -76,12 +71,12 @@ stock_numeric:
         or al, al
         jnz .have_key
         push 0
-        call 0xBDE3:0x000E              ; normalized key after global filter
+        FCALL T_BDE3_000E               ; normalized key after global filter
         add sp, 2
 .have_key:
         mov [cs:numeric_key], al
         push 0
-        call 0xB1B1:0x0008              ; hide the cursor while dispatching
+        FCALL T_B1B1_0008               ; hide the cursor while dispatching
         add sp, 2
 
         mov al, [cs:numeric_key]
@@ -97,7 +92,7 @@ stock_numeric:
         xor ah, ah
         push 0                          ; B31B flags: do not accept pad events
         push ax
-        call 0xB31B:0x0007
+        FCALL T_B31B_0007
         add sp, 4
         mov [cs:numeric_result], ax
         or ax, ax
@@ -119,7 +114,7 @@ stock_numeric:
 .enter:
         mov al, [NUM_EDITING]
         mov [cs:numeric_was_editing], al
-        call 0xB060:0x0715
+        FCALL T_B060_0715
         cmp byte [cs:numeric_was_editing], 0
         jne .normal                     ; idle Enter changes no frame value
         call numeric_commit
@@ -130,13 +125,13 @@ stock_numeric:
         ; Idle Up must preserve frame values that the stock display rounds.
         mov al, [NUM_EDITING]
         mov [cs:numeric_was_editing], al
-        call 0xB060:0x0715
+        FCALL T_B060_0715
         cmp byte [cs:numeric_was_editing], 0
         jne .zone_graphics
         call numeric_commit
 .zone_graphics:
         call refresh
-        call 0xC4C8:0x0F5F
+        FCALL T_C4C8_0F5F
         mov ax, '^'
         jmp .return
 
@@ -182,7 +177,7 @@ stock_numeric:
 
 .normal:
         call refresh
-        call 0xC4C8:0x0F5F              ; return to graphics and blit
+        FCALL T_C4C8_0F5F               ; return to graphics and blit
         xor ax, ax                      ; graphics calls do not define AX
 .return:
         mov dl, [cs:numeric_sel]
@@ -213,9 +208,9 @@ numeric_select_field:
         xor ah, ah
         mov al, [cs:numeric_field]
         push ax
-        call 0xB060:0x006B
+        FCALL T_B060_006B
         add sp, 2
-        call 0xB060:0x021C
+        FCALL T_B060_021C
         ret
 
 ; Convert all four live frame positions back into the suspended B99A page's
@@ -246,7 +241,7 @@ numeric_sync_all:
         sub bx, 0x12
         call numeric_store_components
 
-        call 0xB99A:0x16BB
+        FCALL T_B99A_16BB
         ret
 
 ; Store DX:AX frames as stock components at SS:BX.
@@ -255,7 +250,7 @@ numeric_store_components:
         push ax
         push ss                         ; far destination segment, offset
         push bx
-        call 0xB99A:0x266D
+        FCALL T_B99A_266D
         add sp, 8
         ret
 
@@ -289,7 +284,7 @@ numeric_commit:
 .convert:
         push ss
         push bx
-        call 0xB99A:0x2619
+        FCALL T_B99A_2619
         add sp, 4
         sub ax, [cs:numeric_current]
         sbb dx, [cs:numeric_current+2]

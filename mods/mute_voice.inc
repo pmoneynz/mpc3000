@@ -10,12 +10,6 @@
 ;   mute_get_group:   AL=program, BL=canonical pad 0..63 -> AL=0..4
 ; These APIs preserve SI, DI, BP, and DS.
 
-%ifdef WAVE_CAPTURE_20261001
-MUTE_CURRENT_PROGRAM equ 0xE60C
-%else
-MUTE_CURRENT_PROGRAM equ 0xE60E
-%endif
-
 MUTE_PROGRAM_COUNT equ 24
 MUTE_PAD_COUNT     equ 64
 MUTE_VOICE_COUNT   equ 32
@@ -47,7 +41,7 @@ mute_note_on_wrapper:
         mov al, [es:bx+2]                ; MIDI note, 23h..62h for pads
         xor ah, ah
         push ax
-        call 0xD9F2:0x003D               ; first pad slot mapped to note
+        FCALL T_D9F2_003D                ; first pad slot mapped to note
         add sp, 2
         cmp ax, MUTE_PAD_COUNT
         jae .forward
@@ -70,7 +64,7 @@ mute_note_on_wrapper:
 .forward:
         push word [bp+8]                 ; event segment
         push word [bp+6]                 ; event offset
-        call 0xCFC6:0x0007
+        FCALL T_CFC6_0007
 .builder_return:                         ; frame signature; see below
         leave                            ; also drops the two arguments
         retf
@@ -134,7 +128,7 @@ mute_voice_alloc_wrapper:
         mov byte [cs:mute_voice_program+di], 0
         mov byte [cs:mute_voice_pad+di], 0
         push di
-        call 0xD21F:0x0008              ; stock one-channel stop primitive
+        FCALL T_D21F_0008               ; stock one-channel stop primitive
         add sp, 2
 .next:
         inc di
@@ -147,7 +141,7 @@ mute_voice_alloc_wrapper:
         push word [bp+0x0A]             ; Cutoff note 1
         push word [bp+0x08]             ; owner/source note
         push word [bp+0x06]             ; Poly enum
-        call 0xCF37:0x0002
+        FCALL T_CF37_0002
         add sp, 10
 
         cmp ax, MUTE_VOICE_COUNT

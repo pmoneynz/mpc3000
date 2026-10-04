@@ -11,10 +11,10 @@ audition:
         push ds
         push es
         mov byte [cs:aud_too_short], 0
-        call 0xCFC6:0x0D75
+        FCALL T_CFC6_0D75
         or ax, ax
         jz .start
-        call 0xCFC6:0x0D93
+        FCALL T_CFC6_0D93
         jmp .done
 .start: mov al, [cs:sel]
         and al, 2
@@ -70,6 +70,7 @@ audition:
         jbe .done
 .bounds:
         mov ax, SND_SEG
+        RELOC_PREV
         mov es, ax
         mov si, [cs:rec]
         mov ax, [es:si+0x14]
@@ -89,11 +90,12 @@ audition:
         mov [es:si+0x18], ax
         mov [es:si+0x1A], dx
         push word [cs:sound_index]
-        call 0xCFC6:0x0CE9
+        FCALL T_CFC6_0CE9
 .return_from_stock:
         add sp, 2
         ; Stock calls may change ES; always re-establish the record pointer.
         mov ax, SND_SEG
+        RELOC_PREV
         mov es, ax
         mov si, [cs:rec]
         mov ax, [cs:aud_saved_start]
@@ -116,9 +118,10 @@ audition:
 audition_callsite:
         push bx
         push si
-        cmp word [ss:bp+2], 0x0D70
+        cmp word [ss:bp+2], PLAYER_CE9_RET
         jne .done
-        cmp word [ss:bp+4], 0xCFC6
+        cmp word [ss:bp+4], strict word PLAYER_SEG
+        RELOC_PREV
         jne .done
         mov bx, [ss:bp]
         cmp word [ss:bx+2], audition.return_from_stock
@@ -143,9 +146,9 @@ audition_duration:
         or ax, ax
         jnz .return
         mov byte [cs:aud_too_short], 1
-        jmp 0xCFC6:0x0B21
+        FJMP T_CFC6_0B21
 .return:
-        jmp 0xCFC6:0x06A3
+        FJMP T_CFC6_06A3
 
 ; CFC6:0897 receives the pitch-adjusted, floored natural-stop tick count.
 ; One tick can expire almost immediately at the next shared timer phase.
@@ -157,10 +160,10 @@ audition_ticks:
         cmp ax, 2
         jae .stock
         mov byte [cs:aud_too_short], 1
-        jmp 0xCFC6:0x0B21
+        FJMP T_CFC6_0B21
 .stock: mov [bp-0x58], ax
         cmp word [bp-0x58], 0
-        jmp 0xCFC6:0x089E
+        FJMP T_CFC6_089E
 
 align 2
 sound_index: dw 0

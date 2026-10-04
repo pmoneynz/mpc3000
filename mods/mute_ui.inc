@@ -2,20 +2,6 @@
 ; Uses the same complete raster font/framebuffer as the waveform view.
 ; Storage and voice contracts are in mute_storage.inc / mute_voice.inc.
 
-%ifdef WAVE_CAPTURE_20261001
-MUTE_PROGRAM equ 0xE60C
-MUTE_RECORD equ 0xE5F7
-MUTE_PAD equ 0xD6AA
-MUTE_NOTE equ 0xD6AB
-MUTE_NOTE_MIDI equ 0xD6AC
-%else
-MUTE_PROGRAM equ 0xE60E
-MUTE_RECORD equ 0xE5F9
-MUTE_PAD equ 0xD6AC
-MUTE_NOTE equ 0xD6AD
-MUTE_NOTE_MIDI equ 0xD6AE
-%endif
-
 ; C887:0064 replaces CBW/DEC AX/MOV BX,AX/CMP BX,8 (seven bytes).
 ; EBC8's existing menu reader maps digit 0 to option 10.
 mute_menu_dispatch:
@@ -25,10 +11,10 @@ mute_menu_dispatch:
         dec ax
         mov bx, ax
         cmp bx, 8
-        jmp 0xC887:0x006B
+        FJMP T_C887_006B
 .mute: call mute_ui
         mov dl, al
-        jmp 0xC887:0x00F1
+        FJMP T_C887_00F1
 
 mute_ui:
         push bp
@@ -44,11 +30,11 @@ mute_ui:
         xor al, al
 .pad:   mov [cs:mu_pad], al
         call mute_ui_context
-        call 0xB1B1:0x004F
+        FCALL T_B1B1_004F
         call mute_ui_draw
-        call 0xC4C8:0x0F5F
+        FCALL T_C4C8_0F5F
 .key:   push 0
-        call 0xBDE3:0x000E
+        FCALL T_BDE3_000E
         add sp, 2
         mov [cs:mu_key], al
         mov ax, [KEY_REPEAT]
@@ -106,7 +92,7 @@ mute_ui:
         jmp .exit
 .menu:  mov al, 'L'
 .exit:  push ax
-        call 0xC4C8:0x0409
+        FCALL T_C4C8_0409
         pop ax
         pop es
         pop ds
@@ -130,7 +116,7 @@ mute_ui:
         mov al, [MUTE_NOTE_MIDI]
 .note:  xor ah, ah
         push ax
-        call 0xD9F2:0x003D
+        FCALL T_D9F2_003D
         add sp, 2
         cmp ax, 64
         jae .redraw
@@ -244,7 +230,7 @@ mute_ui:
         cmp al, [cs:mu_program]
         je .redraw
         push ax
-        call 0xCA45:0x0008
+        FCALL T_CA45_0008
         add sp, 2
         call mute_ui_context
         jmp .redraw
@@ -270,7 +256,7 @@ mute_ui:
         call mute_set_group
 .redraw:
         call mute_ui_draw
-.blit:  call 0xC4C8:0x0F0D
+.blit:  FCALL T_C4C8_0F0D
         jmp .key
 
 ; AX value in [0,DX], BL +/- and CX repeat. Saturating unsigned arithmetic.
@@ -305,7 +291,7 @@ mute_ui_context:
         jb .name
         xor si, si
 .notes: push si
-        call 0xD9F2:0x000C
+        FCALL T_D9F2_000C
         add sp, 2
         mov [cs:mu_notes+si], al
         inc si

@@ -1,0 +1,152 @@
+; 2026-10-01 physical capture profile (mods/build_wave_physical.py defines
+; WAVE_CAPTURE_20261001; evidence notes/wave_physical_profile.md).  Selected
+; by mods/profile.inc.  Same layout and names as profile_vailixi.inc.  The
+; captured personalized DGROUP places every object from generic 8010:113F on
+; two bytes lower, with the same consumers.  The high-ROM BIOS/AMX entries
+; sit ten bytes lower.  Code segments and the other far targets are generic.
+; The image carries no relocation table, so RELOC_PREV marks nothing.
+
+%macro RELOC_PREV 0
+%endmacro
+
+%macro FCALL 1
+        call %1
+        RELOC_PREV
+%endmacro
+
+%macro FJMP 1
+        jmp %1
+        RELOC_PREV
+%endmacro
+
+; ---------------------------------------------------------------- segments
+
+SND_SEG    equ 0xA2AE           ; sound records at A2AE:4800 + idx*24h
+DGROUP_SEG equ 0x8010           ; DGROUP, DS in the hooked routines
+CAVE_SEG   equ 0xF07D           ; this cave, file 0x707D0 (build_mod_sys.py)
+PLAYER_SEG equ 0xCFC6           ; stock sound player code
+
+; ---------------------------------------------------------------- shared
+
+SND_DIR    equ 0x4800           ; first sound record in SND_SEG
+FB         equ 0x158F           ; generic 8010:1591; same consumers
+KEY_REPEAT equ 0xD698           ; generic 8010:D69A
+%define T_B1B1_004F 0xB1B1:0x004F       ; save the text shadow (INT 43 AX=5)
+%define T_B1B1_0055 0xB1B1:0x0055       ; restore that shadow (INT 43 AX=6)
+%define T_BDE3_000E 0xBDE3:0x000E       ; next key after the global filter
+%define T_C4C8_0409 0xC4C8:0x0409       ; clear, text mode, INT 43 AX=1
+%define T_C4C8_0F0D 0xC4C8:0x0F0D       ; blit FB
+%define T_C4C8_0F5F 0xC4C8:0x0F5F       ; graphics mode + blit FB
+%define T_B99A_1595 0xB99A:0x1595       ; leave Edit Sound for the menu
+%define T_B99A_16BB 0xB99A:0x16BB       ; redraw the 17 Edit Sound fields
+
+; ---------------------------------------------------------------- view (wave.asm)
+
+BUF_W      equ 0x2400           ; Best st's read buffer A2AE:0000, words
+BUSY       equ 0x9755           ; generic 8010:9757
+MODE       equ 0xD7C9           ; generic 8010:D7CB
+OPTION     equ 0xD7C8           ; generic 8010:D7CA
+ZONE_ST    equ 0xEDB9           ; generic 8010:EDBB
+ZONE_EN    equ 0xEDB5           ; generic 8010:EDB7
+%define T_B060_0428 0xB060:0x0428       ; B060:035D key loop: stock Help
+%define T_B060_0459 0xB060:0x0459       ; B060:035D key loop: other keys
+%define T_B060_06E2 0xB060:0x06E2       ; B060:035D key loop: return key SI
+%define T_B99A_0AF3 0xB99A:0x0AF3       ; Edit Sound Do dispatch (key 75h)
+%define T_CF92_000C 0xCF92:0x000C       ; wave transfer (dst, wave, count, dir)
+
+; ---------------------------------------------------------------- numeric entry (wave_numeric.inc)
+
+NUM_EDITING equ 0x7D72          ; 0 while an entry buffer is active
+%define T_B060_006B 0xB060:0x006B       ; select a live B99A field record
+%define T_B060_021C 0xB060:0x021C       ; initialize its parser and display
+%define T_B060_0715 0xB060:0x0715       ; commit the active entry buffer
+%define T_B1B1_0008 0xB1B1:0x0008       ; cursor shape (0 hides)
+%define T_B31B_0007 0xB31B:0x0007       ; numeric field editor (key, flags)
+%define T_B99A_2619 0xB99A:0x2619       ; component triple (far) -> frames
+%define T_B99A_266D 0xB99A:0x266D       ; frames -> component triple (far)
+
+; ---------------------------------------------------------------- audition (wave_playback.inc)
+
+PLAYER_CE9_RET equ 0x0D70       ; CFC6:0D70, CE9's return from CFC6:039E
+%define T_CFC6_0CE9 0xCFC6:0x0CE9       ; start the Sound at index (word)
+%define T_CFC6_0D75 0xCFC6:0x0D75       ; first active voice slot, 0 if none
+%define T_CFC6_0D93 0xCFC6:0x0D93       ; stop all 32 channels (Ply/Stp stop)
+%define T_CFC6_06A3 0xCFC6:0x06A3       ; 039E after the 30 ms SUB/SBB at 069D
+%define T_CFC6_089E 0xCFC6:0x089E       ; 039E after the tick MOV/CMP at 0897
+%define T_CFC6_0B21 0xCFC6:0x0B21       ; 039E epilogue: no voice started
+
+; ---------------------------------------------------------------- zones (wave_zones.inc)
+
+; The capture shifts this DGROUP queue object by two bytes and the high-ROM
+; queue helpers by ten bytes.
+KEY_QUEUE  equ 0x12BA           ; generic 8010:12BC
+LIST_SELECTION equ 0xE408       ; generic 8010:E40A
+%define T_FB00_06B9 0xFB00:0x06AF       ; generic FB00:06B9 - 0Ah
+%define T_B99A_0009 0xB99A:0x0009       ; Edit Sound after its replaced prologue
+%define T_B99A_006B 0xB99A:0x006B       ; Edit Sound after the sorted-list seam
+%define T_B99A_04E3 0xB99A:0x04E3       ; field 0 handler, sound present
+%define T_B99A_082E 0xB99A:0x082E       ; Edit Sound input loop
+
+; ---------------------------------------------------------------- CHOP (wave_chop.inc)
+
+; The capture shifts all three safety-byte operands by -2 (B99A:0B2F,
+; B99A:1732) and the Do field operands EDB5/35A2/3781 to EDB3/35A0/377F.
+CHOP_SEQ_STATE equ 0xA7AC       ; transport state (HYPOTHESIS); Do guard
+CHOP_SAFE_LOCK equ 0x862D       ; EDIT SND <Do> safe lock setting
+CHOP_MUTE_EDIT equ 0x8627       ; mute audio during EDIT SND setting
+CHOP_DO        equ 0xEDB3       ; Do choice index
+CHOP_DO_LABEL  equ 0x377F       ; Do field label string
+CHOP_OPT_0     equ 0x3630       ; stock Do option strings 0..9
+CHOP_OPT_1     equ 0x3641
+CHOP_OPT_2     equ 0x3652
+CHOP_OPT_3     equ 0x3663
+CHOP_OPT_4     equ 0x3674
+CHOP_OPT_5     equ 0x3680
+CHOP_OPT_6     equ 0x3691
+CHOP_OPT_7     equ 0x36A2
+CHOP_OPT_8     equ 0x36B3
+CHOP_OPT_9     equ 0x36C0
+%define T_B1B1_0026 0xB1B1:0x0026       ; cursor position (INT 43 AX=3)
+%define T_B1B1_005B 0xB1B1:0x005B       ; put string (far) at the cursor
+%define T_B354_01C6 0xB354:0x01C6       ; add a choice field record
+%define T_B3C7_0007 0xB3C7:0x0007       ; stock error box (error number)
+%define T_B99A_048F 0xB99A:0x048F       ; Edit Sound after the Do field
+%define T_B99A_0B0D 0xB99A:0x0B0D       ; stock Do jump table (BX = 0..9)
+%define T_B99A_27F2 0xB99A:0x27F2       ; rebuild the sorted Sound list
+%define T_C6C2_173D 0xC6C2:0x173D       ; collision-free ZONEnnn name
+%define T_D0C0_0236 0xD0C0:0x0236       ; free wave words, DX:AX
+%define T_D0C0_0611 0xD0C0:0x0611       ; allocate Sound (name, length, stereo)
+%define T_D0C0_084D 0xD0C0:0x084D       ; free record count
+%define T_D0C0_086F 0xD0C0:0x086F       ; rebuild allocation state
+%define T_D0C0_0B19 0xD0C0:0x0B19       ; free Sound (index, mode, flag)
+%define T_D0C0_0B1F 0xD0C0:0x0B1F       ; free Sound after its replaced prologue
+%define T_D0C0_0E50 0xD0C0:0x0E50       ; copy wave words (src, dest, count)
+%define T_D980_000C 0xD980:0x000C       ; mute 1 / unmute 0 (port 6A)
+
+; ---------------------------------------------------------------- mute storage (mute_storage.inc)
+
+%define T_C887_19FB 0xC887:0x19FB       ; after the program-record copy
+%define T_CEE6_0086 0xCEE6:0x0086       ; close (handle)
+%define T_CF0C_0073 0xCF0C:0x0073       ; fixed-size read (buffer, handle, n)
+%define T_CF0C_0096 0xCF0C:0x0096       ; fixed-size write (buffer, handle, n)
+%define T_CF37_04B3 0xCF37:0x04B3       ; program init after its prologue
+
+; ---------------------------------------------------------------- mute voice (mute_voice.inc)
+
+MUTE_CURRENT_PROGRAM equ 0xE60C ; selected program 0..23 (generic E60E)
+%define T_CF37_0002 0xCF37:0x0002       ; voice allocator
+%define T_CFC6_0007 0xCFC6:0x0007       ; shared note-on engine (event far)
+%define T_D21F_0008 0xD21F:0x0008       ; one-channel stop (channel)
+%define T_D9F2_003D 0xD9F2:0x003D       ; first pad slot mapped to a note
+
+; ---------------------------------------------------------------- mute UI (mute_ui.inc)
+
+MUTE_PROGRAM   equ 0xE60C       ; selected program 0..23 (generic E60E)
+MUTE_RECORD    equ 0xE5F7       ; far pointer to its program record (E5F9)
+MUTE_PAD       equ 0xD6AA       ; current pad slot (generic D6AC)
+MUTE_NOTE      equ 0xD6AB       ; note of the last pad event (D6AD)
+MUTE_NOTE_MIDI equ 0xD6AC       ; note of the last MIDI event (D6AE)
+%define T_C887_006B 0xC887:0x006B       ; stock menu dispatch continuation
+%define T_C887_00F1 0xC887:0x00F1       ; menu return continuation (DL)
+%define T_CA45_0008 0xCA45:0x0008       ; select program (index)
+%define T_D9F2_000C 0xD9F2:0x000C       ; effective pad slot -> note

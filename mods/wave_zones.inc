@@ -5,20 +5,10 @@
 
 ZONE_MAX equ 16
 
-; The captured personalized image shifts this DGROUP queue object by two
-; bytes and the high-ROM queue helpers by ten bytes.  D6E0:0075 appends a
-; key, which is not strong enough for the one-shot resume contract: an older
-; queued mode key could run first.  FB00's unget helper inserts at the read
-; head, so the synthetic '6' is the next key consumed.
-%ifdef WAVE_CAPTURE_20261001
-KEY_QUEUE   equ 0x12BA
-QUEUE_UNGET equ 0x06AF
-LIST_SELECTION equ 0xE408
-%else
-KEY_QUEUE   equ 0x12BC
-QUEUE_UNGET equ 0x06B9
-LIST_SELECTION equ 0xE40A
-%endif
+; D6E0:0075 appends a key to KEY_QUEUE, which is not strong enough for the
+; one-shot resume contract: an older queued mode key could run first.
+; FB00's unget helper (T_FB00_06B9) inserts at the read head, so the
+; synthetic '6' is the next key consumed.
 
 ; New stock Edit Sound invocation starts a new map lifetime, unless it is
 ; the explicit waveform Exit/Help re-entry into the same page.
@@ -35,7 +25,7 @@ zones_page_entry:
         mov byte [cs:zones_reselect], 1
 .clear:
         mov byte [cs:zones_resume], 0
-        jmp 0xB99A:0x0009
+        FJMP T_B99A_0009
 
 ; Replaces B99A:[0063,006B), immediately after 27F2 builds the sorted Sound
 ; list at SS:[BP-BC].  Stock restores a sorted-list position from a global,
@@ -75,7 +65,7 @@ zones_list_ready:
         pop cx
         pop bx
 .store:mov [bp-2], al
-        jmp 0xB99A:0x006B
+        FJMP T_B99A_006B
 
 ; Replaces the field-0 handler's initial cmp/jump window.  A sound-selection
 ; commit invalidates even when the user later selects the original slot:
@@ -86,9 +76,9 @@ zones_sound_changed:
         mov byte [cs:zones_resume], 0
         cmp di, -1
         jne .have_sound
-        jmp 0xB99A:0x082E
+        FJMP T_B99A_082E
 .have_sound:
-        jmp 0xB99A:0x04E3
+        FJMP T_B99A_04E3
 
 ; Put option '6' at the front of the stock key queue and arm exactly one
 ; Edit Sound re-entry.  FB00 returns -1 when the queue is already full, 0 on
@@ -107,7 +97,7 @@ zones_reopen:
         pop es
         mov bx, KEY_QUEUE
         mov cl, '6'
-        call 0xFB00:QUEUE_UNGET
+        FCALL T_FB00_06B9
         or ax, ax
         js .failed
         mov byte [cs:zones_resume], 1
@@ -129,6 +119,7 @@ zones_enter:
         pusha
         push es
         mov ax, SND_SEG
+        RELOC_PREV
         mov es, ax
         mov si, [cs:rec]
         cmp byte [cs:zones_valid], 0
