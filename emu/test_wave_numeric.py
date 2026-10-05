@@ -4,7 +4,10 @@ Run: python3 -m unittest emu.test_wave_numeric -v
 
 Payloads come from emu.harness, built from the current sources: every case
 on the capture profile, the GENERIC subset also on the generic profile, so
-both documented NUM_EDITING layouts execute.
+both documented NUM_EDITING layouts execute, and every case on the 316
+profile (WAVE316.SYS on OS 3.16, NUM_EDITING at 3.16 DGROUP 7A62; one BIOS
+set per load segment by default, all four in release mode).  Times are
+relative to V = profile.view (40 s on Vailixi, 52 s on 3.16).
 """
 from __future__ import annotations
 
@@ -13,7 +16,7 @@ import re
 import unittest
 
 from emu import harness as h
-from emu.harness import VIEW as V, taps
+from emu.harness import taps
 from emu.snd import sine441, snd, stereo1
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,9 +44,11 @@ def is_graphics(screen: dict) -> bool:
 class WaveNumeric(h.EmuSuite):
     RUNS = RUNS
     GENERIC = frozenset({"generic_basic", "cancel_typed", "start_clamp", "sample44_idle_enter"})
+    PROFILE_NAMES = h.ALL_PROFILES
 
     @classmethod
     def cases(cls, profile, runs):
+        V = profile.view
         small = [[0] * 2000]
         definitions = {
             # name: planes, start, end, keys, probe times
@@ -89,7 +94,7 @@ class WaveNumeric(h.EmuSuite):
         for name, (planes, start, end, events, times) in definitions.items():
             source = runs / f"{name}.SND"
             source.write_bytes(snd(name.upper()[:16], planes, start=start, end=end))
-            cases[name] = h.Case(events=h.wave_events(events), times=times,
+            cases[name] = h.Case(events=h.wave_events(events, profile=profile), times=times,
                                  files=[(source, "TEST.SND")], parts=("repeat_watch", "snddump"),
                                  env={"SNDDUMP_PCM": "0"})
         return cases
