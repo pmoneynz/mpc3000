@@ -16,7 +16,7 @@
 ; 3. Jump to 3.16's own entry, L:0000, with DS = 0040 as the loader left it.
 ;
 ; The home must end below page 61 (logical F4000h, NVRAM), so L may be at most
-; F400h - CAVE_HOME - the cave's paragraphs (72DAh today; the known EPROMs
+; F400h - CAVE_HOME - the cave's paragraphs (72D9h today; the known EPROMs
 ; use 6900h and 7000h).  A larger L halts here rather than writing NVRAM.
 
 entry316:
