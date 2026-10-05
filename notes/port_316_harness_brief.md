@@ -36,6 +36,9 @@ For implementation workers (`port-mechanic`). Read `AGENTS.md`,
   re-entry through the queued `6`) stops a playing sequence, as stock 3.16 does.
 - CHOP names results `ZONE000`, `ZONE001`, … itself (collision-free).
 - Sequence memory: 411K with `L = 0x6900`, 439K with `L = 0x7000`.
+- Default pad-to-note map: 3.16 programs map pad 1 to note 37 (Vailixi 35);
+  the Mute Groups page shows 3.16's own map (`Note:37`), as 3.16's Select
+  Program screen does (`Assign Note:37/A01`).
 
 ## Task
 
