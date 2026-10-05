@@ -157,9 +157,9 @@ playback, mute UI/voice/persistence, disk full); see
 | # | Finding | Disposition |
 |---|---|---|
 | 1 | The lock re-take after the voice allocator (`mute_voice.inc`, all profiles) added a yield between the allocator choosing a channel (it writes only `[E284]`) and `0B2D` marking it busy; a task waiting on resource 1 could take the same channel. PROVEN (code); the race is HYPOTHESIS. | Removed. The re-take before the allocator stays: it repairs only the drop caused by the mute stops, before any channel is chosen. The allocator's own MONO/Cutoff stops drop the lock in stock as well. |
-| 2 | The loader simulation did not model `entry316` (copy count, pool rule). | Builder hardening. |
-| 3 | Targets were shape-checked against the unpatched image (`T_D0C0_0B19` sits on the `chop_sound_delete` hook, as intended). | Builder hardening. |
-| 4 | Loose relocation checks: `0000`/`FFFF`/`4853` accepted anywhere; the unrelocated-word scan covered only data segments. | Builder hardening. |
+| 2 | The loader simulation did not model `entry316` (copy count, pool rule). | Builder runs it: `entry316` must assemble to the modelled routine (`ENTRY316`, read from the NASM listing); `cave_end` = cave size; the copy uses its `CX` (`2*CX` = size or size+1) and the home must equal the cave relocated independently; the halt immediate must be the highest `L−1` whose home ends below page 61 (`0x72D8`) and every `L` must pass it; the pool rule runs on the guard constants as assembled and must leave `min(L−1, 6FFF)` (`68FF`, `6FFF`). |
+| 3 | Targets were shape-checked against the unpatched image (`T_D0C0_0B19` sits on the `chop_sound_delete` hook, as intended). | Builder compares the patched image; a target's compared instructions may not reach a patch unless it is listed in `HOOK_TARGETS` (only `T_D0C0_0B19`), which must start a patch and is compared on its stock bytes. Compared bytes holding `0F E0` / `0F F0` (BRKXA/RETXA, which ndisasm mis-decodes) are an error. |
+| 4 | Loose relocation checks: `0000`/`FFFF`/`4853` accepted anywhere; the unrelocated-word scan covered only data segments. | Builder pins `FFFF`, `4853` and `0000` to their three `entry316` sites; every other relocated word must be a profile segment (`T_` target segments, DGROUP, sound, player, cave). No unrelocated word within one listing line may equal one of those, except the 23 listing-proven instruction bytes in `NOT_OPERANDS` (21 × `CMP AX,[CS:x]` = `2E 3B 06`, the word being `063B`; 2 × `MOV DX,0020h` = `BA 20 00`, the word being `20BA`). Far transfers into DGROUP or the sound segment are rejected. |
 | 5 | No bound on `L`: the home crosses page 61 when `L > 0x72D9` (cave `0x3264` bytes). | `entry316` halts in that case instead of writing NVRAM. |
 | 6 | The pool is 28K smaller with `L = 0x6900`. | Recorded above and in the bench checklist. |
 | 7 | Stale notes. | Fixed. |
@@ -168,7 +168,9 @@ Build after the review: `WAVE316.SYS` 470,948 bytes, SHA-256
 `c3eeefbbe8e5a3cfa6176ff9f8e261c6ca1244a7a0d9ce42777be017671be303`; cave
 12,900 bytes (logical `0xE7000–0xEA264` with `L = 0x6900`,
 `0xEE000–0xF1264` with `L = 0x7000`); 7,122 relocations; 86 far transfers;
-112 relocated cave words.
+112 relocated cave words. The hardened builder checks (rows 2–4) pass on this
+build with its output unchanged; `tests/test_build_wave316.py` pins the
+hashes and breaks each check once on in-memory inputs.
 
 ## Status
 
