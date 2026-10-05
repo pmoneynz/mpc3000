@@ -1,10 +1,9 @@
 -- mute_voice.lua for the 316 profile (WAVE316.SYS on OS 3.16, Route C).
---
--- The harness preamble defines MUTE_VOICE_OFFSETS (the assembled map),
--- CAVE_SEG / CAVE_PHYS (the cave at its home, L+7E00 = physical
--- 0x300000 + L*16 + 0x7E000) and LOAD_SEG (L).  Same output as
--- mute_voice.lua: mute_voice.log with SNAP, TAGWRITE, STOP and KEYON lines.
--- This script installs taps and reads live state; it never writes MPC RAM.
+-- The harness preamble (emu/harness.py observer()) defines CAVE (assembled
+-- map offsets), LOAD_SEG (L), CAVE_SEG (L+7E00) and CAVE_PHYS (0x300000 +
+-- L*16 + 0x7E000).  Same output as mute_voice.lua: mute_voice.log with
+-- TAGWRITE, STOP, KEYON and SNAP lines.  Installs taps and reads live state;
+-- it never writes MPC RAM.
 
 local machine = manager.machine
 local cpu = machine.devices[":maincpu"]
@@ -12,14 +11,13 @@ local prog = cpu.spaces["program"]
 local iosp = cpu.spaces["io"]
 local out = os.getenv("PROBE_OUT") or "."
 local log = assert(io.open(out .. "/mute_voice.log", "w"))
-local off = assert(MUTE_VOICE_OFFSETS, "generated preamble lacks MUTE_VOICE_OFFSETS")
+local off = CAVE
 
--- The one-channel stop T_D21F_0008 is 3.16 relative 234D:0000
--- (mods/profile_316.inc).  Its first register-select OUT DX,AX (AX = 0x0400 +
--- channel) is at 234D:0014 (image 0x234E4), as D21F:001C is in Vailixi: the
--- 41 instructions from the entry match one for one (only the far call to
--- the resource reservation differs), so the frame is the same.
-local STOP_CS, STOP_IP = (LOAD_SEG + 0x234D) & 0xffff, 0x0014
+-- One-channel stop T_D21F_0008 = 3.16 234D:0000 (mods/profile_316.inc).  Its
+-- bytes equal Vailixi D21F:0008..0047 except the relocated reserve call, so
+-- D21F:001C (OUT DX,AX, AX = 0400h + channel) is 234D:0014 at CS = L+234D.
+local STOP_CS = (LOAD_SEG + 0x234D) & 0xffff
+local STOP_IP = 0x0014
 
 local function now()
 	return machine.time:as_double()
@@ -65,7 +63,8 @@ local function snapshot(t)
 	log:flush()
 end
 
--- Sidecar writes provide exact tag lifetime and the writer responsible.
+-- Tag writes at the cave home, with the writer's CS:IP (the entry routine's
+-- copy writes them too, from the staging segment).
 local function tag_tap(name, offset)
 	local first = CAVE_PHYS + offset
 	local last = first + 31
@@ -90,27 +89,19 @@ local program_tap = tag_tap("program", off.mute_voice_program)
 local pad_tap = tag_tap("pad", off.mute_voice_pad)
 
 -- Mirror the DSP register selection so key-ons can be counted by channel.
--- The stop's first register-select write occurs with its BP frame live,
--- allowing the caller CS:IP and channel argument to be recorded without
--- fetch taps.
-local selected_channel, selected_reg = 0, 0
+-- 234D:0000 pushes BP and copies SP into it; its reserve call has returned by
+-- the OUT at 0014, so SP is the frame base there (MAME exposes SP, not BP).
+local selected_channel = 0
 local dsp_tap = iosp:install_write_tap(0x60, 0x6f, "mute_dsp", function(address, data, mask)
 	local cs, ip = csip()
 	if address == 0x60 then
 		if mask & 0x00ff ~= 0 then selected_channel = data & 0x1f end
-		if mask & 0xff00 ~= 0 then selected_reg = (data >> 8) & 0x0f end
-		local t = now()
-		-- Match the instruction and its full-word operand, as mute_voice.lua
-		-- does, not merely any port-60 write at that CS:IP.
 		if cs == STOP_CS and ip == STOP_IP and mask == 0xffff and (data >> 8) & 0xff == 0x04 then
 			local ss = tonumber(cpu.state["SS"].value)
-			-- The stop has pushed BP and copied SP into it by its first OUT.
-			-- MAME exposes SP but not BP in this V53 state surface, so SP is
-			-- the live frame base here.
 			local bp = tonumber(cpu.state["SP"].value)
 			log:write(string.format(
 				"STOP t=%.6f ch=%u caller_cs=%04X caller_ip=%04X arg=%u stop_ip=%04X\n",
-				t, data & 0x1f, rd16(ss, (bp + 4) & 0xffff),
+				now(), data & 0x1f, rd16(ss, (bp + 4) & 0xffff),
 				rd16(ss, (bp + 2) & 0xffff), rd16(ss, (bp + 6) & 0xffff), ip))
 		end
 	elseif address == 0x68 and data & mask & 0x0100 ~= 0 then

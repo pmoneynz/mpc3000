@@ -4,16 +4,26 @@ Run from the repository root:
 
     python3 -m unittest emu.test_mute_voice -v
 
-The capture payload is built from the current sources by emu.harness (its
-SHA-256 is logged).  The fixtures derive from a PGM saved by the native Disk
-UI.  Lua only observes execution and RAM writes; it does not seed program,
-sound, mute, or voice state.  Tag writes are counted only when the cave
-itself (CS=F07D) writes them: the loader's copy of the cave (CS=6900) also
-writes every tag byte at boot.
+The payloads are built from the current sources by emu.harness (their
+SHA-256 is logged): capture, and 316 (WAVE316.SYS on OS 3.16) once per BIOS
+set of harness.bios316_sets(), all four in release mode.  The fixtures derive
+from a PGM saved by the native Disk UI.  Lua only observes execution and RAM
+writes; it does not seed program, sound, mute, or voice state.  Tag writes
+are counted only when the cave itself (CS=F07D; 316: its home segment L+7E00)
+writes them: the loader's copy of the cave (CS=6900; 316: the entry routine
+copying it from its staging segment) also writes every tag byte at boot.
+
+OS 3.16: the hooks, the cave and the stop primitive are the same code; only
+the run-time segments the assertions name differ (Vailixi -> 3.16 relative,
+runtime CS = L + seg; instruction bytes compared, emu/lua/mute_voice316.lua):
+the stop D21F:0008 = 234D:0000, the note-event module CFB3 = 20DA (entry
+CFB3:0008 = 20DA:000E, note-off stop call CFB3:0125 = 20DA:012B) and the
+voice allocator CF37:0002 = 205E:0008 (Cutoff stop call CF37:0071 =
+205E:0077).  3.16 boots later and its start-up loader takes longer over the
+529 KB TEST.SND, so every time from Main Screen on is shifted by shift().
 """
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 import re
@@ -24,6 +34,7 @@ from emu import pgm as pgm_fixture
 from emu.mpc3k import run
 from emu.panel import dial, key_tap, pad_hit, panel_pad, write_smf
 from emu.snd import sine, snd
+from emu.test_mute_persistence import suite_profiles
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +47,15 @@ LUA = ROOT / "emu/lua/mute_voice.lua"
 PGM_RECORD = 0x0A82
 NOTE_RECORDS = PGM_RECORD + 0x003E
 NOTE_SIZE = 0x18
+
+LOAD = 62.0             # Vailixi: Disk, once the SCSI search has timed out
+MAIN = 72.0             # Main Screen after the PGM load; later times are relative to it
+# OS 3.16 (MAME, one run per set): the start-up file loader loads MUTE.PGM and
+# TEST.SND before the SCSI search, which is on screen from 45.5 s (v308), 46.0
+# (default, v311) and 50.0 (vailixi, whose EPROM loader starts 3.16 later).
+# Soft Key 4 cancels it here; the Disk keys then follow profile.timeline.
+STARTUP_316 = 51.0
+NOTE_EVENT_SEG_316 = 0x20DA     # CFB3: entry 20DA:000E (CALLF sites 0x311C6, 0x33B15, 0x4104E)
 
 
 @dataclass(frozen=True)
@@ -113,33 +133,89 @@ def program_fixture(path: Path, sound: Path, *, enabled: bool, groups: dict[int,
     return path
 
 
-def load_actions() -> list[tuple[float, bytes]]:
-    events = []
-    for at, key in ((62.0, "disk"), (63.5, "7"), (65.5, "soft1"),
-                    (68.5, "soft1"), (72.0, "main_screen")):
+def load_times(profile: h.Profile | None = None) -> tuple[float, ...]:
+    """Disk, 7, <Load> (MUTE.PGM, the first file), <Load it>, Main Screen."""
+    if profile is None or not profile.is316:
+        return LOAD, LOAD + 1.5, LOAD + 3.5, LOAD + 6.5, MAIN
+    tl = profile.timeline
+    disk = STARTUP_316 + tl.load_at - tl.cancel
+    load = disk + tl.load_key
+    return disk, disk + tl.load_seven, load, load + 3.0, load + 6.5
+
+
+def shift(profile: h.Profile | None = None) -> float:
+    """Added to every Vailixi time from MAIN on: 0 on Vailixi, -8.5 on 3.16."""
+    return load_times(profile)[-1] - MAIN
+
+
+def load_actions(profile: h.Profile | None = None) -> list[tuple[float, bytes]]:
+    events = h.taps((STARTUP_316, "soft4")) if profile is not None and profile.is316 else []
+    for at, key in zip(load_times(profile), ("disk", "7", "soft1", "soft1", "main_screen")):
         events += key_tap(key, at)
     return events
 
 
+def segments(profile: h.Profile) -> dict[str, str]:
+    """Run-time CS values the logs are compared with: the cave, the stock
+    note-event module (Vailixi CFB3) and the voice allocator (CF37)."""
+    if profile.is316:
+        return {"cave": f"{profile.cave_segment:04X}",
+                "note_event": f"{profile.runtime(NOTE_EVENT_SEG_316, 0).cs:04X}",
+                "allocator": f"{profile.target('T_CF37_0002').cs:04X}"}
+    return {"cave": f"{profile.cave_segment:04X}", "note_event": "CFB3", "allocator": "CF37"}
+
+
 class MuteVoice(unittest.TestCase):
-    results: dict[str, list[Event]] = {}
+    results: dict[tuple[str, str], list[Event]] = {}
+    profiles: dict[str, h.Profile] = {}
 
     @classmethod
     def setUpClass(cls) -> None:
-        profile = h.payload("capture")
         if not TEMPLATE.is_file():
             h.unavailable(f"native PGM fixture is missing: {TEMPLATE}")
-        RUNS.mkdir(parents=True, exist_ok=True)
+        jobs = {}
+        cls.profiles = {}
+        for profile in suite_profiles():
+            cls.profiles[profile.label] = profile
+            for name, job in cls.cases(profile).items():
+                jobs[(profile.label, name)] = job
+
+        def execute(key: tuple[str, str], job: tuple) -> list[Event]:
+            profile, runs, probe, (image, panel, external, end) = job
+            extra = ["-autoboot_script", str(probe)]
+            if external is not None:
+                # mpc3000.cpp registers mdin, mdin2, then panel.  MAME exposes
+                # those media slots as midiin1, midiin2, and midiin3.
+                extra += ["-midiin1", str(external)]
+            s = shift(profile)
+            run(profile.bios, [74.0 + s, end - 1.0, end], runs / key[1],
+                floppy=image, panel=panel, rompath=profile.rompath,
+                extra=extra)
+            log = runs / key[1] / "mute_voice.log"
+            # MAME has exited, so the log is complete; no polling.
+            h.require_marker(log, f"SNAP t={end:.6f}")
+            return parse_events(log)
+
+        cls.results = h.run_parallel(jobs, execute, 4)
+
+    @classmethod
+    def cases(cls, profile: h.Profile) -> dict[str, tuple]:
+        """Every case of one profile; Vailixi times from MAIN on are moved by shift()."""
+        runs = RUNS / profile.label
+        runs.mkdir(parents=True, exist_ok=True)
         profile.record(RUNS)
-        cls.payload_hash = profile.sha256
-        probe = h.observer(profile, RUNS / "observe.lua", ["mute_voice"])
+        probe = h.observer(profile, runs / "observe.lua", ["mute_voice"])
+        s = shift(profile)
+
+        def moved(events: list[tuple[float, bytes]]) -> list[tuple[float, bytes]]:
+            return [(at + s, data) for at, data in events]
 
         definitions: dict[str, tuple[Path, Path, Path | None, float]] = {}
-        mono = RUNS / "TEST.SND"
+        mono = runs / "TEST.SND"
         # Six seconds keeps the first voice sounding through the late 78.5 s
         # live-edit and cross-program hits; a release does not end POLY voices.
         mono.write_bytes(snd("TEST", [sine(44_100 * 6)]))
-        stereo = RUNS / "STEREO.SND"
+        stereo = runs / "STEREO.SND"
         plane = sine(44_100 * 2)
         stereo.write_bytes(snd("TEST", [plane, list(reversed(plane))]))
 
@@ -151,19 +227,19 @@ class MuteVoice(unittest.TestCase):
                 panel_extra: list[tuple[float, bytes]] | None = None,
                 external_midi: list[tuple[float, bytes]] | None = None,
                 end: float = 78.0) -> None:
-            program = program_fixture(RUNS / f"{name}.PGM", sound,
+            program = program_fixture(runs / f"{name}.PGM", sound,
                           enabled=enabled, groups=groups,
                           assigned_notes=assigned_notes, layers=layers,
                           note_off=note_off, cutoff=cutoff, duplicate=duplicate)
             image = h.wave_disk(profile, f"mute-voice-{name}", [(program, "MUTE.PGM"),
                                                                  (sound, "TEST.SND")])
-            actions = load_actions() + (panel_extra or [])
+            actions = load_actions(profile) + moved(panel_extra or [])
             for pad, at, hold in hits:
-                actions += pad_hit(panel_pad(pad), at, hold=hold)
-            panel = write_smf(RUNS / f"{name}.mid", actions)
-            external = (write_smf(RUNS / f"{name}-external.mid", external_midi)
+                actions += pad_hit(panel_pad(pad), at + s, hold=hold)
+            panel = write_smf(runs / f"{name}.mid", actions)
+            external = (write_smf(runs / f"{name}-external.mid", moved(external_midi))
                         if external_midi is not None else None)
-            definitions[name] = (image, panel, external, end)
+            definitions[name] = (image, panel, external, end + s)
 
         add("disabled", enabled=False, groups={0: 1, 1: 1},
             hits=[(1, 75.0, 3.0), (2, 75.5, 3.0)])
@@ -209,10 +285,10 @@ class MuteVoice(unittest.TestCase):
         # start a voice in Program 2, select Program 1 through MUTE GROUPS, then
         # hit another pad.  Equal group numbers remain isolated by program tag.
         isolation_program = program_fixture(
-            RUNS / "program_isolation.PGM", mono, enabled=True, groups={0: 1, 1: 1})
+            runs / "program_isolation.PGM", mono, enabled=True, groups={0: 1, 1: 1})
         isolation_image = h.wave_disk(profile, "mute-voice-program-isolation",
                                       [(isolation_program, "MUTE.PGM"), (mono, "TEST.SND")])
-        isolation = load_actions()
+        isolation = []
         for at, key in ((74.0, "program_sounds"), (76.0, "4"), (78.0, "2"),
                         (80.0, "down")):
             isolation += key_tap(key, at)
@@ -222,129 +298,147 @@ class MuteVoice(unittest.TestCase):
                         (89.3, "1"), (90.0, "main_screen")):
             isolation += key_tap(key, at, hold=0.05)
         isolation += pad_hit(panel_pad(2), 91.0, hold=2.0)
-        isolation_panel = write_smf(RUNS / "program_isolation.mid", isolation)
-        definitions["program_isolation"] = (isolation_image, isolation_panel, None, 93.0)
+        isolation_panel = write_smf(runs / "program_isolation.mid",
+                                    load_actions(profile) + moved(isolation))
+        definitions["program_isolation"] = (isolation_image, isolation_panel, None, 93.0 + s)
+        return {name: (profile, runs, probe, spec) for name, spec in definitions.items()}
 
-        def execute(item: tuple[str, tuple[Path, Path, Path | None, float]]) -> tuple[str, list[Event]]:
-            name, (image, panel, external, end) = item
-            extra = ["-autoboot_script", str(probe)]
-            if external is not None:
-                # mpc3000.cpp registers mdin, mdin2, then panel.  MAME exposes
-                # those media slots as midiin1, midiin2, and midiin3.
-                extra += ["-midiin1", str(external)]
-            run("vailixi", [74.0, end - 1.0, end], RUNS / name,
-                floppy=image, panel=panel, rompath=profile.rompath,
-                extra=extra)
-            log = RUNS / name / "mute_voice.log"
-            # MAME has exited, so the log is complete; no polling.
-            h.require_marker(log, f"SNAP t={end:.6f}")
-            return name, parse_events(log)
+    def each(self):
+        """(label, run-time segments, time shift) of every profile that ran."""
+        self.assertTrue(self.profiles, "no profile ran")
+        for label, profile in self.profiles.items():
+            yield label, segments(profile), shift(profile)
 
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            cls.results = dict(pool.map(execute, definitions.items()))
+    def events(self, label: str, case: str, kind: str) -> list[dict[str, int | float | str]]:
+        self.assertIn((label, case), self.results, f"{case} did not run on {label}")
+        return [event.values for event in self.results[(label, case)] if event.kind == kind]
 
-    def events(self, case: str, kind: str) -> list[dict[str, int | float | str]]:
-        return [event.values for event in self.results[case] if event.kind == kind]
+    def custom_stops(self, label: str, case: str) -> list[dict[str, int | float | str]]:
+        cave = segments(self.profiles[label])["cave"]
+        return [event for event in self.events(label, case, "STOP") if event["caller_cs"] == cave]
 
-    def custom_stops(self, case: str) -> list[dict[str, int | float | str]]:
-        return [event for event in self.events(case, "STOP") if event["caller_cs"] == "F07D"]
-
-    def firmware_tags(self, case: str) -> list[dict[str, int | float | str]]:
+    def firmware_tags(self, label: str, case: str) -> list[dict[str, int | float | str]]:
         """Tag writes made by the cave code itself, not the loader's copy."""
-        return [event for event in self.events(case, "TAGWRITE") if event["cs"] == "F07D"]
+        cave = segments(self.profiles[label])["cave"]
+        return [event for event in self.events(label, case, "TAGWRITE") if event["cs"] == cave]
 
-    def allocations(self, case: str) -> list[dict[str, int | float | str]]:
-        return [event for event in self.firmware_tags(case)
+    def allocations(self, label: str, case: str) -> list[dict[str, int | float | str]]:
+        s = shift(self.profiles[label])
+        return [event for event in self.firmware_tags(label, case)
                 if event["table"] == "program" and event["value"] != 0
-                and event["t"] >= 74.0]
+                and event["t"] >= 74.0 + s]
 
     def test_disabled_tags_but_does_not_choke(self) -> None:
-        starts = self.events("disabled", "KEYON")
-        self.assertEqual(len(starts), 2)
-        self.assertEqual(self.custom_stops("disabled"), [])
-        # Each voice start tags its channel with the program (1) and its
-        # zero-based pad, each written once by the cave before key-on.
-        tags = [(t["table"], t["ch"], t["value"]) for t in self.firmware_tags("disabled")
-                if t["t"] >= 74.0]
-        self.assertEqual(tags, [("program", starts[0]["ch"], 1), ("pad", starts[0]["ch"], 0),
-                                ("program", starts[1]["ch"], 1), ("pad", starts[1]["ch"], 1)])
+        for p, _, s in self.each():
+            with self.subTest(profile=p):
+                starts = self.events(p, "disabled", "KEYON")
+                self.assertEqual(len(starts), 2)
+                self.assertEqual(self.custom_stops(p, "disabled"), [])
+                # Each voice start tags its channel with the program (1) and its
+                # zero-based pad, each written once by the cave before key-on.
+                tags = [(t["table"], t["ch"], t["value"]) for t in self.firmware_tags(p, "disabled")
+                        if t["t"] >= 74.0 + s]
+                self.assertEqual(tags, [("program", starts[0]["ch"], 1), ("pad", starts[0]["ch"], 0),
+                                        ("program", starts[1]["ch"], 1), ("pad", starts[1]["ch"], 1)])
 
     def test_same_group_different_pad_chokes_exact_prior_channel(self) -> None:
-        starts = self.events("same_group", "KEYON")
-        stops = self.custom_stops("same_group")
-        self.assertEqual(len(starts), 2)
-        self.assertEqual([event["ch"] for event in stops], [starts[0]["ch"]])
-        self.assertLess(stops[0]["t"], starts[1]["t"])
+        for p, _, _ in self.each():
+            with self.subTest(profile=p):
+                starts = self.events(p, "same_group", "KEYON")
+                stops = self.custom_stops(p, "same_group")
+                self.assertEqual(len(starts), 2)
+                self.assertEqual([event["ch"] for event in stops], [starts[0]["ch"]])
+                self.assertLess(stops[0]["t"], starts[1]["t"])
 
     def test_other_groups_and_off_are_unaffected(self) -> None:
-        self.assertEqual(len(self.events("unaffected", "KEYON")), 3)
-        self.assertEqual(self.custom_stops("unaffected"), [])
+        for p, _, _ in self.each():
+            with self.subTest(profile=p):
+                self.assertEqual(len(self.events(p, "unaffected", "KEYON")), 3)
+                self.assertEqual(self.custom_stops(p, "unaffected"), [])
 
     def test_same_pad_keeps_stock_poly_overlap(self) -> None:
-        self.assertEqual(len(self.events("same_pad", "KEYON")), 2)
-        self.assertEqual(self.custom_stops("same_pad"), [])
+        for p, _, _ in self.each():
+            with self.subTest(profile=p):
+                self.assertEqual(len(self.events(p, "same_pad", "KEYON")), 2)
+                self.assertEqual(self.custom_stops(p, "same_pad"), [])
 
     def test_stereo_chokes_both_planes(self) -> None:
-        starts = self.allocations("stereo")
-        stops = self.custom_stops("stereo")
-        self.assertEqual(len(starts), 4)
-        self.assertEqual({event["ch"] for event in stops},
-                         {event["ch"] for event in starts[:2]})
+        for p, _, _ in self.each():
+            with self.subTest(profile=p):
+                starts = self.allocations(p, "stereo")
+                stops = self.custom_stops(p, "stereo")
+                self.assertEqual(len(starts), 4)
+                self.assertEqual({event["ch"] for event in stops},
+                                 {event["ch"] for event in starts[:2]})
 
     def test_simult_layers_are_all_choked(self) -> None:
-        starts = self.events("layers", "KEYON")
-        stops = self.custom_stops("layers")
-        self.assertEqual(len(starts), 4)
-        self.assertEqual({event["ch"] for event in stops},
-                         {event["ch"] for event in starts[:3]})
+        for p, _, _ in self.each():
+            with self.subTest(profile=p):
+                starts = self.events(p, "layers", "KEYON")
+                stops = self.custom_stops(p, "layers")
+                self.assertEqual(len(starts), 4)
+                self.assertEqual({event["ch"] for event in stops},
+                                 {event["ch"] for event in starts[:3]})
 
     def test_note_off_remains_stock(self) -> None:
-        self.assertEqual(len(self.events("note_off", "KEYON")), 1)
-        self.assertEqual(self.custom_stops("note_off"), [])
-        self.assertTrue(any(event["caller_cs"] == "CFB3"
-                            for event in self.events("note_off", "STOP")))
+        for p, seg, _ in self.each():
+            with self.subTest(profile=p):
+                self.assertEqual(len(self.events(p, "note_off", "KEYON")), 1)
+                self.assertEqual(self.custom_stops(p, "note_off"), [])
+                self.assertTrue(any(event["caller_cs"] == seg["note_event"]
+                                    for event in self.events(p, "note_off", "STOP")))
 
     def test_cutoff_remains_stock(self) -> None:
-        self.assertEqual(len(self.events("cutoff", "KEYON")), 2)
-        self.assertEqual(self.custom_stops("cutoff"), [])
-        self.assertTrue(any(event["caller_cs"] == "CF37"
-                            for event in self.events("cutoff", "STOP")))
+        for p, seg, _ in self.each():
+            with self.subTest(profile=p):
+                self.assertEqual(len(self.events(p, "cutoff", "KEYON")), 2)
+                self.assertEqual(self.custom_stops(p, "cutoff"), [])
+                self.assertTrue(any(event["caller_cs"] == seg["allocator"]
+                                    for event in self.events(p, "cutoff", "STOP")))
 
     def test_enable_and_group_edit_apply_to_ringing_voice(self) -> None:
-        starts = self.events("live_edit", "KEYON")
-        stops = self.custom_stops("live_edit")
-        self.assertEqual(len(starts), 2)
-        self.assertEqual([event["ch"] for event in stops], [starts[0]["ch"]])
-        self.assertGreater(stops[0]["t"], 78.49)
-        self.assertLess(stops[0]["t"], starts[1]["t"])
+        for p, _, s in self.each():
+            with self.subTest(profile=p):
+                starts = self.events(p, "live_edit", "KEYON")
+                stops = self.custom_stops(p, "live_edit")
+                self.assertEqual(len(starts), 2)
+                self.assertEqual([event["ch"] for event in stops], [starts[0]["ch"]])
+                self.assertGreater(stops[0]["t"], 78.49 + s)
+                self.assertLess(stops[0]["t"], starts[1]["t"])
 
     def test_external_midi_uses_the_shared_hooks(self) -> None:
         # The notes arrive on MIDI In 1 (-midiin1, MAME slot mdin); the panel
         # link carries only the load keys, never a pad frame.
-        starts = self.events("midi", "KEYON")
-        stops = self.custom_stops("midi")
-        self.assertEqual(len(starts), 2)
-        self.assertEqual([event["ch"] for event in stops], [starts[0]["ch"]])
-        for start, sent in zip(starts, (75.0, 75.5)):
-            self.assertGreater(start["t"], sent)
-            self.assertLess(start["t"], sent + 0.02)
+        for p, _, s in self.each():
+            with self.subTest(profile=p):
+                starts = self.events(p, "midi", "KEYON")
+                stops = self.custom_stops(p, "midi")
+                self.assertEqual(len(starts), 2)
+                self.assertEqual([event["ch"] for event in stops], [starts[0]["ch"]])
+                for start, sent in zip(starts, (75.0 + s, 75.5 + s)):
+                    self.assertGreater(start["t"], sent)
+                    self.assertLess(start["t"], sent + 0.02)
 
     def test_duplicate_note_mapping_uses_first_pad_alias(self) -> None:
-        self.assertEqual(len(self.events("duplicate_alias", "KEYON")), 2)
-        self.assertEqual(self.custom_stops("duplicate_alias"), [])
-        pad_writes = [event["value"] for event in self.events("duplicate_alias", "TAGWRITE")
-                      if event["table"] == "pad" and event["t"] >= 74.0]
-        self.assertEqual(pad_writes, [0, 0])
+        for p, _, s in self.each():
+            with self.subTest(profile=p):
+                self.assertEqual(len(self.events(p, "duplicate_alias", "KEYON")), 2)
+                self.assertEqual(self.custom_stops(p, "duplicate_alias"), [])
+                pad_writes = [event["value"] for event in self.events(p, "duplicate_alias", "TAGWRITE")
+                              if event["table"] == "pad" and event["t"] >= 74.0 + s]
+                self.assertEqual(pad_writes, [0, 0])
 
     def test_program_tags_isolate_sounding_voices(self) -> None:
-        starts = self.events("program_isolation", "KEYON")
-        self.assertEqual(len(starts), 2)
-        self.assertEqual(self.custom_stops("program_isolation"), [])
-        self.assertFalse(any(event["ch"] == starts[0]["ch"]
-                             and starts[0]["t"] < event["t"] < starts[1]["t"]
-                             for event in self.events("program_isolation", "STOP")))
-        programs = [event["value"] for event in self.allocations("program_isolation")]
-        self.assertEqual(set(programs), {1, 2})
+        for p, _, _ in self.each():
+            with self.subTest(profile=p):
+                starts = self.events(p, "program_isolation", "KEYON")
+                self.assertEqual(len(starts), 2)
+                self.assertEqual(self.custom_stops(p, "program_isolation"), [])
+                self.assertFalse(any(event["ch"] == starts[0]["ch"]
+                                     and starts[0]["t"] < event["t"] < starts[1]["t"]
+                                     for event in self.events(p, "program_isolation", "STOP")))
+                programs = [event["value"] for event in self.allocations(p, "program_isolation")]
+                self.assertEqual(set(programs), {1, 2})
 
 
 if __name__ == "__main__":
