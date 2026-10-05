@@ -5,13 +5,21 @@ Run from the repository root:
     python3 -m unittest emu.test_wave_playback -v
 
 Payloads come from emu.harness, built from the current sources (capture
-profile for every case, generic for the GENERIC subset).  Evidence comes from
+profile for every case, generic for the GENERIC subset, and every case on the
+316 profile: WAVE316.SYS on OS 3.16, one BIOS set per load segment by default,
+all four in release mode).  Evidence comes from
 the stock player's own data reads of the record bounds inside CFC6:0CE9
 (BOUNDREAD, CS=CFC6, IP in [0CE9,0D75)), full 16-bit DSP I/O writes, the exact
 D213/D21F release/stop instructions, writes/snapshots of the live sound
 record, and short WAV windows of the mixed output.  Every started channel must
 stop exactly once within the selected duration plus one 10 ms scheduler tick
 (notes/wave_playback.md).
+
+On 3.16 the observer is emu/lua/wave_playback316.lua: the same instructions
+at their relocated 3.16 addresses (player body T_CFC6_0CE9..T_CFC6_0D75 =
+20ED:[0CEF,0D7B), record zero at SND_SEG L+539D:4814), so every assertion is
+the same.  Times are relative to V = profile.view (40 s on Vailixi, 52 s on
+3.16).
 """
 from __future__ import annotations
 
@@ -22,7 +30,6 @@ import unittest
 import wave
 
 from emu import harness as h, wave_ref
-from emu.harness import VIEW as V
 from emu.panel import dial, key_tap
 from emu.snd import sine441, snd, stereo1
 
@@ -43,6 +50,22 @@ RATE = 44_100
 TICK = 0.010                    # stock playback scheduler tick
 BOUND_WORDS = [0x3A72F4, 0x3A72F6, 0x3A72F8, 0x3A72FA]
 HEX_KEYS = {"phys", "data", "mask", "wave", "mixer", "step", "left", "right", "type"}
+
+
+def bound_words(profile: h.Profile) -> list[int]:
+    """Physical words of record zero's start/end dwords (sound segment:4814..481B)."""
+    if not profile.is316:
+        return BOUND_WORDS
+    first = profile.runtime(h.SND_SEG_316, 0x4814).phys
+    return [first + 2 * i for i in range(4)]
+
+
+def player(profile: h.Profile) -> tuple[str, int, int]:
+    """The stock player body CE9: CS as logged, IP range [start, end)."""
+    if not profile.is316:
+        return "CFC6", 0x0CE9, 0x0D75
+    start, end = profile.target("T_CFC6_0CE9"), profile.target("T_CFC6_0D75")
+    return f"{start.cs:04X}", start.ip, end.ip
 
 
 @dataclass(frozen=True)
@@ -83,10 +106,12 @@ def common_events() -> list[tuple[float, bytes]]:
 class WavePlayback(h.EmuSuite):
     RUNS = RUNS
     GENERIC = frozenset({"full_stop", "empty", "fine_record_end", "stock_exit"})
+    PROFILE_NAMES = h.ALL_PROFILES
     results: dict = {}
 
     @classmethod
     def cases(cls, profile, runs):
+        V = profile.view
         mono_path = runs / "SINE441.SND"
         stereo_path = runs / "STEREO1.SND"
         end_path = runs / "SINEEND.SND"
@@ -146,7 +171,8 @@ class WavePlayback(h.EmuSuite):
                 # 170 ms windows around each audition instead of a whole-run WAV.
                 env["PLAYBACK_WAV"] = ";".join(f"{V + k - 0.02}:{V + k + 0.15}:audition{k}.wav"
                                                for k in (2, 4))
-            cases[name] = h.Case(events=h.wave_events(actions[name]), times=capture_times[name],
+            cases[name] = h.Case(events=h.wave_events(actions[name], profile=profile),
+                                 times=capture_times[name],
                                  files=[(sound[name], sound[name].name)],
                                  parts=("wave_playback",), env=env)
         return cases
@@ -185,8 +211,9 @@ class WavePlayback(h.EmuSuite):
             self.assertEqual((snapshot["start"], snapshot["end"], snapshot["len"]),
                              (start, end, length))
 
-    def requested_intervals(self, log) -> list[tuple[int, int, float, float]]:
+    def requested_intervals(self, prof: str, log) -> list[tuple[int, int, float, float]]:
         """(start, end, t_mutate, t_restore) for each temporary record mutation."""
+        words = bound_words(self.profiles[prof])
         writes = self.kind(log, "BOUNDWRITE")
         self.assertEqual(len(writes) % 8, 0, writes)
         snapshots = self.kind(log, "SNAP")
@@ -195,8 +222,8 @@ class WavePlayback(h.EmuSuite):
         intervals = []
         for offset in range(0, len(writes), 8):
             temporary, restored = writes[offset:offset + 4], writes[offset + 4:offset + 8]
-            self.assertEqual([w["phys"] for w in temporary], BOUND_WORDS)
-            self.assertEqual([w["phys"] for w in restored], BOUND_WORDS)
+            self.assertEqual([w["phys"] for w in temporary], words)
+            self.assertEqual([w["phys"] for w in restored], words)
             self.assertEqual([w["mask"] for w in temporary + restored], [0xFFFF] * 8)
             start = int(temporary[0]["data"]) | (int(temporary[1]["data"]) << 16)
             end = int(temporary[2]["data"]) | (int(temporary[3]["data"]) << 16)
@@ -206,7 +233,7 @@ class WavePlayback(h.EmuSuite):
             intervals.append((start, end, float(temporary[-1]["t"]), float(restored[0]["t"])))
         return intervals
 
-    def assert_player_read(self, log, start: int, end: int, t0: float, t1: float) -> None:
+    def assert_player_read(self, prof: str, log, start: int, end: int, t0: float, t1: float) -> None:
         """CFC6:0CE9 itself read these start/end dwords in [t0, t1].
 
         CE9 compares the high words (signed) and reads the low end word only
@@ -214,23 +241,27 @@ class WavePlayback(h.EmuSuite):
         read; otherwise the end's low word may be skipped.  Every read of the
         bounds in the window, by any code, must return the requested values.
         """
+        profile = self.profiles[prof]
+        start_lo, start_hi, end_lo, end_hi = bound_words(profile)
+        cs, first, last = player(profile)
         reads = self.kind(log, "BOUNDREAD", t0, t1 + 1e-9)
-        want = {0x3A72F4: start & 0xFFFF, 0x3A72F6: start >> 16,
-                0x3A72F8: end & 0xFFFF, 0x3A72FA: end >> 16}
+        want = {start_lo: start & 0xFFFF, start_hi: start >> 16,
+                end_lo: end & 0xFFFF, end_hi: end >> 16}
         for r in reads:
             self.assertEqual(int(r["data"]), want[r["phys"]], r)
-        player = {r["phys"] for r in reads
-                  if r["cs"] == "CFC6" and 0x0CE9 <= int(r["ip"], 16) < 0x0D75}
-        required = set(want) if start >> 16 == end >> 16 else set(want) - {0x3A72F8}
-        self.assertTrue(required <= player, f"CE9 read {sorted(player)} in [{t0}, {t1}]")
+        player_reads = {r["phys"] for r in reads
+                        if r["cs"] == cs and first <= int(r["ip"], 16) < last}
+        required = set(want) if start >> 16 == end >> 16 else set(want) - {end_lo}
+        self.assertTrue(required <= player_reads, f"CE9 read {sorted(player_reads)} in [{t0}, {t1}]")
 
-    def assert_calls(self, log, intervals: list[tuple[int, int]]) -> int:
-        requested = self.requested_intervals(log)
+    def assert_calls(self, prof: str, log, intervals: list[tuple[int, int]]) -> int:
+        requested = self.requested_intervals(prof, log)
         self.assertEqual([(a, b) for a, b, _, _ in requested], intervals)
         for a, b, t0, t1 in requested:
-            self.assert_player_read(log, a, b, t0, t1)
+            self.assert_player_read(prof, log, a, b, t0, t1)
         # Every stock-player read belongs to one of the temporary mutations.
-        reads = [r for r in self.kind(log, "BOUNDREAD") if r["cs"] == "CFC6"]
+        cs = player(self.profiles[prof])[0]
+        reads = [r for r in self.kind(log, "BOUNDREAD") if r["cs"] == cs]
         self.assertTrue(all(any(t0 <= float(r["t"]) <= t1 for _, _, t0, t1 in requested)
                             for r in reads), reads)
         snapshots = self.kind(log, "SNAP")
@@ -255,7 +286,7 @@ class WavePlayback(h.EmuSuite):
     def test_full_trim_and_explicit_stop(self) -> None:
         for prof, log in self.runs("full_stop"):
             with self.subTest(profile=prof):
-                wave_base = self.assert_calls(log, [(MONO_START, MONO_END)])
+                wave_base = self.assert_calls(prof, log, [(MONO_START, MONO_END)])
                 starts = self.kind(log, "STARTREG")
                 self.assertEqual([(e["start"], e["type"]) for e in starts],
                                  [(wave_base + MONO_START, 0)])
@@ -271,9 +302,10 @@ class WavePlayback(h.EmuSuite):
         half_window = 120 * 16
         for prof, log in self.runs("fine"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 intervals = [(MONO_START, MONO_START + half_window),
                              (MONO_END - half_window, MONO_END)]
-                wave_base = self.assert_calls(log, intervals)
+                wave_base = self.assert_calls(prof, log, intervals)
                 self.assertEqual([e["start"] for e in self.kind(log, "STARTREG")],
                                  [wave_base + MONO_START, wave_base + MONO_END - half_window])
                 self.assert_lifecycles(log, [half_window, half_window])
@@ -303,7 +335,7 @@ class WavePlayback(h.EmuSuite):
         for prof, log in self.runs("zone"):
             with self.subTest(profile=prof):
                 interval = (2 * step, MONO_LEN // 16 + 10 * step)
-                wave_base = self.assert_calls(log, [interval])
+                wave_base = self.assert_calls(prof, log, [interval])
                 self.assertEqual([e["start"] for e in self.kind(log, "STARTREG")],
                                  [wave_base + 2 * step])
                 self.assert_lifecycles(log, [interval[1] - interval[0]])
@@ -312,7 +344,7 @@ class WavePlayback(h.EmuSuite):
     def test_stereo_starts_both_planes(self) -> None:
         for prof, log in self.runs("stereo"):
             with self.subTest(profile=prof):
-                wave_base = self.assert_calls(log, [(STEREO_START, STEREO_END)])
+                wave_base = self.assert_calls(prof, log, [(STEREO_START, STEREO_END)])
                 starts = self.kind(log, "STARTREG")
                 self.assertEqual([e["start"] for e in starts],
                                  [wave_base + STEREO_START, wave_base + STEREO_LEN + STEREO_START])
@@ -327,12 +359,13 @@ class WavePlayback(h.EmuSuite):
         zone_end = MONO_LEN // 16
         for prof, log in self.runs("empty"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 # Nothing at all happens for the empty request ...
                 for kind in ("BOUNDREAD", "STARTREG", "KEYON", "BOUNDWRITE", "D213", "D21F"):
                     self.assertEqual(self.kind(log, kind, V, V + 3.5), [], kind)
                 # ... while the same key, once the zone is non-empty, plays it.
                 positive = (zone_end - 10 * (MONO_LEN // 240), zone_end)
-                wave_base = self.assert_calls(log, [positive])
+                wave_base = self.assert_calls(prof, log, [positive])
                 self.assertEqual([e["start"] for e in self.kind(log, "STARTREG")],
                                  [wave_base + positive[0]])
                 self.assertGreater(self.kind(log, "STARTREG")[0]["t"], V + 6)
@@ -342,8 +375,9 @@ class WavePlayback(h.EmuSuite):
     def test_zoom_one_rejects_then_recovers(self) -> None:
         for prof, log in self.runs("short_recover"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 intervals = [(MONO_START, MONO_START + 120), (MONO_START, MONO_START + 120 * 16)]
-                wave_base = self.assert_calls(log, intervals)
+                wave_base = self.assert_calls(prof, log, intervals)
                 starts = self.kind(log, "STARTREG")
                 self.assertEqual([e["start"] for e in starts], [wave_base + MONO_START])
                 self.assertGreater(float(starts[0]["t"]), V + 8.5)
@@ -364,7 +398,7 @@ class WavePlayback(h.EmuSuite):
         half_window = 120 * 16
         for prof, log in self.runs("fine_record_end"):
             with self.subTest(profile=prof):
-                wave_base = self.assert_calls(log, [(MONO_LEN - half_window, MONO_LEN)])
+                wave_base = self.assert_calls(prof, log, [(MONO_LEN - half_window, MONO_LEN)])
                 self.assertEqual([e["start"] for e in self.kind(log, "STARTREG")],
                                  [wave_base + MONO_LEN - half_window])
                 self.assert_lifecycles(log, [half_window])
@@ -373,13 +407,14 @@ class WavePlayback(h.EmuSuite):
     def test_stock_plystp_hook_scope(self) -> None:
         for prof, log in self.runs("stock_exit"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 self.assertEqual(self.kind(log, "BOUNDWRITE"), [])
                 starts = self.kind(log, "STARTREG")
                 self.assertEqual(len(starts), 1)
                 snapshots = self.kind(log, "SNAP")
                 self.assertEqual(starts[0]["start"], snapshots[0]["wave"] + MONO_START)
                 # The stock caller hands CE9 the record's own bounds.
-                self.assert_player_read(log, MONO_START, MONO_END, V, starts[0]["t"])
+                self.assert_player_read(prof, log, MONO_START, MONO_END, V, starts[0]["t"])
                 releases = self.kind(log, "D213")
                 stops = self.kind(log, "D21F")
                 self.assertEqual((len(releases), len(stops)), (1, 1))
