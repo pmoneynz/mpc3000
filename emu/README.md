@@ -161,7 +161,13 @@ Observers: for a 316 profile `observer()` loads part `X` from
 `CAVE_LEN` to the preamble (`DG` holds 3.16 offsets). Ported parts:
 `wave_zones316`, `snddump316`, `repeat_watch316`, and `image316` (pool-end
 immediate, cave home and image-head dumps at `IMAGE316_AT`, writes to image
-`0..0x6FFF` from `IMAGE316_WATCH_FROM`).
+`0..0x6FFF` from `IMAGE316_WATCH_FROM`); `wave_playback316` (same log as
+`wave_playback`; the stock taps at 3.16 `2325:004C`, `2341:0013`, `234D:0014`,
+record zero at `SND_SEG:4814`, and a `SNDPHYS` line if the live PGR does not
+map the record to `0x300000 + logical`); `mute_ui316`, `mute_voice316` (stop
+select `234D:0014`); and `mute_range_inject316`, which, like
+`mute_range_inject`, writes: it swaps the program index in the hooked caller's
+frame and restores it at the 3.16 return site the suite names.
 
 `EmuSuite`: a suite opts in with `PROFILE_NAMES = harness.ALL_PROFILES`; its
 cases run on 316 once per BIOS set (`default` and `v308` by default, all four
@@ -171,6 +177,14 @@ release refuses a subset), minus `SKIP_316`. `cases()` takes times from
 316. `emu/test_port316_boot.py`: banner, timeline, wave view pixels, Mute
 Groups, cave home and pool end, and the pool-fix Song regression, on all four
 sets.
+
+Every suite except `test_mpc3k` (stock emulator checks) runs its cases on 316
+as well; `test_wave_physical` adds `WavePhysical316`. Where 3.16 behaves
+differently the suites assert 3.16's behaviour (list and evidence:
+[`../notes/port_316.md`](../notes/port_316.md), "Emulator suites on 3.16").
+`SKIP_316` names cases whose feature 3.16 lacks: `test_wave_chop_safety`
+`unlocked_running` (no safe-lock setting) and `test_harness_lifecycle` `do1`,
+`do7` (COPY ZONE-> SND and TRUNC SFT ST+END are Vailixi-only Do options).
 
 `<t>` in file names is the probe time formatted as `%g` (79.5 and 80.5 stay
 distinct). New suites: `test_harness_bursts` (coalesced point motion and

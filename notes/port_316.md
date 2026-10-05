@@ -121,8 +121,8 @@ The builder's own loader simulation agrees at both `L`. The builder is now
 ## Results of the first full build (2026-10-05, MAME, one execution per set)
 
 These results are for the first build (`c5fda657…`). The build after the review
-(below) differs by one removed lock re-take and the load-segment bound; the
-emulator suites are being re-run on it.
+(below) differs by one removed lock re-take and the load-segment bound; every
+emulator suite has since passed on it ("Emulator suites on 3.16").
 
 `python3 mods/build_wave316.py`: `WAVE316.SYS` 470,944 bytes, SHA-256
 `c5fda657b9e8c8514dc2c5c34e8a6c8d481dc54cdb420c9c61f75ecd6245a5ef`; cave
@@ -147,10 +147,6 @@ segments; loader simulation at both `L`.
   Stock `M3K316.SYS` hangs at this step on `default` and `vailixi`
   (`<scratchpad>/port/work-memprobe/song_wave316.log`, `runs/song_ab_*`).
 
-**Not yet run on 3.16:** the emulator suites (zones, CHOP, numeric,
-playback, mute UI/voice/persistence, disk full); see
-[port_316_harness_brief.md](port_316_harness_brief.md). Physical behaviour is
-**UNDETERMINED**.
 
 ## Adversarial review (2026-10-05, read-only, code; no MAME)
 
@@ -172,6 +168,55 @@ Build after the review: `WAVE316.SYS` 470,948 bytes, SHA-256
 build with its output unchanged; `tests/test_build_wave316.py` pins the
 hashes and breaks each check once on in-memory inputs.
 
+## Emulator suites on 3.16 (2026-10-05, MAME, one execution per set)
+
+Every suite except `test_mpc3k` (stock emulator checks) runs its cases on the
+316 profile as well as on the Vailixi builds (`capture`; `generic` for its
+subset). Release run (`python3 -m emu.harness_release`, 23 suites in four
+groups) on `port-316` at `9a9ad8e`, build `c3eeefbb…`, 3.16 on `default`,
+`vailixi`, `v311` and `v308`: **150 tests, 0 failures, 0 errors, 0 skipped**
+(boot 7, CHOP 10/1/6/1, `test_mpc3k` 21, mute UI 8, range 3, apply-all 5,
+audition 2, voice 12, persistence 4, disk full 6, lifecycle 2, zones 10,
+zone navigation 5, bursts 3, harness lifecycle 7, long 6, physical 9,
+numeric 9, numeric order 5, playback 8).
+
+Where 3.16 behaves differently the suites assert 3.16's behaviour:
+
+- Do list: 8 stock options, CHOP ZONE is index 8 (3.16 `0B72:0B0A`
+  `cmp bx,7`; Vailixi `B99A:0B05` `cmp bx,9`). COPY ZONE-> SND and TRUNC SFT
+  ST+END are Vailixi-only (`test_harness_lifecycle` `do1`, `do7`: `SKIP_316`).
+- No safe lock and no Edit Sound mute: entering Edit Sound stops a Rec+Play
+  transport (DS `A49B` 8 → 0 at the `6` key), so CHOP runs and writes no port
+  `6Ah`. `test_wave_chop_safety` `unlocked_running` (it turns the Vailixi
+  setting off) is `SKIP_316`.
+- Default pad map: pad 1 = note 37 … pad 64 = note 98, a 64-byte table at 3.16
+  DGROUP `087F` (image `0x6123F`) that image `0x493D` copies to DGROUP `8064`
+  (PROVEN, code); Vailixi pad 1 = 35.
+- Timeline: boot-relative times are 13 s later (Soft Key 4 cancels the SCSI
+  search at 33.0 s against 20 s); the second of two sounds is selected 5.0 s
+  after the first `<Load>` (4.5 s on Vailixi).
+- `test_wave_chop` `memory_full` uses a 492,000-frame source: with
+  `WAVE316.SYS` the floppy has 986,624 bytes free, too few for the
+  540,000-frame source; 492,000 frames still exceed half of the 980,992 free
+  sound words, so the refusal is the same.
+- The disk-full stock control boots `M3K316.SYS`; `test_incompatible_rom_rejected`
+  stays capture-only (`WAVE316.SYS` has no ROM guard by design).
+
+Stock 3.16 addresses only the tests use (instruction-identical windows
+against Vailixi, rechecked by the orchestrator; not in `profile_316.inc`):
+
+| Vailixi | 3.16 relative | Use |
+|---|---|---|
+| `D1F7:0054` | `2325:004C` | start register `OUT 62h` |
+| `D213:001B` | `2341:0013` | release register select (`OUT 60h`) |
+| `D21F:001C` | `234D:0014` | stop register select (`OUT 60h`) |
+| `CFB3:0008`, `CFB3:0125` | `20DA:000E`, `20DA:012B` | note-event entry; its note-off stop call |
+| `CF37:0071` | `205E:0077` | the allocator's Cutoff stop call |
+| `C20F:0417` | `1396:041D` | PGM load: return after close (range injection) |
+| `E86E:0273` | `3E8F:026F` | PGM save: return after close (range injection) |
+
+Physical behaviour is **UNDETERMINED** ([bench316_checklist.md](bench316_checklist.md)).
+
 ## Status
 
 | Work | State |
@@ -181,4 +226,5 @@ hashes and breaks each check once on in-memory inputs.
 | Cave source profile refactor (byte-identical Vailixi builds) | done |
 | Route C builder core and loader simulation | proven in MAME with a probe cave |
 | Full build, smoke, pixel check, pool fix | done (MAME) |
-| Emulator suites on 3.16, all four sets | next |
+| Emulator suites on 3.16, all four sets | done (MAME): 150 tests, 0 skipped |
+| Bench run of `WAVE BENCH 08` | next (USB deploy, then bench316_checklist.md) |
