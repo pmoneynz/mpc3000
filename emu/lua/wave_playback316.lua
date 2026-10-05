@@ -1,17 +1,21 @@
 -- wave_playback.lua for the 316 profile (WAVE316.SYS on OS 3.16, Route C).
--- Same taps, environment and output (wave_playback.log) as wave_playback.lua,
--- at the relocated 3.16 addresses.  The harness preamble defines LOAD_SEG (L)
--- and SND_SEG (runtime L+539D); physical = 0x300000 + logical (third PGR,
--- XA on).  3.16 relative seg:off, each named after its Vailixi address and
--- matched instruction for instruction (every relocated far reference into
--- these routines uses the segment given, so CS = L + that segment):
---   record zero bounds    SND_SEG:4814..481B   Vailixi A2AE:4814..481B
---   start register OUT    2325:004C            Vailixi D1F7:0054 (OUT 62h, register 0)
---   release select OUT    2341:0013            Vailixi D213:001B (OUT 60h, AX = 0400h + ch)
---   stop select OUT       234D:0014            Vailixi D21F:001C (OUT 60h, AX = 0400h + ch)
--- BOUNDREAD logs the runtime CS:IP; the tests pick out the player body
--- T_CFC6_0CE9..T_CFC6_0D75 (3.16 20ED:[0CEF,0D7B)).  Read-only.
-
+-- Same output (wave_playback.log: BOUNDREAD, BOUNDWRITE, STARTREG, KEYON,
+-- D213, D21F, SNAP, WAVSTART/WAVSTOP) and environment (PLAYBACK_WATCH_FROM,
+-- PLAYBACK_SNAPSHOTS, PLAYBACK_WAV) as wave_playback.lua.  Read-only.
+--
+-- Addresses: record zero is SND_SEG:4800 (runtime L+539D, harness preamble),
+-- its start/end dwords at SND_PHYS..SND_PHYS+7 (third PGR: physical =
+-- 0x300000 + logical; checked through the live PGR at 33 s).  cs/ip in the
+-- log are runtime values (CS = L + relative segment).  The three stock OUT
+-- instructions the Vailixi part matches by CS:IP, in 3.16 relative seg:off
+-- (instruction-identical windows; callers in the same modules):
+--   D1F7:0054 -> 2325:004C  start register lane 0 (OUT 62h) in 2325:0006,
+--                           whose only far caller is the player at 20ED:0BA6
+--                           (Vailixi D1F7:000E, called from CFC6:0BA0)
+--   D213:001B -> 2341:0013  release register select (AX = 0400h + channel)
+--                           in 2341:0000 (Vailixi D213:0008)
+--   D21F:001C -> 234D:0014  stop register select in 234D:0000 (profile_316.inc
+--                           T_D21F_0008)
 local machine = manager.machine
 local cpu = machine.devices[":maincpu"]
 local prog = cpu.spaces["program"]
@@ -19,10 +23,10 @@ local iosp = cpu.spaces["io"]
 local out = os.getenv("PROBE_OUT") or "."
 local log = assert(io.open(out .. "/wave_playback.log", "w"))
 
-local START_CS = (LOAD_SEG + 0x2325) & 0xffff
-local RELEASE_CS = (LOAD_SEG + 0x2341) & 0xffff
-local STOP_CS = (LOAD_SEG + 0x234D) & 0xffff
-local BOUNDS = 0x300000 + ((SND_SEG << 4) + 0x4814)
+local START_CS, START_IP = (LOAD_SEG + 0x2325) & 0xffff, 0x004c
+local RELEASE_CS, RELEASE_IP = (LOAD_SEG + 0x2341) & 0xffff, 0x0013
+local STOP_CS, STOP_IP = (LOAD_SEG + 0x234d) & 0xffff, 0x0014
+local SND_PHYS = 0x300000 + SND_SEG * 16 + 0x4814
 
 local function now()
 	return machine.time:as_double()
@@ -64,8 +68,9 @@ end
 
 local watch_from = tonumber(os.getenv("PLAYBACK_WATCH_FROM") or "0")
 
--- Full-word reads only (the Lua observers' own byte reads also hit the tap).
-local read_tap = prog:install_read_tap(BOUNDS, BOUNDS + 7, "wave_bound_read", function(offset, data, mask)
+-- Full-word reads of the record-zero bounds with the reader's CS:IP (the
+-- observers' own byte reads are excluded by the mask, as in wave_playback.lua).
+local read_tap = prog:install_read_tap(SND_PHYS, SND_PHYS + 7, "wave_bound_read", function(offset, data, mask)
 	if now() < watch_from then return end
 	local cs, ip = csip()
 	if mask & 0xffff == 0xffff then
@@ -75,7 +80,7 @@ local read_tap = prog:install_read_tap(BOUNDS, BOUNDS + 7, "wave_bound_read", fu
 	end
 end)
 
-local bounds_tap = prog:install_write_tap(BOUNDS, BOUNDS + 7, "wave_bounds", function(offset, data, mask)
+local bounds_tap = prog:install_write_tap(SND_PHYS, SND_PHYS + 7, "wave_bounds", function(offset, data, mask)
 	if now() >= watch_from then
 		local cs, ip = csip()
 		log:write(string.format(
@@ -101,10 +106,10 @@ local dsp_tap = iosp:install_write_tap(0x60, 0x6f, "wave_dsp", function(offset, 
 	if offset == 0x60 then
 		if mask & 0x00ff ~= 0 then selected_channel = data & 0x1f end
 		if mask & 0xff00 ~= 0 then selected_reg = (data >> 8) & 0x0f end
-		if cs == STOP_CS and ip == 0x0014 and mask == 0xffff and (data >> 8) & 0xff == 0x04 then
+		if cs == STOP_CS and ip == STOP_IP and mask == 0xffff and (data >> 8) & 0xff == 0x04 then
 			log:write(string.format("D21F t=%.6f ch=%u data=%04X mask=%04X\n",
 				now(), data & 0x1f, data & 0xffff, mask & 0xffff))
-		elseif cs == RELEASE_CS and ip == 0x0013 and mask == 0xffff and (data >> 8) & 0xff == 0x04 then
+		elseif cs == RELEASE_CS and ip == RELEASE_IP and mask == 0xffff and (data >> 8) & 0xff == 0x04 then
 			log:write(string.format("D213 t=%.6f ch=%u data=%04X mask=%04X\n",
 				now(), data & 0x1f, data & 0xffff, mask & 0xffff))
 		end
@@ -112,7 +117,7 @@ local dsp_tap = iosp:install_write_tap(0x60, 0x6f, "wave_dsp", function(offset, 
 		local lane = (offset - 0x62) // 2 + 1
 		local value = lanes(selected_reg, selected_channel)
 		value[lane] = merge(value[lane], data, mask)
-		if selected_reg == 0 and cs == START_CS and ip == 0x004c then
+		if selected_reg == 0 and cs == START_CS and ip == START_IP then
 			local raw = value[1] | (value[2] << 16) | (value[3] << 32)
 			log:write(string.format(
 				"STARTREG t=%.6f cs=%04X ip=%04X ch=%u start=%06X type=%X mask=%04X\n",
@@ -138,11 +143,19 @@ for value in string.gmatch(os.getenv("PLAYBACK_SNAPSHOTS") or os.getenv("PROBE_T
 	snapshots[#snapshots + 1] = tonumber(value)
 end
 local snapshot_index = 1
+local pgr_checked = false
 
 emu.register_periodic(function()
 	read_tap:reinstall()
 	bounds_tap:reinstall()
 	dsp_tap:reinstall()
+	if not pgr_checked and now() >= 33.0 and cpu.state["XA"].value ~= 0 then
+		-- The taps assume physical = 0x300000 + logical for the record.
+		if phys(SND_SEG, 0x4814) ~= SND_PHYS then
+			log:write(string.format("SNDPHYS t=%.6f mismatch=%d\n", now(), phys(SND_SEG, 0x4814)))
+		end
+		pgr_checked = true
+	end
 	if snapshot_index <= #snapshots and now() >= snapshots[snapshot_index] then
 		record("SNAP", snapshots[snapshot_index])
 		snapshot_index = snapshot_index + 1

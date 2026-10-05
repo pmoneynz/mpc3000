@@ -4,7 +4,7 @@ Run: python3 -m unittest emu.test_harness_lifecycle -v
 
 Covers (notes/wave_zones.md "State lifetime", notes/wave_chop.md hooks):
 
-- every stock Edit Sound ``Do:`` operation 0-9 run while a zone map exists
+- every stock Edit Sound ``Do:`` operation run while a zone map exists
   (dispatch hook B99A:0AFF clears the map before rejoining B99A:0B0D);
 - reopening the view after editing the zone pair on the stock page (import
   path: the pair is clamped between its outer neighbours);
@@ -12,9 +12,21 @@ Covers (notes/wave_zones.md "State lifetime", notes/wave_chop.md hooks):
 - deleting the map's source sound, and another sound, on Program/Sounds 7
   (D0C0:0B19 prologue hook).
 
-Payloads come from emu.harness (capture for every case, generic for GENERIC).
-Observers only read RAM.  Each case also checks that the stock action really
-happened (positive control), so an unexecuted action cannot pass.
+Payloads come from emu.harness: capture for every case, generic for GENERIC,
+and every case on the 316 profile (WAVE316.SYS on OS 3.16; one BIOS set per
+load segment by default, all four in release mode) except SKIP_316.  Times
+are relative to the profile's timeline (V = profile.view: 40 s on Vailixi,
+52 s on 3.16).  Observers only read RAM.  Each case also checks that the
+stock action really happened (positive control), so an unexecuted action
+cannot pass.
+
+The ``Do:`` cases are named by the Vailixi option index k (``do0`` ..
+``do9``, the order of OPS).  3.16 has eight stock options, not ten (image
+bytes: 3.16 DGROUP 32C6..3341 holds the eight strings in DO_INDEX_316
+order, and its dispatch 0B72:0B0A is ``cmp bx,7`` where Vailixi B99A:0B05
+is ``cmp bx,9``).  It lacks COPY ZONE-> SND (k=1) and
+TRUNC SFT ST+END (k=7): those two cases are SKIP_316; every other case
+selects the same operation by its 3.16 index and asserts the same result.
 """
 from __future__ import annotations
 
@@ -22,7 +34,7 @@ from pathlib import Path
 import unittest
 
 from emu import harness as h
-from emu.harness import VIEW as V, pcm, sound_records, taps, zone_rows
+from emu.harness import pcm, sound_records, taps, zone_rows
 from emu.panel import dial
 from emu.snd import sine441, snd, stereo1
 
@@ -34,16 +46,27 @@ FOUR = [LEN * i // 4 for i in range(5)]
 OPS = ["COPY ZONE-> TEMP", "COPY ZONE-> SND ", "INS TMP-> ZON ST", "INS TMP-> ZN END",
        "DELETE ZONE", "DEL BEFR SOFT ST", "DEL AFTR SFT END", "TRUNC SFT ST+END",
        "SILENCE ZONE", "REVERSE ZONE"]
-# Two sounds loaded one after the other; the view opens on the first (AAA).
-VA = 45.0
+# Vailixi option index k -> 3.16 option index (3.16 DGROUP 32C6..3341).
+DO_INDEX_316 = {k: i for i, k in enumerate((0, 2, 3, 4, 5, 6, 8, 9))}
+# Two sounds loaded one after the other.  After the first <Load> the second
+# file is selected once the first sound is in RAM: 4.5 s on Vailixi (108 KB
+# SINE441 done by 31 s after <Load> at 26.5 s), 5.0 s on 3.16 (done by 43.8 s
+# after <Load> at 39.0 s, harness.TIMELINE_316).  The view opens 7 s after the
+# second <Load> (130 KB STEREO1: 6.0 s on 3.16).
+FIRST_LOADED, FIRST_LOADED_316 = 4.5, 5.0
+SECOND_LOADED = 7.0
 
 
-def two_sound_events(*more) -> list:
-    events = taps((h.CANCEL_SCSI, "soft4"), (23, "disk"), (24.5, "7"), (26.5, "soft1"),
-                  (31, "+"), (32, "soft1")) + h.open_view_events(39)
+def two_sound_events(profile: h.Profile, *more) -> tuple[list, float]:
+    """Load AAA then BBB, open the view on AAA; returns (events, VA = view time)."""
+    tl = profile.timeline
+    plus = tl.load_at + tl.load_key + (FIRST_LOADED_316 if profile.is316 else FIRST_LOADED)
+    view_at = plus + 1 + SECOND_LOADED
+    events = (h.load_sound_events(profile=profile) + taps((plus, "+"), (plus + 1, "soft1"))
+              + h.open_view_events(view_at, profile=profile))
     for part in more:
         events += part
-    return events
+    return events, view_at + tl.view - tl.view_at
 
 
 def four_zones(at: float) -> list:
@@ -58,9 +81,14 @@ def stock_field(at: float, rights: int) -> list:
 class Lifecycle(h.EmuSuite):
     RUNS = RUNS
     GENERIC = frozenset({"do4", "do8", "import_ms", "abba", "delete_source"})
+    PROFILE_NAMES = h.ALL_PROFILES
+    # Not on 3.16: COPY ZONE-> SND and TRUNC SFT ST+END do not exist there.
+    SKIP_316 = frozenset({"do1", "do7"})
+    VA: dict = {}
 
     @classmethod
     def cases(cls, profile, runs):
+        V = profile.view
         one = runs / "TEST.SND"
         one.write_bytes(snd("TEST", sine441(), start=SOFT_START, end=SOFT_END))
         a = runs / "AAA.SND"
@@ -69,26 +97,31 @@ class Lifecycle(h.EmuSuite):
         b.write_bytes(snd("BBB", stereo1()))
         cases = {}
         for k in range(10):
+            if profile.is316 and f"do{k}" in cls.SKIP_316:
+                continue
+            index = DO_INDEX_316[k] if profile.is316 else k
             # Map of four zones, exit, Right x16 to Do:, select op k, Do, Help.
             events = four_zones(V + 1) + stock_field(V + 7, 16)
-            if k:
-                events += dial(k, V + 13)
+            if index:
+                events += dial(index, V + 13)
             events += taps((V + 15, "soft4"), (V + 19, "help"))
             pcm_times = f"{V + 14.5},{V + 18}" if k in (8, 9) else "0"
-            cases[f"do{k}"] = h.Case(events=h.wave_events(events),
+            cases[f"do{k}"] = h.Case(events=h.wave_events(events, profile=profile),
                                      times=[V + 6, V + 14.5, V + 15.5, V + 18, V + 21],
                                      files=[(one, "TEST.SND")], env={"SNDDUMP_PCM": pcm_times})
         # Stock page: Right x11 is Zone end's milliseconds, x10 its seconds.
         for name, rights in (("import_ms", 11), ("import_clamp", 10)):
             events = four_zones(V + 1) + stock_field(V + 7, rights) + dial(3, V + 13)
-            cases[name] = h.Case(events=h.wave_events(events + taps((V + 19, "help"))),
+            cases[name] = h.Case(events=h.wave_events(events + taps((V + 19, "help")), profile=profile),
                                  times=[V + 6, V + 18, V + 21], files=[(one, "TEST.SND")],
                                  env={"SNDDUMP_PCM": "0"})
+        _, VA = two_sound_events(profile)
+        cls.VA[profile.label] = VA
         # A -> B -> A on field 0, then reopen.
         events = (four_zones(VA + 1) + taps((VA + 7, "soft4"))
                   + taps(*[(VA + 9 + i * .2, "left") for i in range(16)])
                   + taps((VA + 13, "+"), (VA + 15, "-"), (VA + 17, "help")))
-        cases["abba"] = h.Case(events=two_sound_events(events),
+        cases["abba"] = h.Case(events=two_sound_events(profile, events)[0],
                                times=[VA + 6, VA + 12.5, VA + 14, VA + 16, VA + 19],
                                files=[(a, "AAA.SND"), (b, "BBB.SND")], env={"SNDDUMP_PCM": "0"})
         # Delete the map's source (AAA), or the other sound (BBB), on
@@ -99,17 +132,24 @@ class Lifecycle(h.EmuSuite):
                              (VA + 12.5, "7"))
                       + (taps((VA + 14, "+")) if other else [])
                       + taps((VA + 15, "soft4"), (VA + 17, "soft1")))
-            cases[name] = h.Case(events=two_sound_events(events),
+            cases[name] = h.Case(events=two_sound_events(profile, events)[0],
                                  times=[VA + 6, VA + 16, VA + 19],
                                  files=[(a, "AAA.SND"), (b, "BBB.SND")], env={"SNDDUMP_PCM": "0"})
         return cases
 
     # ------------------------------------------------------------------
 
+    def each_op(self, k: int):
+        """Runs of case do<k>; a case that did not run fails op k only."""
+        with self.subTest(op=k):
+            return self.each(f"do{k}")
+        return []
+
     def test_every_stock_do_operation_invalidates_the_map(self):
         for k in range(10):
-            for prof, d, screens in self.each(f"do{k}"):
+            for prof, d, screens in self.each_op(k):
                 with self.subTest(op=k, profile=prof):
+                    V = self.view(prof)
                     r = zone_rows(d)
                     # The map existed when Do was pressed on op k ...
                     self.assertEqual((r[V + 14.5]["valid"], r[V + 14.5]["count"]), (1, 4))
@@ -130,8 +170,9 @@ class Lifecycle(h.EmuSuite):
         zone = FOUR[1]
         expected_length = {4: LEN - zone, 5: LEN - SOFT_START, 6: SOFT_END, 7: SOFT_END - SOFT_START}
         for k in range(10):
-            for prof, d, _ in self.each(f"do{k}"):
+            for prof, d, _ in self.each_op(k):
                 with self.subTest(op=k, profile=prof):
+                    V = self.view(prof)
                     before, after = sound_records(d, V + 14.5), sound_records(d, V + 18)
                     self.assertEqual(len(before), 1)
                     self.assertEqual(before[0]["length"], LEN)
@@ -157,6 +198,7 @@ class Lifecycle(h.EmuSuite):
     def test_reopen_imports_the_stock_zone_pair(self):
         for prof, d, screens in self.each("import_ms"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 self.assertEqual(r[V + 6]["bounds"][:5], FOUR)
                 # Stock page edit: Zone end +3 ms = +132 frames (13781 -> 13913).
@@ -168,6 +210,7 @@ class Lifecycle(h.EmuSuite):
     def test_reopen_clamps_an_imported_pair_to_its_neighbours(self):
         for prof, d, screens in self.each("import_clamp"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 # Stock page: Zone end +3 s, which the stock page clamps to the
                 # sound length; the import clamps it to the next boundary.
                 self.assertIn("Zone end:001.250.00", screens[1]["rows"][3])
@@ -178,6 +221,7 @@ class Lifecycle(h.EmuSuite):
     def test_a_b_a_selection_discards_the_map(self):
         for prof, d, screens in self.each("abba"):
             with self.subTest(profile=prof):
+                VA = self.VA[prof]
                 r = zone_rows(d)
                 self.assertEqual((r[VA + 6]["valid"], r[VA + 6]["count"]), (1, 4))
                 self.assertEqual(r[VA + 12.5]["valid"], 1)          # exit alone keeps it
@@ -193,6 +237,7 @@ class Lifecycle(h.EmuSuite):
     def test_deleting_the_source_sound_invalidates_the_map(self):
         for prof, d, _ in self.each("delete_source"):
             with self.subTest(profile=prof):
+                VA = self.VA[prof]
                 r = zone_rows(d)
                 self.assertEqual([r[t]["valid"] for t in (VA + 6, VA + 16)], [1, 1])
                 self.assertEqual(r[VA + 19]["valid"], 0)
@@ -202,6 +247,7 @@ class Lifecycle(h.EmuSuite):
     def test_deleting_another_sound_keeps_the_map(self):
         for prof, d, _ in self.each("delete_other"):
             with self.subTest(profile=prof):
+                VA = self.VA[prof]
                 r = zone_rows(d)
                 self.assertEqual([r[t]["valid"] for t in (VA + 6, VA + 16, VA + 19)], [1, 1, 1])
                 self.assertEqual(r[VA + 19]["bounds"][:5], FOUR)
