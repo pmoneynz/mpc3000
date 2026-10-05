@@ -42,17 +42,24 @@ image offset = `seg*16+off`, runtime logical = `L*16` + image offset.
   `7DF9` (both relocated, so always 1) → fixed pool `0x0200:0000` to
   `0x6FFF:000E`, i.e. logical `0x2000–0x6FFFE`, whatever `L` is.
 
-**Hazard in stock 3.16 (PROVEN by addresses; exposure HYPOTHESIS):** with
-`L = 0x6900` (3.12 and Vailixi 3.50 EPROMs) the pool overlaps logical
+**Hazard in stock 3.16 (PROVEN by addresses; MAME, one execution per set):**
+with `L = 0x6900` (3.12 and Vailixi 3.50 EPROMs) the pool overlaps logical
 `0x69000–0x6FFFE`, which is 3.16's own image offsets `0x0000–0x6FFE`. That
 range holds live code, including relative segment `0x0427` (the most
 referenced code segment, 1,336 relocations). The pool reports this space as
-free (439K), so a sequence that grows past about 412K would overwrite 3.16
-code on those machines. On 3.08/3.11 (`L = 0x7000`) the pool ends just
-below the image. **Proposed fix in the port:** before jumping to 3.16, the
-entry routine sets the pool-end immediate at image `0x48535` (`MOV BX,6FFF`)
-to `L−1`, so the pool ends at `L*16−2`: unchanged on 3.08/3.11, 28K smaller
-on 3.12/3.50. Needs the user's decision and a MAME check.
+free (439K). In MAME, stock `M3K316.SYS` hangs at Song after a short
+recording on `default` and `vailixi` (Results below). On 3.08/3.11
+(`L = 0x7000`) the pool ends just below the image.
+
+**Fix in the port (`mods/entry316.inc`):** before jumping to 3.16, the entry
+routine sets the pool-end immediate at image `0x48535` (`MOV BX,6FFF`) to
+`L−1`, so the pool ends at `L*16−2`: unchanged on 3.08/3.11, 28K smaller on
+3.12/3.50 (`0x6DFFE` → `0x66FFE` bytes; 411K free). **PROVEN (code, review
+2026-10-05):** the immediate's only reader is `4852:0006`, whose only caller
+(`0x3419B`) runs it once after start-up; every reader of the pool variables
+`[8B13]..[8B19]` uses the variables, so ALL/SEQ data larger than the smaller
+pool is refused rather than written over code. What 3.16 shows then is
+**UNDETERMINED**.
 
 ## Architecture ("Route C")
 
@@ -95,8 +102,8 @@ the `default` (3.12), `vailixi`, `v311` and `v308` sets: the banner reads
 `RouteC 3.16 (02/20/05)`; at 45 s the cave home holds the relocated copy
 (physical `0x3E7000` with `L = 0x6900`, `0x3EE000` with `L = 0x7000`), its
 hit counter is 1 and its recorded CS is `L+0x7E00`; 3.16 reaches Play/Record.
-The builder's own loader simulation agrees at both `L`. Builder:
-`<scratchpad>/port/route-c/route_c.py` (to be moved into `mods/`).
+The builder's own loader simulation agrees at both `L`. The builder is now
+`mods/route_c.py`.
 
 ## Differences from Vailixi that change features
 
@@ -108,9 +115,14 @@ The builder's own loader simulation agrees at both `L`. Builder:
   mirror 3.16's own Do handlers instead (being mapped).
 - Lineage: 12-byte code windows of the hooked Vailixi routines recur
   verbatim in 3.16 at 29–63%; `CFC6:0CE9` (audition entry) matches image
-  `0x21BBF` exactly over 0x8C bytes.
+  `0x21BBF` over 0x8C bytes once relocated segment words are masked
+  (`mov dx,539D` against `A2AE`).
 
 ## Results of the first full build (2026-10-05, MAME, one execution per set)
+
+These results are for the first build (`c5fda657…`). The build after the review
+(below) differs by one removed lock re-take and the load-segment bound; the
+emulator suites are being re-run on it.
 
 `python3 mods/build_wave316.py`: `WAVE316.SYS` 470,944 bytes, SHA-256
 `c5fda657b9e8c8514dc2c5c34e8a6c8d481dc54cdb420c9c61f75ecd6245a5ef`; cave
@@ -139,6 +151,24 @@ segments; loader simulation at both `L`.
 playback, mute UI/voice/persistence, disk full); see
 [port_316_harness_brief.md](port_316_harness_brief.md). Physical behaviour is
 **UNDETERMINED**.
+
+## Adversarial review (2026-10-05, read-only, code; no MAME)
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | The lock re-take after the voice allocator (`mute_voice.inc`, all profiles) added a yield between the allocator choosing a channel (it writes only `[E284]`) and `0B2D` marking it busy; a task waiting on resource 1 could take the same channel. PROVEN (code); the race is HYPOTHESIS. | Removed. The re-take before the allocator stays: it repairs only the drop caused by the mute stops, before any channel is chosen. The allocator's own MONO/Cutoff stops drop the lock in stock as well. |
+| 2 | The loader simulation did not model `entry316` (copy count, pool rule). | Builder hardening. |
+| 3 | Targets were shape-checked against the unpatched image (`T_D0C0_0B19` sits on the `chop_sound_delete` hook, as intended). | Builder hardening. |
+| 4 | Loose relocation checks: `0000`/`FFFF`/`4853` accepted anywhere; the unrelocated-word scan covered only data segments. | Builder hardening. |
+| 5 | No bound on `L`: the home crosses page 61 when `L > 0x72D9` (cave `0x3264` bytes). | `entry316` halts in that case instead of writing NVRAM. |
+| 6 | The pool is 28K smaller with `L = 0x6900`. | Recorded above and in the bench checklist. |
+| 7 | Stale notes. | Fixed. |
+
+Build after the review: `WAVE316.SYS` 470,948 bytes, SHA-256
+`c3eeefbbe8e5a3cfa6176ff9f8e261c6ca1244a7a0d9ce42777be017671be303`; cave
+12,900 bytes (logical `0xE7000–0xEA264` with `L = 0x6900`,
+`0xEE000–0xF1264` with `L = 0x7000`); 7,122 relocations; 86 far transfers;
+112 relocated cave words.
 
 ## Status
 

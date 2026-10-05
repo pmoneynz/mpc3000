@@ -14,9 +14,17 @@
 ;    MOV BX,6FFFh immediate at image POOL_INIT_IMM; set it to L-1 when that
 ;    is lower, so the pool ends at L*16-2.  L = 7000 keeps 6FFFh.
 ; 3. Jump to 3.16's own entry, L:0000, with DS = 0040 as the loader left it.
+;
+; The home must end below page 61 (logical F4000h, NVRAM), so L may be at most
+; F400h - CAVE_HOME - the cave's paragraphs (72DAh today; the known EPROMs
+; use 6900h and 7000h).  A larger L halts here rather than writing NVRAM.
 
 entry316:
         cld
+        mov dx, 0xFFFF                  ; L - 1
+        RELOC_PREV
+        cmp dx, 0xF400 - CAVE_HOME - (cave_end - $$ + 15) / 16 - 1
+        ja .halt
         push cs
         pop ds
         mov ax, CAVE_SEG
@@ -34,13 +42,14 @@ entry316:
         jne .pool_done
         cmp word [es:bx], 0x6FFF
         jne .pool_done
-        mov ax, 0xFFFF                  ; L - 1
-        RELOC_PREV
-        cmp ax, 0x6FFF
+        cmp dx, 0x6FFF
         jae .pool_done
-        mov [es:bx], ax
+        mov [es:bx], dx
 .pool_done:
         mov ax, 0x0040
         mov ds, ax
         jmp 0x0000:0x0000               ; 3.16 entry, L:0000
         RELOC_PREV
+.halt:
+        hlt                             ; IF = 0: stays here
+        jmp short .halt

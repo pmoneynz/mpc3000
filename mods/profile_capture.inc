@@ -69,7 +69,7 @@ NUM_EDITING equ 0x7D72          ; 0 while an entry buffer is active
 
 PLAYER_CE9_RET equ 0x0D70       ; CFC6:0D70, CE9's return from CFC6:039E
 %define T_CFC6_0CE9 0xCFC6:0x0CE9       ; start the Sound at index (word)
-%define T_CFC6_0D75 0xCFC6:0x0D75       ; first active voice slot, 0 if none
+%define T_CFC6_0D75 0xCFC6:0x0D75       ; any voice pending (AX=1), else 0
 %define T_CFC6_0D93 0xCFC6:0x0D93       ; stop all 32 channels (Ply/Stp stop)
 %define T_CFC6_06A3 0xCFC6:0x06A3       ; 039E after the 30 ms SUB/SBB at 069D
 %define T_CFC6_089E 0xCFC6:0x089E       ; 039E after the tick MOV/CMP at 0897
