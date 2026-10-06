@@ -196,7 +196,7 @@ class MuteVoice(unittest.TestCase):
             h.require_marker(log, f"SNAP t={end:.6f}")
             return parse_events(log)
 
-        cls.results = h.run_parallel(jobs, execute, 4)
+        cls.results = h.run_parallel(jobs, execute)
 
     @classmethod
     def cases(cls, profile: h.Profile) -> dict[str, tuple]:

@@ -60,7 +60,6 @@ end
 
 local idx = 1
 emu.register_periodic(function()
-	tap:reinstall()
 	if idx > #times or machine.time:as_double() < times[idx] - 0.05 then return end
 	local t = times[idx]
 	local imm = IMAGE_PHYS + 0x48535

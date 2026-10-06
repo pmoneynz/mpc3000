@@ -66,6 +66,3 @@ inject_taps = {
     prog:install_read_tap(hook_phys & ~1, hook_phys | 1, "inject_hook", function() on_hook() end),
     prog:install_read_tap(back_phys & ~1, back_phys | 1, "inject_back", function() on_back() end),
 }
-emu.register_periodic(function()
-    for _, t in ipairs(inject_taps) do t:reinstall() end
-end)

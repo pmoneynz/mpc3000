@@ -26,7 +26,6 @@ end
 cave_keep = taps
 local last = -1
 emu.register_periodic(function()
-	for _, t in ipairs(taps) do t:reinstall() end
 	local n = #first
 	for _, v in pairs(count) do n = n + v end
 	if n ~= last then

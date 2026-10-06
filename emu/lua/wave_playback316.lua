@@ -146,9 +146,6 @@ local snapshot_index = 1
 local pgr_checked = false
 
 emu.register_periodic(function()
-	read_tap:reinstall()
-	bounds_tap:reinstall()
-	dsp_tap:reinstall()
 	if not pgr_checked and now() >= 33.0 and cpu.state["XA"].value ~= 0 then
 		-- The taps assume physical = 0x300000 + logical for the record.
 		if phys(SND_SEG, 0x4814) ~= SND_PHYS then

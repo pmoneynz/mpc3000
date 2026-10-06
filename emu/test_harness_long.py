@@ -80,7 +80,6 @@ class Long(h.EmuSuite):
     RUNS = RUNS
     GENERIC = frozenset({"long"})
     PROFILE_NAMES = h.ALL_PROFILES
-    WORKERS = 2
 
     @classmethod
     def cases(cls, profile, runs):

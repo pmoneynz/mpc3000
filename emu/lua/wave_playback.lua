@@ -152,9 +152,6 @@ end
 local snapshot_index = 1
 
 emu.register_periodic(function()
-	read_tap:reinstall()
-	bounds_tap:reinstall()
-	dsp_tap:reinstall()
 	if snapshot_index <= #snapshots and now() >= snapshots[snapshot_index] then
 		record("SNAP", snapshots[snapshot_index])
 		snapshot_index = snapshot_index + 1

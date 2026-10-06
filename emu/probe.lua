@@ -47,9 +47,11 @@ local lcd_tap = iosp:install_write_tap(0xe0, 0xe3, "probe_lcd", function(offset,
 	end
 end)
 
-local function first(kind)
+-- Called on every I/O access: the key is a number (a string key would be
+-- built per access), reads 0..FFFF and writes 10000..1FFFF.
+local function first(kind, base)
 	return function(offset, data, mask)
-		local key = kind .. offset
+		local key = base + offset
 		if not seen[key] then
 			seen[key] = true
 			portlog:write(string.format("%.6f %s %s %04X data=%04X mask=%04X\n",
@@ -57,8 +59,8 @@ local function first(kind)
 		end
 	end
 end
-local rtap = iosp:install_read_tap(0x0000, 0xffff, "probe_r", first("R"))
-local wtap = iosp:install_write_tap(0x0000, 0xffff, "probe_w", first("W"))
+local rtap = iosp:install_read_tap(0x0000, 0xffff, "probe_r", first("R", 0))
+local wtap = iosp:install_write_tap(0x0000, 0xffff, "probe_w", first("W", 0x10000))
 
 -- Env PROBE_TRACE: comma list of hex I/O ports whose every access is logged.
 local traced = {}
@@ -176,19 +178,16 @@ local function dump_words(t)
 	ds_hist = {}
 end
 
+-- Taps are installed once.  V53 OPSEL/xULA writes remap the CPU's internal
+-- I/O space (v5x install_peripheral_io), not the program or I/O spaces tapped
+-- here, so nothing drops them; reinstalling every frame (a passthrough rebuild
+-- over the whole 64K I/O range) cost ~12% of run time.
 local idx = 1
 emu.register_periodic(function()
 	drive_inputs()
 	if wordlog then
 		local ds = cpu.state["DS0"].value
 		ds_hist[ds] = (ds_hist[ds] or 0) + 1
-	end
-	-- V53 OPSEL/xULA writes reinstall I/O handlers, which can drop taps.
-	lcd_tap:reinstall()
-	rtap:reinstall()
-	wtap:reinstall()
-	for _, t in ipairs(traced) do
-		t:reinstall()
 	end
 	if idx <= #times and now() >= times[idx] then
 		dump_text(times[idx])

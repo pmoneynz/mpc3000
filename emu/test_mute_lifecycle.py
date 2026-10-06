@@ -50,7 +50,7 @@ class MuteLifecycle(unittest.TestCase):
                 rompath=profile.rompath,
                 panel=write_smf(runs/'input.mid',events),
                 extra=['-autoboot_script',str(observer(runs,profile=profile))])
-        cls.results=h.run_parallel(jobs,execute,4)
+        cls.results=h.run_parallel(jobs,execute)
 
     def each(self):
         self.assertTrue(self.profiles,'no profile ran')

@@ -648,10 +648,17 @@ def run_case(profile: Profile, runs: Path, name: str, *, times: list[float],
                extra=["-autoboot_script", str(script), *extra], env=env, **kwargs)
 
 
-def run_parallel(jobs: dict, fn, workers: int = 4) -> dict:
-    """Run fn(name, job) for each job on a small pool; returns {name: result}."""
+# Concurrent MAME processes.  Each is single-threaded and ~150 MB, and the
+# emulated timeline does not depend on host load (-nothrottle), so one per
+# core: on a 10-core M1 Max, 10 workers run 2.1x the cases per wall second
+# that 4 did.  MPC3K_WORKERS overrides.
+WORKERS = int(os.environ.get("MPC3K_WORKERS", "0")) or os.cpu_count() or 4
+
+
+def run_parallel(jobs: dict, fn, workers: int | None = None) -> dict:
+    """Run fn(name, job) for each job on a pool of `workers` (default WORKERS); returns {name: result}."""
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=workers) as pool:
+    with ThreadPoolExecutor(max_workers=max(1, min(len(jobs), workers or WORKERS))) as pool:
         futures = {name: pool.submit(fn, name, job) for name, job in jobs.items()}
         return {name: future.result() for name, future in futures.items()}
 
@@ -736,7 +743,7 @@ class EmuSuite(unittest.TestCase):
     CAPTURE_ONLY: frozenset = frozenset()     # cases whose expectations are capture-specific
     PROFILE_NAMES: tuple = PROFILES           # add "316" once the suite's observers are ported
     SKIP_316: frozenset = frozenset()         # cases that do not apply to 3.16 (say why)
-    WORKERS = 4
+    WORKERS: int | None = None               # None: harness.WORKERS
     results: dict = {}
     profiles: dict = {}
 

@@ -42,7 +42,6 @@ end
 -- 3.16 reaches its SCSI search later than Vailixi (32.6 s instead of < 20 s).
 local queue_logged = false
 emu.register_periodic(function()
-	for _, t in ipairs(taps) do t:reinstall() end
 	if not queue_logged and machine.time:as_double() >= 33.0 and cpu.state["XA"].value ~= 0 then
 		log:write(string.format("QUEUE t=%.6f capacity=%d\n", machine.time:as_double(),
 			prog:read_u16(phys(DG_SEG, DG.key_queue))))

@@ -45,7 +45,6 @@ end
 
 local queue_logged = false
 emu.register_periodic(function()
-	for _, t in ipairs(taps) do t:reinstall() end
 	if not queue_logged and machine.time:as_double() >= 20.0 and cpu.state["XA"].value ~= 0 then
 		log:write(string.format("QUEUE t=%.6f capacity=%d\n", machine.time:as_double(),
 			prog:read_u16(phys(0x8010, DG.key_queue))))

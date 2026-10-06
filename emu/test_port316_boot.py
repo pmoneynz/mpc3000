@@ -117,7 +117,7 @@ class Port316Boot(unittest.TestCase):
         def go(key, job):
             profile, runs, spec = job
             return h.run_case(profile, runs, key[1], snapshot=False, **spec)    # the boot is under test
-        cls.results = h.run_parallel(jobs, go, 4)
+        cls.results = h.run_parallel(jobs, go)
 
     def each(self, case: str):
         for bios in h.BIOS_316:

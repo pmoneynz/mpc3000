@@ -294,7 +294,7 @@ class Mpc3kBoot(unittest.TestCase):
                 kw["floppy"] = private_floppy(name, kw["floppy"])
             return name, run(kw.pop("bios"), kw.pop("times"), RUNS / name, **kw)
 
-        with ThreadPoolExecutor(max_workers=8) as pool:
+        with ThreadPoolExecutor(max_workers=harness.WORKERS) as pool:
             cls.results = dict(pool.map(go, CASES.items()))
 
     def test_every_rom_os_reaches_play_record(self) -> None:

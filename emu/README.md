@@ -100,7 +100,16 @@ subset on `generic`. Environment: `MPC3K_GENERIC=all` runs every case on
 both; `MPC3K_PROFILES=capture` (or `generic`) and `MPC3K_CASES=a,b` narrow a
 development run; `MPC3K_TIMEOUT_SCALE` scales the per-run wall-time limit
 (`emu/mpc3k.py` kills MAME after `240 + 8 * last probe time` seconds and
-checks that one screen was captured per requested time).
+checks that one screen was captured per requested time). Cases run
+`harness.WORKERS` MAME processes at once: one per host core, or
+`MPC3K_WORKERS`. Results do not depend on it (`-nothrottle`: emulated time
+is independent of host load).
+
+Probe taps are installed once and never reinstalled: the V53's OPSEL/xULA
+remapping (`v5x install_peripheral_io`) touches only the CPU's internal I/O
+space, not the `program`/`io` spaces the probes tap. A tap whose Lua object
+is collected is removed, so every part keeps its taps in a global
+(`*_keep_alive`).
 
 Timeline: Soft Key 4 at 20 s cancels the SCSI search; `<Load>` of the disk's
 sound at 26.5 s; the wave view is open from `harness.VIEW` = 40 s for sounds

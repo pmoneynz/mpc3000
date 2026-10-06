@@ -122,7 +122,7 @@ class MutePersistence(unittest.TestCase):
             saves[(label, "aps-save")] = ([46 + d, 54 + d, 76 + d],
                                           h.wave_disk(profile, "mute-persistence-aps-save"),
                                           aps_save_events(d))
-        cls.screens = h.run_parallel(saves, execute, 4)
+        cls.screens = h.run_parallel(saves, execute)
 
         cls.saved_pgm, cls.saved_aps = {}, {}
         loads = {}
@@ -157,7 +157,7 @@ class MutePersistence(unittest.TestCase):
             loads[(label, "aps-cold")] = ([50 + d], cold_aps_image, taps_at(d, (20, "soft4")))
             loads[(label, "legacy")] = ([34 + d, 55 + d], legacy_image, stale_then_load_events(d))
             loads[(label, "malformed")] = ([34 + d, 55 + d], malformed_image, stale_then_load_events(d))
-        cls.screens.update(h.run_parallel(loads, execute, 4))
+        cls.screens.update(h.run_parallel(loads, execute))
 
     def each(self):
         """(label, run directory, panel-time offset) of every profile that ran."""

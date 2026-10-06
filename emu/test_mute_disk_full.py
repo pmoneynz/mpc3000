@@ -114,7 +114,7 @@ class MuteDiskFull(unittest.TestCase):
                        panel=write_smf(runs / f"{name}.mid", events),
                        rompath=profile.rompath, extra=extra)
 
-        cls.screens = h.run_parallel(jobs, execute, 3)
+        cls.screens = h.run_parallel(jobs, execute)
         cls.images = {key: img.read_bytes() for key, img in cls.saves.items()}
 
     def each(self):
