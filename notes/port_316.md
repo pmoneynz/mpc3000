@@ -217,6 +217,15 @@ against Vailixi, rechecked by the orchestrator; not in `profile_316.inc`):
 
 Physical behaviour: all bench gates pass on one machine (Vailixi 3.50 EPROM, `L = 0x6900`); other EPROMs are **UNDETERMINED** on hardware ([bench316_checklist.md](bench316_checklist.md)).
 
+## Beta files on stock systems (2026-10-06, MAME, one execution per set)
+
+A PGM and an APS saved by the beta (mute trailer included), one program of the
+APS renamed `BETAPGM_01` as a marker, load on stock `M3K316.SYS` (`default`,
+`v308`) and on the EPROM systems without a STARTUP.SYS (`vailixi`, `default`
+3.12, `v308`): the PGM by Disk → 7 → Load becomes `1-SOURCE2` exactly as a
+native PGM control does, the APS loads at start-up with `1-BETAPGM_01` active,
+and no screen shows an error. The trailer is ignored there. `v311` not run.
+
 ## Status
 
 | Work | State |
