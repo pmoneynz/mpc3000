@@ -59,6 +59,10 @@ Remove the disk (or select another FlashFloppy slot) and power on.
 
 DIFFERENCES FROM STOCK 3.16
 ---------------------------
+  * This beta is Akai's OS 3.16 plus the three additions above. On a Vailixi
+    3.50 machine it replaces the Vailixi system while it runs, so Vailixi's
+    own features are not available; they return when you boot without the
+    disk.
   * On 3.12 and Vailixi 3.50 EPROMs sequence memory is 28K smaller (411K free).
     Stock 3.16 on those EPROMs can write a full sequence memory over its own
     code; this beta stops recording instead.
