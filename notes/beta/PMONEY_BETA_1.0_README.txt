@@ -1,0 +1,86 @@
+WAVEFORM/ZONES/MUTE GROUP - PMONEY BETA 1.0
+for the Akai MPC3000
+
+Public beta. Please read all of this before you install.
+
+WHAT IT IS
+----------
+A replacement operating system loaded from floppy (STARTUP.SYS), based on
+Akai's OS 3.16 maintenance upgrade, with three additions:
+
+  * Waveform view    Program/Sounds > 6 (Edit Sound) > HELP shows the sound's
+                     waveform. Data wheel moves Start/End, Soft Key 3 toggles
+                     Full/Fine, Up/Down zoom, Soft Key 1 plays the selection,
+                     Soft Key 4 exits.
+  * Zones            In the waveform view, Soft Key 2 switches between trimming
+                     Start/End and Zone mode, where you set the number of zones
+                     (1-16, ZONE field) and step through them.
+                     CHOP ZONE (Edit Sound > Do:, the 9th option, after
+                     REVERSE ZONE) makes one new sound per zone, named ZONE000,
+                     ZONE001, ...
+  * Mute groups      Program/Sounds > 0. Per program: enable, and a group
+                     (1-4 or Off) for each of the 64 pads. A pad cuts any
+                     sounding pad of the same group. Soft Key 1 (Apply All)
+                     asks before setting every pad.
+
+Nothing is written to your EPROMs. Remove the disk and the machine boots as
+before.
+
+WHICH MACHINES
+--------------
+Any MPC3000 whose EPROM is 3.08, 3.11, 3.12 or Vailixi 3.50 (licensed or not).
+The EPROM version shows at power-on.
+
+  Tested on hardware:  Vailixi 3.50, about 32 MB sound memory - all checks pass.
+  Tested in emulation: 3.08, 3.11, 3.12, Vailixi 3.50.
+
+If you own a 3.08, 3.11 or 3.12 machine, your report is the most useful one.
+
+INSTALL
+-------
+Back up first. Use copies of your program, sound and sequence disks: this
+beta adds mute-group data to the PGM and APS files it saves, and those files
+may not load on other OS versions.
+
+  FlashFloppy / Gotek: copy WAVE316.img to the USB stick and select it.
+  Real floppy:         write WAVE316.img to a 1.44 MB HD disk with a disk
+                       imaging tool, or copy STARTUP.SYS onto a disk the
+                       MPC3000 formatted.
+
+Power on with the disk in. Loading takes about 50 seconds. The boot screen
+shows WAVEFORM/ZONES/MUTE GROUP and PMONEY BETA 1.0. Press Soft Key 4 to
+cancel the SCSI search if you have no hard disk.
+
+The image also holds two test sounds, SINE441 and STEREO1 (Disk > 7 to load).
+
+TO GO BACK
+----------
+Remove the disk (or select another FlashFloppy slot) and power on.
+
+DIFFERENCES FROM STOCK 3.16
+---------------------------
+  * On 3.12 and Vailixi 3.50 EPROMs sequence memory is 28K smaller (411K free).
+    Stock 3.16 on those EPROMs can write a full sequence memory over its own
+    code; this beta stops recording instead.
+  * CHOP ZONE is the 9th Do: option. There is no Edit Sound "safe lock".
+  * PGM and APS files saved by this beta carry the mute groups.
+
+REPORTING
+---------
+Email hello@clevedonroad.com with:
+  1. EPROM version (power-on screen) and sound memory size (System
+     Information screen at power-on).
+  2. What you did, step by step, and what happened.
+  3. A photo of the screen for any error or anything odd.
+Reports that everything worked are just as welcome.
+
+FILES
+-----
+  WAVE316.img    471,043-byte STARTUP.SYS plus SINE441 and STEREO1
+  STARTUP.SYS    the OS file alone
+  SHA256SUMS     checksums
+
+  STARTUP.SYS  d80745384128fc58348f2ff603b00f6a3d5c2f90482b0d5d0b80eeec0cc0b214
+  WAVE316.img  a0b1ba1073c02a04b261b5f3f13c3f92febcc19d601e76fd746a312cbc4120f3
+
+Beta software, provided as is. Use at your own risk.
