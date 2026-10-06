@@ -53,8 +53,6 @@ Power on with the disk in. Loading takes about 50 seconds. The boot screen
 shows WAVEFORM/ZONES/MUTE GROUP and PMONEY BETA 1.0. Press Soft Key 4 to
 cancel the SCSI search if you have no hard disk.
 
-The image also holds two test sounds, SINE441 and STEREO1 (Disk > 7 to load).
-
 TO GO BACK
 ----------
 Remove the disk (or select another FlashFloppy slot) and power on.
@@ -79,11 +77,11 @@ Reports that everything worked are just as welcome.
 
 FILES
 -----
-  WAVE316.img    471,043-byte STARTUP.SYS plus SINE441 and STEREO1
+  WAVE316.img    1.44 MB floppy image holding STARTUP.SYS only
   STARTUP.SYS    the OS file alone
   SHA256SUMS     checksums
 
   STARTUP.SYS  d80745384128fc58348f2ff603b00f6a3d5c2f90482b0d5d0b80eeec0cc0b214
-  WAVE316.img  a0b1ba1073c02a04b261b5f3f13c3f92febcc19d601e76fd746a312cbc4120f3
+  WAVE316.img  676ab86b8181b6542db198e6f5adb5da2196c20bb4f3f9e49a692b34f80ee554
 
 Beta software, provided as is. Use at your own risk.
