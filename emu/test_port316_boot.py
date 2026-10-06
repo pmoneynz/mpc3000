@@ -116,7 +116,7 @@ class Port316Boot(unittest.TestCase):
 
         def go(key, job):
             profile, runs, spec = job
-            return h.run_case(profile, runs, key[1], **spec)
+            return h.run_case(profile, runs, key[1], snapshot=False, **spec)    # the boot is under test
         cls.results = h.run_parallel(jobs, go, 4)
 
     def each(self, case: str):
@@ -131,7 +131,9 @@ class Port316Boot(unittest.TestCase):
         for bios, _, _, screens in self.each("view"):
             with self.subTest(bios=bios):
                 s = {t: text(x) for t, x in zip(VIEW_TIMES, screens)}
-                self.assertIn("WAVE BENCH 08", s[31.5])
+                raw = screens[VIEW_TIMES.index(31.5)]["rows"]               # spaces print as "."
+                self.assertEqual(raw[3], "." * 7 + "WAVEFORM/ZONES/MUTE.GROUP" + "." * 8)   # cave banner316
+                self.assertEqual(raw[4], "." * 12 + "PMONEY.BETA.1.0" + "." * 13)
                 self.assertIn("Searching SCSI", s[32.6])
                 self.assertIn("Play/Record", s[34.0].splitlines()[0])
                 self.assertIn("Load/Erase/Rename", s[38.5])

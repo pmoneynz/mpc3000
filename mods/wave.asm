@@ -1075,5 +1075,6 @@ num:    times 11 db 0
 
 %ifdef PROFILE_316
 %include "entry316.inc"
+%include "banner316.inc"
 %endif
 cave_end:                               ; end of everything the 3.16 entry copies
