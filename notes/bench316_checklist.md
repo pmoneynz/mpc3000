@@ -40,3 +40,18 @@ into PGM and APS files it saves.
 Photos of the banner, wave view, mute page, the Apply All prompt and any
 error; the boot time; the free sequence memory figure; pass/fail per gate.
 Return the USB for checks of the saved files.
+
+## Results (2026-10-06, Peter's MPC3000: Vailixi 3.50 EPROM, L = 6900, about 32 MB sound memory)
+
+All gates **PASS** (PROVEN, hardware, one session). Evidence: ten photos and a
+69 s boot video kept by Peter (`IMG_4896 2.MOV`).
+
+| Gate | Observation |
+|---|---|
+| 0 Boot | Vailixi EPROM screen, System Information (SND free 32,636K, SEQ free 484K, I-0055 active), "Loading files", banner `WAVE BENCH 08`, SCSI search with `<Cancel>`. About 50 s from power-on to the banner (video). |
+| 1 Wave view | SINE441 full view (`<Full>`, zoom 16) and fine view (`<Fine>`, ramp); a real drum loop also displayed with `ZONE:01/16`. |
+| 2 CHOP | Pass (reported). |
+| 3 Mute groups | Program/Sounds menu shows `0.Mute groups`; Apply All asks "Program 01: set all 64 pads to group 1" with `<Do it>`/`<Cancel>`, then all 64 pads read 1. Pad 02 shows `Note:36`, as 3.16's default map gives (pad 1 = 37, pad 2 = 36). |
+| 4 Sequence memory | Other page: 98% free normally. Peter then filled sequence memory to 0% free: the machine kept working normally and refused further steps. This is the case where stock 3.16 on this EPROM writes the pool over its own code. |
+| 5 Save/load | Pass (reported). |
+| 6 Stability | Pass (reported). |

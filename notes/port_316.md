@@ -215,7 +215,7 @@ against Vailixi, rechecked by the orchestrator; not in `profile_316.inc`):
 | `C20F:0417` | `1396:041D` | PGM load: return after close (range injection) |
 | `E86E:0273` | `3E8F:026F` | PGM save: return after close (range injection) |
 
-Physical behaviour is **UNDETERMINED** ([bench316_checklist.md](bench316_checklist.md)).
+Physical behaviour: all bench gates pass on one machine (Vailixi 3.50 EPROM, `L = 0x6900`); other EPROMs are **UNDETERMINED** on hardware ([bench316_checklist.md](bench316_checklist.md)).
 
 ## Status
 
@@ -227,4 +227,5 @@ Physical behaviour is **UNDETERMINED** ([bench316_checklist.md](bench316_checkli
 | Route C builder core and loader simulation | proven in MAME with a probe cave |
 | Full build, smoke, pixel check, pool fix | done (MAME) |
 | Emulator suites on 3.16, all four sets | done (MAME): 150 tests, 0 skipped |
-| Bench run of `WAVE BENCH 08` | next (USB deploy, then bench316_checklist.md) |
+| Bench run of `WAVE BENCH 08` | all gates pass on hardware (Vailixi EPROM, 2026-10-06; bench316_checklist.md) |
+| Public beta `PMONEY BETA 1.0` | next: boot banner, rebuild, release run, beta package |
