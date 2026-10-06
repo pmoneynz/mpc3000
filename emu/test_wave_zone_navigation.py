@@ -1,7 +1,10 @@
 """Real panel End -> Up -> Zone -> Down -> End shortcuts, including numeric entry.
 
 Run: python3 -m unittest emu.test_wave_zone_navigation -v
-Payloads come from emu.harness (built from the current sources).
+Payloads come from emu.harness (built from the current sources): capture,
+generic (GENERIC subset) and the 316 profile (WAVE316.SYS on OS 3.16, every
+case; one BIOS set per load segment by default, all four in release mode).
+Times are relative to V = profile.view (40 s on Vailixi, 52 s on 3.16).
 """
 from pathlib import Path
 import struct
@@ -19,9 +22,11 @@ RUNS = ROOT / 'build/emu/wave-zone-navigation'
 class ZoneNavigation(h.EmuSuite):
     RUNS = RUNS
     GENERIC = frozenset({'mono', 'stereo_fine'})
+    PROFILE_NAMES = h.ALL_PROFILES
 
     @classmethod
     def cases(cls, profile, runs):
+        V = profile.view
         four = taps((V + 1, 'right'), (V + 2, 'right'), (V + 3, 'right')) + dial(-12, V + 4)
         shortcut = taps((V + 7, 'down'), (V + 8, 'up'), (V + 9, '+'), (V + 10, 'down'), (V + 11, '+'),
                         (V + 12, 'up'), (V + 13, 'right'), (V + 14, 'down'))
@@ -41,11 +46,11 @@ class ZoneNavigation(h.EmuSuite):
         for name, (planes, events, times, end) in definitions.items():
             src = runs / f'{name}.SND'
             src.write_bytes(snd('NAV', planes, end=end))
-            cases[name] = h.Case(events=h.wave_events(events), times=times,
+            cases[name] = h.Case(events=h.wave_events(events, profile=profile), times=times,
                                  files=[(src, 'NAV.SND')], env={'SNDDUMP_PCM': '0'})
         return cases
 
-    def check_shortcut(self, d):
+    def check_shortcut(self, d, V):
         r = zone_rows(d)
         self.assertEqual((r[V + 7.5]['focus'], r[V + 7.5]['sel']), (0, 3))
         self.assertEqual(r[V + 8.5]['focus'], 2)
@@ -58,17 +63,18 @@ class ZoneNavigation(h.EmuSuite):
     def test_mono_current_and_count_return_directly_to_end(self):
         for prof, d, _ in self.each('mono'):
             with self.subTest(profile=prof):
-                self.check_shortcut(d)
+                self.check_shortcut(d, self.view(prof))
 
     def test_generic_profile_shortcut(self):
         runs = [d for prof, d, _ in self.each('mono') if prof == 'generic']
         if not runs:
             h.unavailable('generic profile not selected (MPC3K_PROFILES)')
-        self.check_shortcut(runs[0])
+        self.check_shortcut(runs[0], self.view('generic'))
 
     def test_stereo_fine_skips_view_and_keeps_zoom(self):
         for prof, d, _ in self.each('stereo_fine'):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 self.assertEqual((r[V + 2.5]['focus'], r[V + 2.5]['sel']), (0, 3))
                 self.assertEqual(r[V + 4.5]['focus'], 2)
@@ -80,6 +86,7 @@ class ZoneNavigation(h.EmuSuite):
     def test_up_accepts_typed_end_and_selects_zone(self):
         for prof, d, screens in self.each('numeric'):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 self.assertEqual(r[V + 11.5]['focus'], 2)
                 # Up accepts the edited milliseconds and retains the untouched
@@ -95,6 +102,7 @@ class ZoneNavigation(h.EmuSuite):
     def test_idle_numeric_up_preserves_exact_frame(self):
         for prof, d, _ in self.each('idle_numeric'):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 self.assertEqual(r[V + 3.6]['focus'], 2)
                 self.assertEqual((r[V + 4.6]['focus'], r[V + 4.6]['sel']), (0, 1))

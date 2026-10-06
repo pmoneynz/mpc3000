@@ -5,6 +5,7 @@
 ; Hooks: mods/WAVE.args. This file holds the view entry (help_gate at
 ; B060:0422, page_key at B99A:085A); the included files hold the zone, CHOP,
 ; audition and mute-group hooks.
+; Stock addresses, segments and far targets: mods/profile.inc.
 ; DS = 8010 (DGROUP) in the hooked routines and throughout.
 ; C convention inside: preserve SI, DI, BP, DS.
 ; cpu 186: the stock OS uses PUSH imm (68 iw at B000:0015).
@@ -13,26 +14,8 @@ bits 16
 cpu 186
 org 0
 
-SND_SEG equ 0xA2AE              ; sound records at A2AE:4800 + idx*24h
-SND_DIR equ 0x4800
-BUF_W   equ 0x2400              ; Best st's read buffer A2AE:0000, words
-%ifdef WAVE_CAPTURE_20261001
-FB      equ 0x158F              ; captured personalized DGROUP; same consumers
-BUSY    equ 0x9755
-MODE    equ 0xD7C9
-OPTION  equ 0xD7C8
-ZONE_ST equ 0xEDB9
-ZONE_EN equ 0xEDB5
-KEY_REPEAT equ 0xD698
-%else
-FB      equ 0x1591              ; 8010:1591, 30 bytes x 64 rows, bit 7 = left
-BUSY    equ 0x9757              ; transfer busy counter (INC/DEC round CF92)
-MODE    equ 0xD7CB              ; 'L' = Program/Sounds
-OPTION  equ 0xD7CA              ; 6 = Edit Sound
-ZONE_ST equ 0xEDBB              ; zone start / end dwords (Edit Sound fields)
-ZONE_EN equ 0xEDB7
-KEY_REPEAT equ 0xD69A
-%endif
+%include "profile.inc"
+
 ROW     equ 30
 COLS    equ 240
 MID     equ 31                  ; zero line; rows 16..47 hold the wave
@@ -52,9 +35,9 @@ help_gate:
         cmp byte [OPTION], 6
         jne .help
         mov si, 'H'                     ; return the key like any other
-        jmp 0xB060:0x06E2
-.help:  jmp 0xB060:0x0428
-.other: jmp 0xB060:0x0459
+        FJMP T_B060_06E2
+.help:  FJMP T_B060_0428
+.other: FJMP T_B060_0459
 
 ; Replaces `cmp ax,75h / jnz / jmp 0AF3 / jmp 1595` in the B99A:082E loop.
 ; AX = key (cbw). Page frame: [bp-1] key, [bp-2] list position,
@@ -62,7 +45,7 @@ help_gate:
 page_key:
         cmp ax, 0x75
         jne .h
-        jmp 0xB99A:0x0AF3
+        FJMP T_B99A_0AF3
 .h:     cmp ax, 'H'
         jne .out
         mov byte [bp-1], 0
@@ -80,7 +63,7 @@ page_key:
         or ah, ah
         jz .out
         call zones_reopen              ; preserve map only for immediate re-entry
-.out:   jmp 0xB99A:0x1595
+.out:   FJMP T_B99A_1595
 
 ; ---------------------------------------------------------------- view
 
@@ -105,6 +88,7 @@ view:
         mov [cs:rec], ax
         mov si, ax
         mov ax, SND_SEG
+        RELOC_PREV
         mov es, ax
         mov ax, [es:si+0x1C]
         mov dx, [es:si+0x1E]
@@ -125,11 +109,11 @@ view:
         mov [cs:aud_too_short], al
         mov word [cs:zoom], ZOOM0
         call zones_enter
-        call 0xB1B1:0x004F              ; save stock text for numeric entry
+        FCALL T_B1B1_004F               ; save stock text for numeric entry
         call refresh
-        call 0xC4C8:0x0F5F              ; graphics mode + blit 8010:1591
+        FCALL T_C4C8_0F5F               ; graphics mode + blit 8010:1591
 .key:   push 0
-        call 0xBDE3:0x000E              ; next key after the global filter
+        FCALL T_BDE3_000E               ; next key after the global filter
         add sp, 2
         mov bl, al
         mov ax, [KEY_REPEAT]             ; BDE3 coalesces consecutive +/- keys
@@ -281,10 +265,10 @@ view:
 .zoom:  mov [cs:zoom], cx
 .redraw:
         call refresh
-        call 0xC4C8:0x0F0D              ; blit
+        FCALL T_C4C8_0F0D               ; blit
         jmp .key
 .exit:  push ax
-        call 0xC4C8:0x0409              ; clear, text mode, INT 43 AX=1
+        FCALL T_C4C8_0409               ; clear, text mode, INT 43 AX=1
         pop ax
         pop di
         pop si
@@ -364,6 +348,7 @@ paddr:
         cmp al, 2
         jae .z
         mov di, SND_SEG
+        RELOC_PREV
         mov es, di
         mov di, [cs:rec]
         add di, 0x14
@@ -514,9 +499,10 @@ fill:
         push ax                         ; count
         push cx
         push bx                         ; wave word address
-        push SND_SEG
+        push strict word SND_SEG
+        RELOC_PREV
         push 0
-        call 0xCF92:0x000C
+        FCALL T_CF92_000C
         add sp, 14
         dec byte [BUSY]
         ret
@@ -594,6 +580,7 @@ scan:
         shl ax, 1
         mov si, ax
         mov ax, SND_SEG
+        RELOC_PREV
         mov es, ax
         mov bx, [cs:vmax]
         mov dx, [cs:vmin]
@@ -888,6 +875,7 @@ draw:
         mov dx, BOT - TOP + 1
         call invert
 .t:     mov ax, SND_SEG                 ; name: 16 characters at +00
+        RELOC_PREV
         mov es, ax
         mov si, [cs:rec]
         xor bx, bx
@@ -1084,3 +1072,9 @@ ftops:  times COLS db 0             ; fine view; fbots = ftops + COLS
 fbots:  times COLS db 0
 name:   times 17 db 0
 num:    times 11 db 0
+
+%ifdef PROFILE_316
+%include "entry316.inc"
+%include "banner316.inc"
+%endif
+cave_end:                               ; end of everything the 3.16 entry copies

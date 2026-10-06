@@ -3,10 +3,11 @@
 Run: python3 -m unittest emu.test_harness_bursts -v
 
 A real wheel spin delivers data-entry frames faster than the view redraws.
-The stock normalized-key reader D6E0:001B (generic file 0x56E1B) folds
-consecutive identical queue keys into one key and writes their count to DGROUP
-D69A (generic) / D698 (capture); WAVE's `step` multiplies its 32-bit base step
-by that count and saturates the product at the sound length (mods/wave.asm).
+The stock normalized-key reader D6E0:001B (generic file 0x56E1B; 3.16
+2D0B:001D) folds consecutive identical queue keys into one key and writes
+their count to DGROUP D69A (generic) / D698 (capture) / D387 (3.16); WAVE's
+`step` multiplies its 32-bit base step by that count and saturates the
+product at the sound length (mods/wave.asm).
 Here bursts are sent 1 ms apart on the panel link (a 3-byte frame takes
 0.96 ms at 31,250 baud), so the first event is read at once and the rest
 queue up while the view redraws (about 34 ms full / 53 ms fine since the
@@ -16,8 +17,9 @@ copied for every key (read-only).
 What the assertions rely on, and why:
 
 - Total steps = events, for bursts of at most 9: one event is consumed at
-  once and the stock key queue (DGROUP 12BC generic / 12BA capture) holds 8,
-  so nothing can be dropped whatever the redraw time.
+  once and the stock key queue (DGROUP 12BC generic / 12BA capture / 12A4
+  3.16, a byte queue of 8 on every OS) holds 8, so nothing can be dropped
+  whatever the redraw time.
 - Coalescing happened (a count above 1, fewer blits than events): true as
   long as one redraw outlasts one 1 ms frame gap.
 - Exact count values (the saturating 64 x 8 step, and 1 + 8 for the
@@ -25,7 +27,11 @@ What the assertions rely on, and why:
   cave's second key read.  `burst_inside_first_redraw` checks that from the
   log first, so a faster redraw makes the test fail with that reason instead
   of silently testing something else.
-Payloads come from emu.harness (both profiles for every case).
+Payloads come from emu.harness: capture and generic for every case, and the
+316 profile (WAVE316.SYS on OS 3.16; one BIOS set per load segment by
+default, all four in release mode).  Times are relative to V = profile.view
+(40 s on Vailixi, 52 s on 3.16, which boots later); the point motion is the
+same cave code on every profile, so every assertion is the same.
 """
 from __future__ import annotations
 
@@ -34,7 +40,7 @@ import re
 import unittest
 
 from emu import harness as h
-from emu.harness import VIEW as V, burst, taps
+from emu.harness import burst, taps
 from emu.snd import sine441, snd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,9 +66,11 @@ def points(d: Path) -> dict[float, tuple[int, int, int]]:
 class Bursts(h.EmuSuite):
     RUNS = RUNS
     GENERIC = frozenset({"motion", "saturate", "overflow"})
+    PROFILE_NAMES = h.ALL_PROFILES
 
     @classmethod
     def cases(cls, profile, runs):
+        V = profile.view
         mono = runs / "MONO.SND"
         mono.write_bytes(snd("MONO", sine441(), start=START, end=END))
         short = runs / "SHORT.SND"
@@ -81,15 +89,15 @@ class Bursts(h.EmuSuite):
                     + taps((V + 11, "left")) + burst(-9, V + 12))       # Start -> 0
         overflow = burst(20, V + 1)
         return {
-            "motion": h.Case(events=h.wave_events(motion), files=[(mono, "MONO.SND")],
+            "motion": h.Case(events=h.wave_events(motion, profile=profile), files=[(mono, "MONO.SND")],
                              times=[V, V + 2, V + 4, V + 7, V + 10, V + 12],
                              parts=("repeat_watch", "wave_zones", "snddump"),
                              env={"SNDDUMP_PCM": "0"}),
-            "saturate": h.Case(events=h.wave_events(saturate), files=[(short, "SHORT.SND")],
+            "saturate": h.Case(events=h.wave_events(saturate, profile=profile), files=[(short, "SHORT.SND")],
                                times=[V, V + 3.5, V + 5, V + 8, V + 10, V + 13],
                                parts=("repeat_watch", "wave_zones", "snddump"),
                                env={"SNDDUMP_PCM": "0"}),
-            "overflow": h.Case(events=h.wave_events(overflow), files=[(mono, "MONO.SND")],
+            "overflow": h.Case(events=h.wave_events(overflow, profile=profile), files=[(mono, "MONO.SND")],
                                times=[V, V + 2], parts=("repeat_watch", "snddump"),
                                env={"SNDDUMP_PCM": "0"}),
         }
@@ -115,6 +123,7 @@ class Bursts(h.EmuSuite):
     def test_point_motion_applies_whole_repeat_count(self):
         for prof, d, _ in self.each("motion"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 p = points(d)
                 self.assertEqual(p[V], (START, END, LEN))
                 self.assertEqual(p[V + 2][0], START + 9 * STEP)
@@ -128,6 +137,7 @@ class Bursts(h.EmuSuite):
     def test_saturated_step_clamps_exactly(self):
         for prof, d, _ in self.each("saturate"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 p = points(d)
                 rows = h.zone_rows(d)
                 self.assertEqual(rows[V + 3.5]["zoom"], 64)
@@ -154,6 +164,7 @@ class Bursts(h.EmuSuite):
         """
         for prof, d, _ in self.each("overflow"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 queue = [v for k, v in h.parse_kv_log(d / "repeat.log", hex_keys={"mask"},
                                                        text_keys={"sym"}) if k == "QUEUE"]
                 self.assertEqual([q["capacity"] for q in queue], [QUEUE])

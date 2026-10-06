@@ -107,13 +107,16 @@ def run(bios: str, times: list[float], out: Path, *, board_mb: int = 2, simm_mb:
     """
     if not times or list(times) != sorted(times):
         raise ValueError(f"times must be non-empty and ascending: {times}")
+    # MAME runs with cwd=out and the probe opens PROBE_OUT files, so a
+    # relative path would resolve twice and hang until the timeout.
+    out = Path(out).resolve()
     if out.exists():
         shutil.rmtree(out)
     (out / "cfg").mkdir(parents=True)
     (out / "cfg" / "mpc3000.cfg").write_text(
         CFG.format(board=BOARD_MB[board_mb], simm=SIMM_MB[simm_mb], smpte=8 if smpte else 0))
 
-    cmd = [str(MAME), "mpc3000", "-bios", bios, "-rompath", str(rompath or build_roms()),
+    cmd = [str(MAME), "mpc3000", "-bios", bios, "-rompath", str(Path(rompath).resolve() if rompath else build_roms()),
            "-video", "none", "-sound", "none", "-nothrottle", "-skip_gameinfo",
            "-cfg_directory", str(out / "cfg"),
            "-nvram_directory", str(out / "nvram"),

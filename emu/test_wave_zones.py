@@ -3,10 +3,14 @@
 Run: python3 -m unittest emu.test_wave_zones -v
 
 The payload is built from the current sources by emu.harness (capture
-profile for every case, generic for the GENERIC subset).  Every case loads a
-disposable SND through the stock disk UI.  The observers only read RAM; no
-zone data or input fields are injected.  Times are emulated seconds; the wave
-view is open from harness.VIEW.
+profile for every case, generic for the GENERIC subset, and every case on the
+316 profile: WAVE316.SYS on OS 3.16, one BIOS set per load segment by default,
+all four in release mode).  Every case loads a disposable SND through the
+stock disk UI.  The observers only read RAM; no zone data or input fields are
+injected.  Times are emulated seconds; the wave view is open from V =
+profile.view (harness.VIEW = 40 on Vailixi, harness.VIEW_316 = 52 on 3.16:
+3.16 boots later), and every case time is relative to it.  The zone editing
+is the same cave code on every profile, so every assertion is the same.
 """
 from __future__ import annotations
 
@@ -51,10 +55,12 @@ def four_zones(at: float = V + 1) -> list:
 class WaveZones(h.EmuSuite):
     RUNS = RUNS
     GENERIC = frozenset({"shared", "resume", "repeat_batch", "wide_partition"})
+    PROFILE_NAMES = h.ALL_PROFILES
 
     @classmethod
     def cases(cls, profile, runs):
-        four = four_zones()
+        V = profile.view
+        four = four_zones(V + 1)
         definitions = {
             "shared": (sine441(), four + taps((V + 7, "left"), (V + 8, "+"), (V + 9, "left"),
                                               (V + 10, "+"), (V + 11, "right"), (V + 12, "+")),
@@ -103,13 +109,14 @@ class WaveZones(h.EmuSuite):
         for name, (planes, events, times) in definitions.items():
             src = runs / f"{name}.SND"
             src.write_bytes(snd(name.upper()[:16], planes))
-            cases[name] = h.Case(events=h.wave_events(events), times=times,
+            cases[name] = h.Case(events=h.wave_events(events, profile=profile), times=times,
                                  files=[(src, "TEST.SND")], env={"SNDDUMP_PCM": "0"})
         return cases
 
     def test_count_and_shared_edge(self):
         for prof, d, _ in self.each("shared"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 initial, four, selected, edited, neighbor = (r[t] for t in sorted(r))
                 self.assertEqual(initial["bounds"], [55125 * i // 16 for i in range(17)])
@@ -130,6 +137,7 @@ class WaveZones(h.EmuSuite):
     def test_count_change_resets_manual_boundaries(self):
         for prof, d, _ in self.each("count_reset"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 four, edited, reset = (zone_rows(d)[t] for t in (V + 6, V + 9.5, V + 13))
                 self.assertNotEqual(four["bounds"][:5], edited["bounds"][:5])
                 self.assertEqual(reset["count"], 5)
@@ -138,6 +146,7 @@ class WaveZones(h.EmuSuite):
     def test_exit_to_stock_and_reopen_preserves_map(self):
         for prof, d, screens in self.each("resume"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 before, after = r[V + 8.5], r[V + 13]
                 self.assertEqual((before["current"], before["count"]), (2, 4))
@@ -155,6 +164,7 @@ class WaveZones(h.EmuSuite):
     def test_leaving_edit_sound_invalidates_session(self):
         for prof, d, screens in self.each("new_session"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 self.assertEqual(r[V + 6]["count"], 4)
                 self.assertNotIn("mode=32", screens[1]["head"])    # really left the view
@@ -165,6 +175,7 @@ class WaveZones(h.EmuSuite):
     def test_stereo_view_remains_separate_from_zone_selection(self):
         for prof, d, _ in self.each("stereo_focus"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 view, zone, count = r[V + 3.5], r[V + 5.5], r[V + 7]
                 self.assertEqual((view["focus"], view["current"]), (1, 1))
@@ -174,6 +185,7 @@ class WaveZones(h.EmuSuite):
     def test_count_is_bounded_one_through_sixteen(self):
         for prof, d, _ in self.each("count_limits"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 top, bottom, top_again = r[V + 4.5], r[V + 7], r[V + 11]
                 self.assertEqual([top["count"], bottom["count"], top_again["count"]], [16, 1, 16])
@@ -182,6 +194,7 @@ class WaveZones(h.EmuSuite):
     def test_coalesced_wheel_bursts_apply_every_zone_step(self):
         for prof, d, _ in self.each("repeat_batch"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 self.assertEqual([(r[t]["current"], r[t]["count"]) for t in sorted(r)],
                                  [(1, 4), (1, 13), (10, 13), (1, 13), (6, 13), (6, 16), (6, 7),
@@ -200,6 +213,7 @@ class WaveZones(h.EmuSuite):
     def test_division_preserves_remainder_above_16_bit_length(self):
         for prof, d, _ in self.each("wide_partition"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 self.assertEqual(r[V]["bounds"], [WIDE * i // 16 for i in range(17)])
                 self.assertEqual(r[V + 6]["bounds"][:5], [WIDE * i // 4 for i in range(5)])
@@ -207,6 +221,7 @@ class WaveZones(h.EmuSuite):
     def test_stock_numeric_edit_updates_the_shared_zone_boundary(self):
         for prof, d, _ in self.each("numeric_zone"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 self.assertEqual(r[V + 10.5]["bounds"][:5], [0, 13781, 27562, 41343, 55125])
                 self.assertEqual(r[V + 16.5]["bounds"][:5], [0, 17640, 27562, 41343, 55125])
@@ -214,6 +229,7 @@ class WaveZones(h.EmuSuite):
     def test_zone_edits_cannot_cross_neighboring_boundaries(self):
         for prof, d, _ in self.each("edge_clamps"):
             with self.subTest(profile=prof):
+                V = self.view(prof)
                 r = zone_rows(d)
                 self.assertEqual(r[V + 8.5]["current"], 2)
                 self.assertEqual(r[V + 21]["bounds"][:5], [0, 13781, 41343, 41343, 55125])

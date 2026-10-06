@@ -93,6 +93,7 @@ discovery order or on earlier builds.
 |---------|---------|--------|
 | `capture` | `build_wave_physical.build()` (`WAVE_CAPTURE_20261001`) | composite: captured ranges over the reference interleave |
 | `generic` | `mods/WAVE.args` on the 3.50 interleave | `build/roms` |
+| `316` | `mods/build_wave316.py` (`WAVE316.SYS`, OS 3.16 Route C) | `build/roms`, any of `default`, `vailixi`, `v311`, `v308` (below) |
 
 `harness.EmuSuite` runs a suite's cases on `capture` and its `GENERIC`
 subset on `generic`. Environment: `MPC3K_GENERIC=all` runs every case on
@@ -119,6 +120,71 @@ profile's map) and `DG` (its DGROUP offsets); all parts only read state:
 | `snddump` | `snd_dir.log`, `wave_<t>_idx<i>.bin` (`SNDDUMP_PCM=0` or a time list limits PCM) |
 | `wave_playback` | `wave_playback.log`: BOUNDREAD/BOUNDWRITE, STARTREG/KEYON, D213/D21F, WAV windows (`PLAYBACK_WAV`) |
 | `mute_voice`, `mute_ui` | mute tag/stop log; mute page state |
+
+### OS 3.16 profile (`316`)
+
+`payload("316", bios)` builds `mods/build_wave316.build(out=...)` into
+`build/emu/harness-payloads/<digest>/316/` (`WAVE316.SYS`, its map as
+`wave.map`). Its own source digest covers `mods/*.inc` (entry, profiles),
+`mods/*.asm`, `build_wave316.py`, `route_c.py`, `build_mod_sys.py`,
+`buildkit.py`, `WAVE316.args`, `M3K316.SYS`, the 3.50 chips (stock-target
+shape check) and the NASM and ndisasm versions; the capture/generic digest is
+unchanged. It boots from the stock romset on `bios` = `default` (3.12),
+`vailixi`, `v311` or `v308` (`harness.BIOS_316`); `profile.label` is
+`316-<bios>`, the run directory and result key. Notes: [`../notes/port_316.md`](../notes/port_316.md).
+
+| `Profile` member (316) | Value |
+|---|---|
+| `load_segment` | L: `0x6900` (`default`, `vailixi`), `0x7000` (`v311`, `v308`) |
+| `cave_segment`, `cave_phys` | `L+0x7E00`; `0x300000 + L*16 + 0x7E000` (cave map offsets add to these) |
+| `dgroup(generic)` | 3.16 DS offset of a generic Vailixi DS offset, from the `NAME equ 0x<3.16> ; <generic>:` pairs of `mods/profile_316.inc` (`KeyError` if unpaired) |
+| `dgroup_segment`, `dgroup_phys(generic)` | `L+0x609C`; `0x300000 + (L+0x609C)*16 + dgroup(generic)` |
+| `sound_segment` | `L+0x539D` (records at `+0x4800`, generic `A2AE`) |
+| `runtime(seg, off)`, `target("T_B99A_0AF3")` | `Runtime(cs=L+seg, ip=off, phys=0x300000+cs*16+off)` for a 3.16 relative address / a profile target |
+| `image_phys(o)`, `relocated_image()`, `cave_home_image()` | physical address of image offset `o`; the load image with relocations for L; the cave at its home per the loader simulation |
+| `timeline`, `view` | `harness.TIMELINE_316`; `52.0` |
+
+Physical = `0x300000 + logical` because 3.16 keeps the loader's third PGR
+(`image316.lua` checks it through the live PGR). The capture/generic profiles
+answer `cave_segment`/`cave_phys`/`dgroup_segment`/`sound_segment`/`view`
+with their Vailixi values (`F07D`, `0x3F07D0`, `8010`, `A2AE`, `40`).
+
+Timeline (`TIMELINE_316`, all four sets): banner by 31 s, SCSI search 32.6 s,
+Soft Key 4 at 33.0 (Play/Record by 33.6); Disk 35.0, 7 at 35.8, `<Load>` at
+39.0 (108K loaded by 43.8); Program/Sounds 46.0, 6 at 46.8, Help 49.0; wave
+view from 52. `load_sound_events`, `open_view_events` and `wave_events` take
+`profile=` (default: the Vailixi timeline, unchanged).
+
+Observers: for a 316 profile `observer()` loads part `X` from
+`emu/lua/X316.lua` (missing port: `FileNotFoundError`) and adds `LOAD_SEG`,
+`CAVE_SEG`, `CAVE_PHYS`, `DG_SEG`, `DG_PHYS`, `SND_SEG`, `IMAGE_PHYS`,
+`CAVE_LEN` to the preamble (`DG` holds 3.16 offsets). Ported parts:
+`wave_zones316`, `snddump316`, `repeat_watch316`, and `image316` (pool-end
+immediate, cave home and image-head dumps at `IMAGE316_AT`, writes to image
+`0..0x6FFF` from `IMAGE316_WATCH_FROM`); `wave_playback316` (same log as
+`wave_playback`; the stock taps at 3.16 `2325:004C`, `2341:0013`, `234D:0014`,
+record zero at `SND_SEG:4814`, and a `SNDPHYS` line if the live PGR does not
+map the record to `0x300000 + logical`); `mute_ui316`, `mute_voice316` (stop
+select `234D:0014`); and `mute_range_inject316`, which, like
+`mute_range_inject`, writes: it swaps the program index in the hooked caller's
+frame and restores it at the 3.16 return site the suite names.
+
+`EmuSuite`: a suite opts in with `PROFILE_NAMES = harness.ALL_PROFILES`; its
+cases run on 316 once per BIOS set (`default` and `v308` by default, all four
+under `MPC3K_RELEASE=1`; `MPC3K_BIOS_316=v311,vailixi` or `all` overrides,
+release refuses a subset), minus `SKIP_316`. `cases()` takes times from
+`profile.view`; tests use `self.view(label)`. `MPC3K_PROFILES=316` runs only
+316. `emu/test_port316_boot.py`: banner, timeline, wave view pixels, Mute
+Groups, cave home and pool end, and the pool-fix Song regression, on all four
+sets.
+
+Every suite except `test_mpc3k` (stock emulator checks) runs its cases on 316
+as well; `test_wave_physical` adds `WavePhysical316`. Where 3.16 behaves
+differently the suites assert 3.16's behaviour (list and evidence:
+[`../notes/port_316.md`](../notes/port_316.md), "Emulator suites on 3.16").
+`SKIP_316` names cases whose feature 3.16 lacks: `test_wave_chop_safety`
+`unlocked_running` (no safe-lock setting) and `test_harness_lifecycle` `do1`,
+`do7` (COPY ZONE-> SND and TRUNC SFT ST+END are Vailixi-only Do options).
 
 `<t>` in file names is the probe time formatted as `%g` (79.5 and 80.5 stay
 distinct). New suites: `test_harness_bursts` (coalesced point motion and

@@ -166,7 +166,7 @@ mute_program_init_hook:
         pop bx
         pop ax
         popf
-        jmp 0xCF37:0x04B3
+        FJMP T_CF37_04B3
 
 ; Replaces C887:[19F2,19FB), linear 0x4A262:
 ;   B9 BF 03 1E 8E D8 F3 A5 1F
@@ -214,7 +214,7 @@ mute_program_copy_hook:
         pop bx
         pop ax
         popf
-        jmp 0xC887:0x19FB
+        FJMP T_C887_19FB
 
 ; ---------------------------------------------------------------- persistence hooks
 
@@ -228,7 +228,7 @@ mute_program_copy_hook:
 ; Wrapper tail: BP is the wrapper frame with SI and DI pushed.
 mute_close_only:
         push word [bp+6]
-        call 0xCEE6:0x0086
+        FCALL T_CEE6_0086
         add sp, 2
         pop di
         pop si
@@ -375,7 +375,7 @@ mute_load_close_common:
         push word [bp-2]
         push cs
         push word mute_read_header
-        call 0xCF0C:0x0073
+        FCALL T_CF0C_0073
         add sp, 8
         or ax, ax
         jnz .close
@@ -395,7 +395,7 @@ mute_load_close_common:
         push word [bp-2]
         push cs
         push word mute_staging
-        call 0xCF0C:0x0073
+        FCALL T_CF0C_0073
         add sp, 8
         or ax, ax
         jnz .close
@@ -414,7 +414,7 @@ mute_load_close_common:
         inc di
         loop .commit
 .close:push word [bp-2]
-        call 0xCEE6:0x0086
+        FCALL T_CEE6_0086
         add sp, 2
         pop di
         pop si
@@ -445,7 +445,7 @@ mute_write_close_common:
         push word [bp-2]
         push cs
         push word [bp-4]
-        call 0xCF0C:0x0096
+        FCALL T_CF0C_0096
         add sp, 8
         or ax, ax
         jz .payload
@@ -458,13 +458,13 @@ mute_write_close_common:
         push word [bp-2]
         push cs
         push word [bp-6]
-        call 0xCF0C:0x0096
+        FCALL T_CF0C_0096
         add sp, 8
         or ax, ax
         jz .close
         mov [bp-10], ax
 .close:push word [bp-2]
-        call 0xCEE6:0x0086
+        FCALL T_CEE6_0086
         add sp, 2
         cmp word [bp-10], 0
         je .return

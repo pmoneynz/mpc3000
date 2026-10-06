@@ -8,13 +8,15 @@ and restores the index when control is back in the stock caller.
 
 Without the range checks the hook would treat index 24 as a program and
 write 33 bytes at ``mute_staging``, or write them to disk.  With the checks
-the stock operation completes and the mod state is untouched.  The capture
-payload and its map are built from the current sources by emu.harness.
+the stock operation completes and the mod state is untouched.  The payloads
+and their maps are built from the current sources by emu.harness: capture,
+and the 316 profile (WAVE316.SYS on OS 3.16; one BIOS set per load segment
+by default, all four in release mode).  Times are Vailixi times moved by
+emu.test_mute_ui.delay(profile) (13 s on 3.16).
 """
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import re
 import subprocess
@@ -23,10 +25,10 @@ import unittest
 from emu import harness as h
 from emu import pgm
 from emu.harness import taps
-from emu.mpc3k import run
-from emu.panel import dial, write_smf
+from emu.mpc3k import DISKS
+from emu.panel import dial
 from emu.test_mute_persistence import pgm_save_events, stale_then_load_events
-from emu.test_mute_ui import observer, states
+from emu.test_mute_ui import PARTS, at, delay, each_run, later, states
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "build/emu/mute-range-tests"
@@ -43,19 +45,37 @@ SITES = {
     # return site E7F5:0A03 runs as E86E:0273.
     "save": ("mute_pgm_save_close", 0x06, 2, 0xE86E, 0x0273, 0),    # source [BP+06h]
 }
+# The same return sites in 3.16 (relative seg:off; CS = L + seg at run time).
+# copy: the hook's own FJMP target T_C887_19FB (mods/profile_316.inc).
+# load: the PGM loader 1396:0009 (image 0x13969) is C20F:0003 instruction for
+#   instruction (431 each, same frame, SUB SP,0B36h); its close CALLF 200D:008C
+#   at 1396:0418 (image 0x13D78, the mute_pgm_load_close hook site) returns to
+#   1396:041D.  The only far references to segment 1396 are CALLF 1396:0009
+#   (images 0x2A32, 0x799F) and 1396:04FC, so it runs with CS = L+1396.
+# save: the PGM writer 3E8F:0009 (image 0x3E8F9) is E86E:000D instruction for
+#   instruction (237 each, SUB SP,0ADCh); its close CALLF at 3E8F:026A (image
+#   0x3EB5A, the mute_pgm_save_close hook site) returns to 3E8F:026F.  The
+#   only far references to segment 3E8F are CALLF 3E8F:0009 at image 0x1D419
+#   (PUSH [BP-0Ah] / CALLF / ADD SP,2 / MOV [BP-6],AX, as at CB10:10C1) and
+#   CALLF 3E8F:0413, so it runs with CS = L+3E8F.
+SITES_316 = {"copy": h.targets316()["T_C887_19FB"], "load": (0x1396, 0x041D), "save": (0x3E8F, 0x026F)}
 
 
-def injector(name: str, profile: h.Profile) -> Path:
+def injector(name: str, profile: h.Profile) -> str:
+    """The suite prelude: INJECT for emu/lua/mute_range_inject[316].lua."""
     label, frame, width, seg, off, after = SITES[name]
+    if profile.is316:
+        site = profile.runtime(*SITES_316[name])
+        seg, off = site.cs, site.ip
     offsets = profile.symbols()
-    prefix = (f"INJECT={{hook={offsets[label]},frame={frame},width={width},value=25,"
-              f"back_seg={seg},back_off={off},staging={offsets['mute_staging']},"
-              f"after={after}}}\n")
-    observe = observer(RUNS / name, profile=profile)
-    script = RUNS / name / "inject.lua"
-    script.write_text(prefix + (ROOT / "emu/lua/mute_range_inject.lua").read_text()
-                      + "\n" + observe.read_text())
-    return script
+    return (f"INJECT={{hook={offsets[label]},frame={frame},width={width},value=25,"
+            f"back_seg={seg},back_off={off},staging={offsets['mute_staging']},"
+            f"after={after + delay(profile)}}}")
+
+
+def case_disk(profile: h.Profile, runs: Path, case: str) -> Path:
+    """The floppy harness.run_case() mounts for `case` (its wave_disk name)."""
+    return DISKS / f"{profile.label}-{runs.name}-{case}.img"
 
 
 def copy_events():
@@ -68,74 +88,75 @@ def copy_events():
     return events + dial(23, 43) + taps((47, "soft1"))
 
 
-class MuteRange(unittest.TestCase):
+class MuteRange(h.EmuSuite):
+    RUNS = RUNS
+    PROFILE_NAMES = h.ALL_PROFILES        # no GENERIC case: capture and 316
+    saved: dict[str, bytes] = {}
+
     @classmethod
-    def setUpClass(cls):
-        profile = h.payload("capture")
+    def cases(cls, profile, runs):
         if not pgm.NATIVE_BLANK_PATH.is_file():
             h.unavailable(f"native PGM fixture is missing: {pgm.NATIVE_BLANK_PATH}")
-        valid = RUNS / "VALID.PGM"
-        RUNS.mkdir(parents=True, exist_ok=True)
-        profile.record(RUNS)
+        valid = runs / "VALID.PGM"
         valid.write_bytes(pgm.with_mute_state(enabled=True, groups=[1] * 64))
-        cases = {
-            "copy": ([35.5, 48], h.wave_disk(profile, "mute-range-copy"), copy_events()),
-            "load": ([34, 55], h.wave_disk(profile, "mute-range-load", [(valid, "VALID.PGM")]),
-                     stale_then_load_events()),
-            "save": ([39, 62], h.wave_disk(profile, "mute-range-save"), pgm_save_events()),
+        # setUpClass reads PROGRAM_.PGM back from this image: it must be this run's.
+        case_disk(profile, runs, "save").unlink(missing_ok=True)
+        t, dt = at(profile), delay(profile)
+        definitions = {
+            "copy": ([35.5, 48], [], copy_events()),
+            "load": ([34, 55], [(valid, "VALID.PGM")], stale_then_load_events()),
+            "save": ([39, 62], [], pgm_save_events()),
         }
-        for name in cases:
-            (RUNS / name).mkdir(parents=True, exist_ok=True)
-        scripts = {name: injector(name, profile) for name in cases}
+        return {name: h.Case(events=later(events, dt), times=[t(x) for x in times], files=files,
+                             parts=("mute_range_inject", *PARTS), prelude=injector(name, profile))
+                for name, (times, files, events) in definitions.items()}
 
-        def execute(item):
-            name, (times, image, events) = item
-            out = RUNS / f"{name}-run"
-            screens = run("vailixi", times, out, floppy=image,
-                          panel=write_smf(RUNS / f"{name}.mid", events), rompath=profile.rompath,
-                          extra=["-autoboot_script", str(scripts[name])])
-            return name, (out, screens)
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.saved = {}
+        for (label, case) in cls.results:
+            if case == "save":
+                runs = cls.RUNS / label
+                target = runs / "saved.PGM"
+                target.unlink(missing_ok=True)
+                subprocess.run(["mcopy", "-i", str(case_disk(cls.profiles[label], runs, case)),
+                                "::PROGRAM_.PGM", str(target)], check=True)
+                cls.saved[label] = target.read_bytes()
 
-        with ThreadPoolExecutor(max_workers=3) as pool:
-            cls.results = dict(pool.map(execute, cases.items()))
-        image = cases["save"][1]
-        target = RUNS / "saved.PGM"
-        target.unlink(missing_ok=True)
-        subprocess.run(["mcopy", "-i", str(image), "::PROGRAM_.PGM", str(target)], check=True)
-        cls.saved = target.read_bytes()
-
-    def injected(self, name: str) -> str:
-        out = self.results[name][0]
-        log = (out / "inject.txt").read_text()
+    def injected(self, d: Path) -> str:
+        log = (d / "inject.txt").read_text()
         self.assertEqual(len(re.findall(r"^inject ", log, re.M)), 1, log)
         self.assertIn("value=25", log)
         staged = re.search(r"^restore \S+ staging=([0-9a-f]+)$", log, re.M)
         self.assertIsNotNone(staged, log)
         return staged.group(1)
 
-    def last_screen(self, name: str) -> str:
-        return "\n".join(self.results[name][1][-1]["rows"])
-
     def test_copy_to_out_of_range_destination_changes_no_mod_state(self):
-        self.assertEqual(self.injected("copy"), "00" * 33)
-        out = self.results["copy"][0]
-        before, after = states(out, 35.5), states(out, 48)
-        self.assertEqual(before[0], COPIED)
-        self.assertEqual(after, before)
+        for label, _, d, _, t in each_run(self, "copy"):
+            with self.subTest(profile=label):
+                self.assertEqual(self.injected(d), "00" * 33)
+                before, after = states(d, t(35.5)), states(d, t(48))
+                self.assertEqual(before[0], COPIED)
+                self.assertEqual(after, before)
 
     def test_load_close_with_out_of_range_destination_only_closes(self):
-        self.assertEqual(self.injected("load"), "00" * 33)
-        out = self.results["load"][0]
-        # The trailer is neither read nor committed, and no slot is cleared.
-        self.assertEqual(states(out, 34)[1], STALE)
-        self.assertEqual(states(out, 55), states(out, 34))
-        self.assertNotIn("Attention", self.last_screen("load"))
+        for label, _, d, screens, t in each_run(self, "load"):
+            with self.subTest(profile=label):
+                self.assertEqual(self.injected(d), "00" * 33)
+                # The trailer is neither read nor committed, and no slot is cleared.
+                self.assertEqual(states(d, t(34))[1], STALE)
+                self.assertEqual(states(d, t(55)), states(d, t(34)))
+                self.assertNotIn("Attention", "\n".join(screens[-1]["rows"]))
 
     def test_save_close_with_out_of_range_source_writes_stock_file(self):
-        self.injected("save")
-        self.assertEqual(len(self.saved), pgm.PGM_BYTES)
-        self.assertEqual(self.saved[:2], b"\x07\x00")
-        self.assertNotIn("Attention", self.last_screen("save"))
+        for label, _, d, screens, _ in each_run(self, "save"):
+            with self.subTest(profile=label):
+                self.injected(d)
+                saved = self.saved[label]
+                self.assertEqual(len(saved), pgm.PGM_BYTES)
+                self.assertEqual(saved[:2], b"\x07\x00")
+                self.assertNotIn("Attention", "\n".join(screens[-1]["rows"]))
 
 
 if __name__ == "__main__":
