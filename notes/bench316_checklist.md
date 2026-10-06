@@ -55,3 +55,9 @@ All gates **PASS** (PROVEN, hardware, one session). Evidence: ten photos and a
 | 4 Sequence memory | Other page: 98% free normally. Peter then filled sequence memory to 0% free: the machine kept working normally and refused further steps. This is the case where stock 3.16 on this EPROM writes the pool over its own code. |
 | 5 Save/load | Pass (reported). |
 | 6 Stability | Pass (reported). |
+
+**PMONEY BETA 1.0** (`WAVE316.img` `a0b1ba10…`, USB `Disk_08.IMG`), same machine,
+2026-10-06: the boot screen shows `WAVEFORM/ZONES/MUTE GROUP` and
+`PMONEY BETA 1.0` centred under `Akai MPC3000`, then 3.16's own "Searching
+floppy for startup files..." (PROVEN, hardware photo). Every cave byte before
+entry316 is identical to the bench-tested BENCH 08.
