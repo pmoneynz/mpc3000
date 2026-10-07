@@ -19,6 +19,25 @@ local pixfile = io.open(out .. "/lcd_pixels.txt", "w")
 
 -- LC7981 registers as last written (instruction register selects).
 local lcd = { ir = nil, reg = {} }
+
+-- Save states (emu/harness.py boot snapshots).  PROBE_SAVE_AT/PROBE_SAVE_NAME:
+-- save the machine at that emulated time, and this register shadow (which a
+-- run resumed from the state cannot rebuild from writes it never saw) to
+-- PROBE_SAVE_LCD.  PROBE_LCD_SEED: such a file, read before the first capture.
+local save_at, save_name = tonumber(os.getenv("PROBE_SAVE_AT") or ""), os.getenv("PROBE_SAVE_NAME")
+local seed = os.getenv("PROBE_LCD_SEED")
+local reinsert = os.getenv("PROBE_REINSERT") == "1"
+-- PROBE_SAVE_ON_WRITE (physical address): save at the first frame after a CPU
+-- write there instead of at PROBE_SAVE_AT; the time is written to PROBE_SAVE_LCD .. ".at".
+local save_on = tonumber(os.getenv("PROBE_SAVE_ON_WRITE") or "", 16)
+local save_hit = false
+local save_tap = save_on and cpu.spaces["program"]:install_write_tap(save_on, save_on + 1, "probe_save_on",
+	function(offset, data, mask) save_hit = true end)
+if seed and seed ~= "" then
+	for k, v in string.gmatch(assert(io.open(seed)):read("a"), "(%w+)=(%d+)") do
+		if k == "ir" then lcd.ir = tonumber(v) else lcd.reg[tonumber(k)] = tonumber(v) end
+	end
+end
 local seen = {}
 
 local function now()
@@ -189,6 +208,33 @@ emu.register_periodic(function()
 		local ds = cpu.state["DS0"].value
 		ds_hist[ds] = (ds_hist[ds] or 0) + 1
 	end
+	if reinsert then
+		-- Resumed from a boot snapshot: the OS still holds the snapshot disk's
+		-- directory, so eject and reinsert this run's floppy (a disk change).
+		for tag, img in pairs(machine.images) do
+			if img.filename and img.image_type_name == "floppydisk" then
+				local f = img.filename
+				img:unload()
+				img:load(f)
+			end
+		end
+		reinsert = false
+	end
+	if save_hit and save_name then
+		save_at = now()
+		save_hit, save_tap = false, nil
+		local f = assert(io.open(os.getenv("PROBE_SAVE_LCD") .. ".at", "w"))
+		f:write(string.format("%.6f\n", save_at))
+		f:close()
+	end
+	if save_at and now() >= save_at then
+		local f = assert(io.open(os.getenv("PROBE_SAVE_LCD"), "w"))
+		if lcd.ir then f:write(string.format("ir=%d\n", lcd.ir)) end
+		for k, v in pairs(lcd.reg) do f:write(string.format("%d=%d\n", k, v)) end
+		f:close()
+		machine:save(save_name)
+		save_at = nil
+	end
 	if idx <= #times and now() >= times[idx] then
 		dump_text(times[idx])
 		if wordlog then dump_words(times[idx]) end
@@ -203,4 +249,4 @@ emu.register_periodic(function()
 	end
 end)
 
-probe_keep_alive = { lcd_tap, rtap, wtap, traced }
+probe_keep_alive = { lcd_tap, rtap, wtap, traced, save_tap }

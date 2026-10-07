@@ -226,6 +226,24 @@ APS renamed `BETAPGM_01` as a marker, load on stock `M3K316.SYS` (`default`,
 native PGM control does, the APS loads at start-up with `1-BETAPGM_01` active,
 and no screen shows an error. The trailer is ignored there. `v311` not run.
 
+## Boot snapshots (2026-10-07, MAME, one execution of the suite set)
+
+`EmuSuite` cases resume from a per-profile MAME save state instead of booting
+cold (`emu/harness.py`, `boot_snapshot`; `MPC3K_SNAPSHOT=0` disables). Vailixi
+profiles save 0.5 s before the Soft Key 4 cancel and reinsert the case floppy
+on resume; 316 profiles save at entry316's first write to the cave home, before
+3.16 reads the floppy. Needs the fork's save-state support (`midiin`
+re-seek, `te7774` channel state, `MACHINE_SUPPORTS_SAVE`).
+
+Every `emu.test_*` suite (default BIOS sets `default`, `v308`) on the same
+sources and binary: cold, 150 tests OK, 0 skipped, 1353 s; with snapshots,
+150 tests OK, 0 skipped, 1019 s (MAME `d651a20c` plus the save-state
+changes, uncommitted then). Repeated on the pinned fork `14ffa559`: cold and
+with snapshots, 150 tests OK, 0 skipped each (wall times not comparable: the
+host was loaded by other jobs). **PROVEN (trace)** for these cases only: a
+case whose assertions do not depend on the boot could still differ; boot-path
+suites set `SNAPSHOT = False`.
+
 ## Status
 
 | Work | State |

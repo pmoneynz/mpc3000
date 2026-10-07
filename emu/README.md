@@ -10,14 +10,14 @@ The driver lives in a MAME fork, outside this repo:
 | Item | Value |
 |------|-------|
 | Fork | <https://github.com/pmoneynz/mame>, branch `mpc3000-accuracy` |
-| Pinned commit | `d651a20c55e90e9f183e089d0070addc1a878b08` (upstream base `9ede38cb`) |
-| Changed files | `src/mame/akai/mpc3000.cpp`, `src/mame/layout/mpc3000.lay`, `src/devices/cpu/nec/{nec,v5x}.{cpp,h}`, `necpriv.ipp`, `src/devices/machine/am9517a.{cpp,h}` |
+| Pinned commit | `14ffa55964ad669d2ea17c2e90b6b5e79f2bfba5` (upstream base `9ede38cb`) |
+| Changed files | `src/mame/akai/{mpc3000.cpp,mpc3000_app.h}`, `src/mame/layout/mpc3000.lay`, `src/devices/cpu/nec/{nec,v5x}.{cpp,h}`, `necpriv.ipp`, `src/devices/machine/{am9517a.cpp,am9517a.h,te7774.cpp}`, `src/devices/imagedev/{midiin.cpp,midiin.h,floppy.h}`, `src/emu/{emuopts,sound}.{cpp,h}`, `src/frontend/mame/luaengine.cpp`; the app OSD `src/osd/mpcapp/`, `scripts/src/osd/mpcapp*.lua` (not used by the harness) |
 | Binary the harness runs | `$MPC3K_MAME`, default `../MPC3000_builds/mame/mpc3k` |
 
 ```bash
 git clone --depth 50 -b mpc3000-accuracy https://github.com/pmoneynz/mame.git ../MPC3000_builds/mame
 cd ../MPC3000_builds/mame
-git checkout d651a20c55e90e9f183e089d0070addc1a878b08
+git checkout 14ffa55964ad669d2ea17c2e90b6b5e79f2bfba5
 make SUBTARGET=mpc3k SOURCES=src/mame/akai/mpc3000.cpp TOOLS=0 NOWERROR=1 -j14
 ```
 
@@ -104,6 +104,12 @@ checks that one screen was captured per requested time). Cases run
 `harness.WORKERS` MAME processes at once: one per host core, or
 `MPC3K_WORKERS`. Results do not depend on it (`-nothrottle`: emulated time
 is independent of host load).
+
+Boot snapshots (default): each profile boots once to just before its Soft
+Key 4 cancel, saves a MAME state under `build/emu/snapshots/`, and every
+`EmuSuite` case resumes from it (`MPC3K_SNAPSHOT=0`: cold boots; evidence in
+[`../notes/port_316.md`](../notes/port_316.md), "Boot snapshots"). It needs
+the fork's save-state support (`MACHINE_SUPPORTS_SAVE`).
 
 Probe taps are installed once and never reinstalled: the V53's OPSEL/xULA
 remapping (`v5x install_peripheral_io`) touches only the CPU's internal I/O

@@ -632,14 +632,79 @@ def observer(profile: Profile, path: Path, parts: list[str], prelude: str = "") 
     return path
 
 
+# Boot snapshots (default; MPC3K_SNAPSHOT=0 boots every case cold).  Every case boots the same way up to the
+# SCSI search, which is ~44% of all emulated time.  With snapshots a profile
+# boots once to half a second before its Soft Key 4 cancel, saves the machine
+# (MAME save state) and the probe's LC7981 register shadow, and each case
+# resumes from there with its own floppy reinserted (the OS keeps the boot
+# disk's directory; a disk change makes it re-read) and its own panel file
+# (emu midiin re-seeks to the restored time).  Cases with a panel event or a
+# probe time before the snapshot, and suites with SNAPSHOT = False, boot cold.
+# Checked against cold boots: notes/port_316.md, "Boot snapshots".
+SNAPSHOT = os.environ.get("MPC3K_SNAPSHOT", "1") != "0"
+SNAPSHOTS = BUILD / "emu" / "snapshots"
+_snap_lock = threading.Lock()
+_mame_sha: list[str] = []
+
+
+def boot_snapshot(profile: Profile) -> tuple[Path, Path, float, bool]:
+    """(state directory, LCD shadow file, time, reinsert) of this profile's boot snapshot, made once.
+
+    3.16: the EPROM has loaded STARTUP.SYS (the same bytes on every case disk)
+    and entry316's first write to the cave home marks the moment, before 3.16
+    reads the floppy, so a case's disk needs no reinsertion.  Vailixi boots
+    from ROM: half a second before the cancel, with the case floppy reinserted."""
+    at = profile.timeline.cancel - 0.5
+    reinsert = not profile.is316
+    with _snap_lock:
+        if not _mame_sha:
+            _mame_sha.append(hashlib.sha256(MAME.read_bytes()).hexdigest())
+        key = hashlib.sha256(f"{_mame_sha[0]} {profile.sha256} {profile.bios} {at} "
+                             f"{profile.rompath}".encode()).hexdigest()[:16]
+        final = SNAPSHOTS / f"{profile.label}-{key}"
+        if not (final / "boot.lcd").exists():
+            SNAPSHOTS.mkdir(parents=True, exist_ok=True)
+            tmp = Path(tempfile.mkdtemp(prefix=f"{profile.label}-", dir=SNAPSHOTS))
+            try:
+                trigger = ({"PROBE_SAVE_ON_WRITE": f"{profile.cave_phys:X}"} if profile.is316
+                           else {"PROBE_SAVE_AT": str(at)})
+                run_case(profile, tmp, "snap", times=[at + 0.3], events=[(at + 100, b"\xf8")], parts=[],
+                         env={**trigger, "PROBE_SAVE_NAME": "boot", "PROBE_SAVE_LCD": str(tmp / "boot.lcd")},
+                         extra=["-state_directory", str(tmp / "states")], snapshot=False)
+                if profile.is316 and not (tmp / "boot.lcd.at").exists():
+                    raise RuntimeError(f"{profile.label}: no write to the cave home before {at + 0.3} s")
+                if not list((tmp / "states").rglob("boot.sta")) or not (tmp / "boot.lcd").exists():
+                    raise RuntimeError(f"{profile.label}: boot snapshot not written; see {tmp / 'snap'}")
+                try:
+                    os.rename(tmp, final)
+                    tmp = None
+                except OSError:
+                    pass                # another process made it first
+            finally:
+                if tmp is not None:
+                    shutil.rmtree(tmp, ignore_errors=True)
+    marker = final / "boot.lcd.at"
+    if marker.exists():
+        at = float(marker.read_text())
+    return final / "states", final / "boot.lcd", at, reinsert
+
+
 def run_case(profile: Profile, runs: Path, name: str, *, times: list[float],
              events: list[tuple[float, bytes]], files: list[tuple[Path, str]] = (),
              parts: list[str] = ("repeat_watch", "wave_zones", "snddump"),
              env: dict[str, str] | None = None, extra: list[str] = (),
-             prelude: str = "", **kwargs) -> list[dict]:
-    """Boot this profile with its payload disk, drive the panel link, observe."""
+             prelude: str = "", snapshot: bool | None = None, **kwargs) -> list[dict]:
+    """Boot this profile with its payload disk, drive the panel link, observe.
+
+    snapshot: resume from the profile's boot snapshot (default: on unless MPC3K_SNAPSHOT=0)
+    when every panel event and probe time comes after it."""
     from emu.mpc3k import run
     from emu.panel import write_smf
+    if SNAPSHOT if snapshot is None else snapshot:
+        states, lcd, at, reinsert = boot_snapshot(profile)
+        if min(times) > at and all(t > at for t, _ in events):
+            extra = ["-state_directory", str(states), "-state", "boot", *extra]
+            env = {**(env or {}), "PROBE_LCD_SEED": str(lcd), "PROBE_REINSERT": "1" if reinsert else "0"}
     case_dir = runs / name
     image = wave_disk(profile, f"{runs.name}-{name}", list(files))
     panel = write_smf(runs / f"{name}.mid", events)
@@ -743,6 +808,7 @@ class EmuSuite(unittest.TestCase):
     CAPTURE_ONLY: frozenset = frozenset()     # cases whose expectations are capture-specific
     PROFILE_NAMES: tuple = PROFILES           # add "316" once the suite's observers are ported
     SKIP_316: frozenset = frozenset()         # cases that do not apply to 3.16 (say why)
+    SNAPSHOT = True                           # False: always boot cold (boot-path suites)
     WORKERS: int | None = None               # None: harness.WORKERS
     results: dict = {}
     profiles: dict = {}
@@ -786,7 +852,8 @@ class EmuSuite(unittest.TestCase):
             profile, runs, spec = job
             return run_case(profile, runs, key[1], times=spec.times, events=spec.events,
                             files=list(spec.files), parts=spec.parts, env=spec.env,
-                            prelude=spec.prelude, **(spec.kwargs or {}))
+                            prelude=spec.prelude, snapshot=None if cls.SNAPSHOT else False,
+                            **(spec.kwargs or {}))
         cls.results = run_parallel(jobs, go, cls.WORKERS)
 
     def view(self, label: str) -> float:
