@@ -148,6 +148,10 @@ MUTE_CURRENT_PROGRAM equ 0xE2FB ; E60E: selected program 0..23
 %define T_D1F7_0126 0x2325:0x011E       ; reserve AMX resource 1 (allocation lock)
 %define T_D21F_0008 0x234D:0x0000       ; one-channel stop (channel)
 %define T_D9F2_003D 0x301D:0x003B       ; first pad slot mapped to a note
+MUTE_PAD_MODE  equ 0x8063       ; 8375: non-zero: pad slot notes come from MUTE_PAD_NOTES (301D:000A)
+MUTE_PAD_NOTES equ 0x8064       ; 8376: 64 pad slot notes used while MUTE_PAD_MODE is set
+%define T_F800_20FA 0x0009:0x20F6       ; signed 32-bit divide: 3.16's linked copy of the BIOS runtime (image 0x2186)
+%define T_F800_2101 0x0009:0x20FD       ; unsigned 32-bit divide (same copy)
 
 ; ---------------------------------------------------------------- mute UI (mute_ui.inc)
 

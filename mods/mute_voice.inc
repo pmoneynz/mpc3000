@@ -40,9 +40,8 @@ mute_note_on_wrapper:
         les bx, [bp+6]                   ; far pointer to the stock event
         mov al, [es:bx+2]                ; MIDI note, 23h..62h for pads
         xor ah, ah
-        push ax
-        FCALL T_D9F2_003D                ; first pad slot mapped to note
-        add sp, 2
+        call mute_pad_of_note            ; first pad slot mapped to note
+.pad_known:                              ; observers: AX = the pad slot
         cmp ax, MUTE_PAD_COUNT
         jae .forward
         mov [bp-2], al
@@ -108,6 +107,7 @@ mute_voice_alloc_wrapper:
         push di
         mov [cs:mute_context_valid], ax  ; observer mirror only; never read
         mov [cs:mute_context_pad], dx
+        xor si, si                       ; SI = 1 once a channel was stopped here
 
         cmp byte [bp-3], 1
         jb .allocate
@@ -130,6 +130,7 @@ mute_voice_alloc_wrapper:
         push di
         FCALL T_D21F_0008               ; stock one-channel stop primitive
         add sp, 2
+        mov si, 1
 .next:
         inc di
         cmp di, MUTE_VOICE_COUNT
@@ -144,8 +145,13 @@ mute_voice_alloc_wrapper:
         ; ours this call changes nothing.  Not after the allocator: its own
         ; MONO/Cutoff stops drop the lock in stock too, and a reserve there
         ; could yield to a waiter between choosing a channel and 0B2D marking
-        ; it busy, so both would start on the same channel.
+        ; it busy, so both would start on the same channel.  Without a stop
+        ; here the lock taken at 0B30 is still ours and the reserve would be
+        ; that no-op, so it is made only after a stop (339 cycles per note).
+        or si, si
+        jz .reserved
         FCALL T_D1F7_0126
+.reserved:
         push word [bp+0x0E]             ; channel excluded from voice steal
         push word [bp+0x0C]             ; Cutoff note 2
         push word [bp+0x0A]             ; Cutoff note 1
@@ -173,6 +179,51 @@ mute_voice_alloc_wrapper:
         pop si
         leave
         retf
+
+; First pad slot 0..63 whose note is AL (AH = 0), else a value >= 64: the
+; stock T_D9F2_003D without its 64 far helper calls (about 5,000 cycles).
+; That routine compares the note with each slot's note from T_D9F2_000C:
+; the byte MUTE_PAD_NOTES[slot] (sign-extended) while [MUTE_PAD_MODE] is
+; non-zero, else the byte at program record + 73Eh + slot (zero-extended),
+; and returns FFFF below note 23h.  For notes 23h..7Fh a byte compare of the
+; same table is the same test, so REPNE SCASB finds the same first slot;
+; notes 80h and up, where the two extensions differ, call the stock routine.
+; Same table, read at the same point of the same trigger.  Keeps BX, CX,
+; DX, SI, DI, DS, ES.
+mute_pad_of_note:
+        cmp al, 0x23
+        jb .none
+        cmp al, 0x80
+        jae .stock
+        push cx
+        push di
+        push es
+        cmp byte [MUTE_PAD_MODE], 0
+        je .record
+        push ds
+        pop es
+        mov di, MUTE_PAD_NOTES
+        jmp .scan
+.record:
+        les di, [MUTE_RECORD]
+        add di, 0x73E
+.scan:  mov cx, MUTE_PAD_COUNT
+        cld
+        repne scasb
+        mov ax, MUTE_PAD_COUNT           ; not found
+        jne .done
+        mov ax, MUTE_PAD_COUNT - 1
+        sub ax, cx                       ; index of the matching byte
+.done:  pop es
+        pop di
+        pop cx
+        ret
+.none:  mov ax, 0xFFFF
+        ret
+.stock: push ax
+        FCALL T_D9F2_003D
+        add sp, 2
+        ret
 
 ; Invalidate voice tags before a program record is initialized or a copy
 ; overwrites the destination.  Sounding channels are not stopped; they simply

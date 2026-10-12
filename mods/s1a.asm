@@ -27,59 +27,10 @@
 bits 16
 org 0
 
-s1a_idiv:                               ; replaces CALLF F800:20FA
-        push bp
-        mov bp, sp
-        mov bx, [bp+10]                 ; divisor low
-        cmp word [bp+12], 0
-        jne .runtime
-        or bx, bx
-        jz .runtime
-        mov ax, [bp+6]
-        mov dx, [bp+8]
-        mov cx, dx                      ; CX bit 15: dividend sign = quotient sign
-        or dx, dx
-        jns .divide
-        neg dx
-        neg ax
-        sbb dx, 0
-.divide:
-        xchg ax, dx                     ; AX = high, DX = low
-        mov [bp+12], dx
-        xor dx, dx
-        div bx                          ; AX = quotient high, DX = remainder
-        xchg ax, [bp+12]                ; AX = low, slot = quotient high
-        div bx                          ; AX = quotient low
-        mov dx, [bp+12]
-        or cx, cx
-        jns .done
-        neg dx
-        neg ax
-        sbb dx, 0
-.done:
-        pop bp
-        retf 8
-.runtime:
-        pop bp
-        jmp 0xF800:0x20FA
+%define S1A_IDIV_RUNTIME 0xF800:0x20FA
+%define S1A_UDIV_RUNTIME 0xF800:0x2101
+%macro FJMP 1
+        jmp %1
+%endmacro
 
-s1a_udiv:                               ; replaces CALLF F800:2101
-        push bp
-        mov bp, sp
-        mov bx, [bp+10]
-        cmp word [bp+12], 0
-        jne .runtime
-        or bx, bx
-        jz .runtime
-        mov ax, [bp+8]                  ; AX = high
-        xor dx, dx
-        div bx
-        mov [bp+12], ax                 ; quotient high
-        mov ax, [bp+6]                  ; DX = remainder, AX = low
-        div bx
-        mov dx, [bp+12]
-        pop bp
-        retf 8
-.runtime:
-        pop bp
-        jmp 0xF800:0x2101
+%include "s1a_divide.inc"

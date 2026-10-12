@@ -72,7 +72,9 @@ ENTRY316 = ("fc", "ba{dx}", "81fa{halt_bound}", "7739", "0e", "1f", "b8{home}", 
 # Unrelocated cave words equal to a segment value that are instruction bytes,
 # not operands: (mnemonic, instruction's first bytes, word position in them).
 NOT_OPERANDS = (("cmp", "2e3b06", 1),   # CMP AX,[CS:disp16]: opcode 3B and ModRM 06
-                ("mov", "ba20", 0))     # MOV DX,0020h (BOT-TOP+1 rows): opcode BA and the immediate's low byte
+                ("mov", "ba20", 0),     # MOV DX,0020h (BOT-TOP+1 rows): opcode BA and the immediate's low byte
+                ("call", "9a", 1),      # CALL FAR's offset word; its segment word (position 3) is the relocated one
+                ("mov", "bb0900", 1))   # MOV BX,9 in draw: the sound name's text column, equal to segment 0009
 
 
 def _profile_values() -> tuple[dict[str, tuple[int, int]], dict[str, int]]:

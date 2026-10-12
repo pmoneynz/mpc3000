@@ -96,6 +96,9 @@ instruction addresses and log external I/O with data; `emu/s1_characterize.py`
 uses them on the note-on path (`python3 -m emu.s1_characterize`,
 `python3 -m unittest emu.test_s1_characterize -v`).
 
+`python3 -m emu.pmoney_profile` profiles PMONEY BETA 1.0 against stock 3.16
+(`build/emu/pmoney/report.md`).
+
 Results and the backlog: [`../notes/performance.md`](../notes/performance.md).
 The profiler, trace points and `NEC_CPU_DIV` are fork commit `b4ab57e6`; all
 three are inert unless their environment variables are set.

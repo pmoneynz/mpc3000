@@ -1,5 +1,14 @@
 # Audited project status
 
+**2026-10-13 PMONEY note-on fixes (not built as a release):** S1a ported to OS 3.16
+(17 divide calls to the cave, fallback to 3.16's runtime copy, byte-identical to the BIOS
+one), an inline pad lookup in the mute note-on wrapper, and the allocation lock re-taken
+only after a choke stop. PROVEN in MAME: the cave's pad lookup equals stock's on 128
+note-ons in both table modes; a PMONEY note-on costs 9,412 cycles with mute groups off
+(was 20,818; stock 3.16 14,656) and 12,763 with them on (was 23,840). Lookup and lock
+changes also apply to the WAVE/WAVEHW builds; release gate 166 tests, no failures or
+skips. notes/performance.md section 12.
+
 **2026-10-13 S1a implemented (not deployed):** `mods/S1A.args` + `mods/s1a.asm` redirect
 the 17 divide calls of the note-on layer `CFC6:039E` to a 116-byte cave doing two DIV
 steps (fallback to the BIOS runtime). PROVEN: the cave and the runtime execute

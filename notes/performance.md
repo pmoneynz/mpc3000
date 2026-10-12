@@ -543,6 +543,143 @@ been run on this pin.
 
 ---
 
+## 11. PMONEY BETA 1.0 audit (2026-10-13)
+
+Target: the released `STARTUP.SYS` (`WAVE316.SYS`, SHA-256 `d8074538…`; the
+harness build is byte-identical), OS 3.16 plus the WAVE/ZONES/MUTE GROUP
+cave, on the Vailixi 3.50 EPROM set (load segment `6900`). Baseline: the
+hash-pinned `M3K316.SYS` on the same set and disk layout. Reproduction:
+`python3 -m emu.pmoney_profile` (eight MAME runs, about 30 s wall) writes
+`build/emu/pmoney/report.md`. The harness's 3.16 timelines were measured
+with the core at the crystal rate, so these runs keep `NEC_CPU_DIV=1`.
+Cycles per event do not depend on the core clock; every time below is
+cycles / 16 MHz. Idle means the 3.16 key-wait loops (image `2D0DB`,
+`2D0BA`, `2D175`, the same bytes as Vailixi `D6E1:000B`/`D6E0:0000`) and
+the BIOS floppy polls. **PROVEN (trace)** for these executions.
+
+### 11.1 What the features cost
+
+| Path | Stock 3.16 | PMONEY | Note |
+|------|-----------:|-------:|------|
+| Idle on Play/Record | 8.2 % | 8.2 % | no idle overhead; also 8.2 % with the waveform view open |
+| Note-on, mute groups disabled | 14,656 cycles (builder) | **20,818** (wrapper, builder inside) | +6.2 k; window busy +6.4 k per note |
+| Note-on, mute groups enabled (4 groups) | — | 23,840 | +9.2 k; includes the choke stops |
+| Audition hooks inside the note-on routine | — | ~52 cycles per note | negligible |
+| CHOP of 4 zones (55,125 frames) | — | 10 % busy over 23 s | stock sound creation; the cave's own share is 7 k cycles |
+| `STARTUP.SYS` size | 458,047 B | 471,043 B | +2.8 % floppy load |
+| Cave (RAM above 3.16) | — | 12,995 B | home limit 24,576 B with `L=7000` (3.08/3.11), 53,248 B with `L=6900` |
+| Sequence memory | 439K (overlaps code on 3.12/3.50) | 411K | the deliberate pool-end fix of `port_316.md`, not a feature cost |
+
+Where the mute-disabled overhead goes, per note:
+
+| Item | Cycles |
+|------|-------:|
+| `T_D9F2_003D` pad lookup in `mute_note_on_wrapper` (stock already calls it twice per note, at image `0x3086B` and `0x03266`) | 5,029 |
+| `T_D1F7_0126` re-reserve in `mute_voice_alloc_wrapper` on every allocation | 339 |
+| Enable check, frames, allocator-wrapper bookkeeping | ~700 |
+
+`T_D9F2_003D` (3.16 `301D:003B`, image `0x3020B`; **PROVEN**, bytes) scans pad slots
+0..63 through a near helper per slot. The helper reads the slot's note
+from `DS:[8064+slot]` when `[8063]` is set, else from
+`program record + 0x73E + slot` (`[E2E6]`). It returns the first match,
+or `FFFF` below note `0x23`. Neither stock caller leaves a per-task
+result: both store the global "last pad" `[D399]`, which is what the
+wrapper's frame-only design avoids.
+
+Waveform view, one redraw (inclusive cycles, 16 MHz time):
+
+| Redraw | Cycles | Time | Breakdown |
+|--------|-------:|-----:|-----------|
+| Full view, wheel step | ~996 k | 62 ms | stock blit `1650:0F01` 598 k (1,920 bytes, ~311 cycles each); `refresh` 398 k, of which 11-12 `text` calls 145 k |
+| Fine view, wheel step | ~1.73 M | 108 ms | `scan` 815 k (`fill` 541 k reads 9,216 sample words every step), draw and text ~335 k, blit 578 k |
+| Zone navigation | ~858 k | 54 ms | 15 redraws for Right x3 and 12 wheel steps |
+| Open (full scan, 55,125 frames) | 5.29 M | 0.33 s | ~96 cycles per frame, linear in length: a 20 s mono sound would take about 5.3 s (**HYPOTHESIS**, arithmetic) |
+
+A 9-step wheel burst gives two redraws: the first, then one for the
+coalesced rest. The view runs in the UI task, which the tick ISR and the
+playback task preempt, so its cost affects responsiveness, not timing.
+
+### 11.2 Opportunities, ranked
+
+| # | Change | Saving | Size | Risk |
+|---|--------|--------|------|------|
+| P1 | **Port S1a.** 3.16's note-on layer (image `0x21274`, 122 of 1,927 bytes differ from Vailixi `CFC6:039E`) makes the same 15 signed and 2 unsigned divide calls into its own linked copy of the runtime, relative `0009:20F6`/`20FD` (image `0x2186`, byte-identical to `F800:20FA`). Redirect them to the S1a cave routine with the fallback relocated to that copy | ~6 k cycles per layer, mute on or off | +116 B cave, 85 B patched | low: the S1a routine, its static test and the characterization method carry over; the fallback target is relocated |
+| P2 | **Inline the pad lookup.** In `mute_note_on_wrapper`, `REPNE SCASB` over the same 64-byte table the stock helper reads (DGROUP `8064` when `[8063]`, else `[E2E6]+0x73E`), first match, `FFFF` below `0x23`; call the stock routine for notes `≥ 0x80`, where its sign extension differs | ~4.7 k per note | ~+40 B | low: same table, same first-match rule, read at the same moment; check against the stock routine over every note and both table modes, and run the mute suites |
+| P3 | **Re-take resource 1 only after a choke stop.** Move `FCALL T_D1F7_0126` under the stop path; the wrapper's own comment says it is a no-op unless `D21F` dropped the lock | 339 per note | −5 B | low |
+| U1 | **Fine view reads only what it shows.** Fill only the window's samples (240 x zoom), and on a step reuse the overlapping columns, scanning only the new ones | ~0.6-0.8 M per fine step | small | low, display only |
+| U2 | **Static text once.** Render the title, labels and soft keys into a saved layer and copy it per redraw, or redraw only changed text | ~130 k per redraw | +1,920 B RAM if a full layer | low |
+| U3 | **Partial LCD update.** Send only the changed bytes or rows instead of the stock full blit | up to ~0.5 M per redraw | +~150 B | medium: a cave LCD write path; needs the LC7981 hardware test H5 |
+| U4 | **Faster open scan.** Tighten the min/max loop; draw progressively for long sounds | up to ~40 % of 96 cycles per frame; measure first | small | low; the sample read is stock (`T_CF92_000C`) |
+| Z1 | Overlay `mute_staging` (792 B, the APS load staging copy) with the view's column arrays (960 B), which are idle during disk I/O | 792 B | — | only if space is needed: 11.6 KB of headroom remain on 3.08/3.11 |
+
+P1-P3 together take PMONEY's note-on from about 20.8 k cycles with mute
+groups disabled to about 9.8 k, a third below stock 3.16 (14.7 k). With
+groups enabled it drops from about 23.8 k to about 12.8 k (estimate from
+the measured parts; the choke work itself is unchanged). U1-U3 would take
+a full-view wheel redraw from about 62 ms to about 25 ms and a fine-view
+step from about 108 ms to under 50 ms (**HYPOTHESIS** until built).
+Nothing else measured shows waste: idle, playback hooks and CHOP are
+already at stock cost.
+
+---
+
+## 12. PMONEY note-on fixes P1-P3 (2026-10-13)
+
+Implemented in the shared cave source, so P2 and P3 apply to every build
+(WAVE generic, WAVEHW capture, WAVE316 = PMONEY). P1 is PMONEY only.
+
+| Fix | Change |
+|-----|--------|
+| P1 | `mods/s1a_divide.inc` holds the S1a routines. `mods/s1a.asm` (the 3.50 Route A mod, unchanged bytes: same `S1A.SYS` SHA-256 `020328c1…`) and `mods/wave.asm` under `PROFILE_316` include it. In PMONEY the fallbacks `FJMP` to `T_F800_20FA` = `0009:20F6` and `T_F800_2101` = `0009:20FD`, 3.16's linked copy of the runtime. `mods/WAVE316.args` redirects the 17 calls of the note-on layer (image `[0x2141C, 0x2182C)`) to them |
+| P2 | `mute_pad_of_note` in `mods/mute_voice.inc` replaces the wrapper's `FCALL T_D9F2_003D`: `REPNE SCASB` over the same 64 bytes (`MUTE_PAD_NOTES` while `[MUTE_PAD_MODE]`, else `[MUTE_RECORD]+73Eh`), `FFFF` below `23h`, the stock call for notes `≥ 80h`. New profile symbols: `MUTE_PAD_MODE`/`MUTE_PAD_NOTES` = `8375`/`8376` (generic), `8373`/`8374` (capture, read from `ROMAPP.BIN`), `8063`/`8064` (3.16) |
+| P3 | `mute_voice_alloc_wrapper` re-reserves AMX resource 1 (`T_D1F7_0126`) only when its scan stopped a channel (`SI` flag) |
+| Builder | `NOT_OPERANDS` in `mods/build_wave316.py` lists two operand coincidences with the new runtime segment `0009`: a `CALL FAR` offset word and `MOV BX,9` (a text column) |
+
+Size: the PMONEY cave grows from 12,995 to 13,181 bytes, still under the
+24,576-byte home limit of the 3.08/3.11 EPROMs. The generic and capture
+caves are 12,878 bytes.
+
+Evidence:
+
+- **PROVEN (bytes):** 3.16's runtime copy, image `[0x2183, 0x2231)`, is
+  byte-identical to `F800:20F7`-`21A5`. The PMONEY cave's divide routines
+  equal the S1A routines except for the two fallback far jumps
+  (`emu/test_pmoney_noteon.py`). So the execution proof of
+  `tests/test_s1a_divide.py` applies. All 17 calls of the 3.16 layer
+  reach the cave, and none still calls the runtime.
+- **PROVEN (trace, one run):** for every note-on of a PMONEY run, the
+  stock lookup (`T_D9F2_003D` called at image `0x3086B`) and
+  `mute_pad_of_note` return the same pad. That is 64 comparisons in normal
+  mode, plus 64 with the mode byte set and the table injected
+  (`emu/lua/pad_mode_inject.lua`: reversed notes, one duplicate, one
+  missing note, one byte `90h`; 3 notes correctly unmapped). The only
+  direct writer of `DS:8063` zeroes it at start-up (image `0x04ABF`), so
+  the injection tests equivalence, not when the OS uses the table.
+- P3 relies on the stock reserve being a no-op for its owner
+  ([`mute_voice.md`](mute_voice.md)). Without a stop in between, the lock
+  taken at `0B30` is still the task's own.
+
+Cost, inclusive cycles per note (`python3 -m emu.pmoney_profile`, same
+workloads as section 11):
+
+| Note-on | Stock 3.16 | PMONEY before | PMONEY after |
+|---------|-----------:|--------------:|-------------:|
+| Mute groups disabled | 14,656 | 20,818 | **9,412** (−55 %; 36 % below stock) |
+| Mute groups enabled | — | 23,840 | **12,763** (−46 %) |
+| Window busy, 64 notes, mute disabled | 13.62 M | 14.03 M | 13.29 M |
+| Idle | 8.2 % | 8.2 % | 8.2 % |
+
+Release gate (`python3 -m emu.harness_release`, `MPC3K_RELEASE=1`, every
+suite on capture, generic and 316 with all four EPROM sets): 166 tests, 0
+failures, 0 errors, 0 skips. **PROVEN (MAME).**
+
+The released PMONEY BETA 1.0 file is unchanged. These fixes take effect
+in the next build. The WAVE and WAVEHW payloads also change (P2, P3), so
+the BENCH hardware results describe the earlier bytes; physical behaviour
+of the new builds is **UNDETERMINED**.
+
+---
+
 ## What this note does *not* prove
 
 - Any physical duration. Every number is MAME's cycle model at 16 MHz with

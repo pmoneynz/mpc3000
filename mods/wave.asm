@@ -1009,6 +1009,11 @@ draw:
 %include "mute_storage.inc"
 %include "mute_voice.inc"
 %include "mute_ui.inc"
+%ifdef PROFILE_316
+ %define S1A_IDIV_RUNTIME T_F800_20FA
+ %define S1A_UDIV_RUNTIME T_F800_2101
+ %include "s1a_divide.inc"             ; the 17 divides of the note-on layer (WAVE316.args)
+%endif
 
 ; Per pair: label strings, label columns, value columns.
 labels: dw s_start, s_end, 0, 20, 6, 24
