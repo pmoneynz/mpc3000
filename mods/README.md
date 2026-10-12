@@ -29,6 +29,7 @@ image hash is a function of its files. Builders no longer need mtools.
 | `build_wave_physical.py` | WAVEHW, hash-pinned captured ROM profile with exact high-ROM guard; hooks generated from `WAVE.args`; every cave far target checked against the capture |
 | `build_romapp.py`, `romapp.asm` | Guarded 336 KiB application/data capture to `ROMAPP.BIN`; excludes NVRAM, uses captured PGR wrapper |
 | `PETER.args`, `CAVEDEMO.args` | Version-screen credit and execution-from-RAM demonstrations |
+| `S1A.args`, `s1a.asm` | S1a: the 17 divide calls of the note-on layer `CFC6:039E` go to a two-step `DIV` cave routine (exact, falls back to the BIOS runtime); layer −45 % in MAME; `notes/performance.md` §9.6, `tests/test_s1a_divide.py` |
 
 ```bash
 python3 mods/build_mod_sys.py @mods/DEMO351.args   # build/mods/DEMO351.{SYS,img}; --out DIR elsewhere

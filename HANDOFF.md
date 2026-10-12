@@ -56,7 +56,7 @@ session (Claude Code reads `CLAUDE.md`, not `AGENTS.md`).
 |------|-------|
 | Repo | `/Users/peterwadams/Documents/MPC3000`, remote `origin` = <https://github.com/pmoneynz/mpc3000> (**private**: it holds Akai ROM dumps and manuals; keep it private). Old Cursor remote kept as `cursor`. `gh` is logged in as `pmoneynz` |
 | Last commits | `b9078a4` (harness + mods moved in), `ae086b9` (loader pinned + HOWTO) |
-| MAME driver | Fork <https://github.com/pmoneynz/mame>, branch `mpc3000-accuracy`, pinned `14ffa559` (upstream base `9ede38cb`); changed files: `emu/README.md` |
+| MAME driver | Fork <https://github.com/pmoneynz/mame>, branch `mpc3000-accuracy`, pinned `b4ab57e6` (upstream base `9ede38cb`); changed files: `emu/README.md` |
 | MAME checkout / binary | `../MPC3000_builds/mame/`, binary `../MPC3000_builds/mame/mpc3k` (override with `MPC3K_MAME`). Shallow clone: remote `fork` = GitHub fork, `origin` = upstream mamedev |
 | MAME rebuild | `cd ../MPC3000_builds/mame && make SUBTARGET=mpc3k SOURCES=src/mame/akai/mpc3000.cpp TOOLS=0 NOWERROR=1 -j14` |
 | Host tools | Python 3.14, NASM 2.16.03, GNU mtools 4.0.49, macOS |

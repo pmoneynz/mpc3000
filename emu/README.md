@@ -10,14 +10,14 @@ The driver lives in a MAME fork, outside this repo:
 | Item | Value |
 |------|-------|
 | Fork | <https://github.com/pmoneynz/mame>, branch `mpc3000-accuracy` |
-| Pinned commit | `14ffa55964ad669d2ea17c2e90b6b5e79f2bfba5` (upstream base `9ede38cb`) |
-| Changed files | `src/mame/akai/{mpc3000.cpp,mpc3000_app.h}`, `src/mame/layout/mpc3000.lay`, `src/devices/cpu/nec/{nec,v5x}.{cpp,h}`, `necpriv.ipp`, `src/devices/machine/{am9517a.cpp,am9517a.h,te7774.cpp}`, `src/devices/imagedev/{midiin.cpp,midiin.h,floppy.h}`, `src/emu/{emuopts,sound}.{cpp,h}`, `src/frontend/mame/luaengine.cpp`; the app OSD `src/osd/mpcapp/`, `scripts/src/osd/mpcapp*.lua` (not used by the harness) |
+| Pinned commit | `b4ab57e6086b6477a9190dcd05b7dbfdd68e3ba9` (upstream base `9ede38cb`) |
+| Changed files | `src/mame/akai/{mpc3000.cpp,mpc3000_app.h}`, `src/mame/layout/mpc3000.lay`, `src/devices/cpu/nec/{nec,v5x}.{cpp,h}`, `necpriv.ipp`, `src/devices/machine/{am9517a.cpp,am9517a.h,te7774.cpp,te7774.h}`, `src/devices/sound/l7a1045_l6028_dsp_a.{cpp,h}`, `src/devices/imagedev/{midiin.cpp,midiin.h,floppy.h}`, `src/emu/{emuopts,sound}.{cpp,h}`, `src/frontend/mame/luaengine.cpp`; the app OSD `src/osd/mpcapp/`, `scripts/src/osd/mpcapp*.lua` (not used by the harness) |
 | Binary the harness runs | `$MPC3K_MAME`, default `../MPC3000_builds/mame/mpc3k` |
 
 ```bash
 git clone --depth 50 -b mpc3000-accuracy https://github.com/pmoneynz/mame.git ../MPC3000_builds/mame
 cd ../MPC3000_builds/mame
-git checkout 14ffa55964ad669d2ea17c2e90b6b5e79f2bfba5
+git checkout b4ab57e6086b6477a9190dcd05b7dbfdd68e3ba9
 make SUBTARGET=mpc3k SOURCES=src/mame/akai/mpc3000.cpp TOOLS=0 NOWERROR=1 -j14
 ```
 
@@ -73,6 +73,32 @@ Extra probes in `emu/lua/`, passed as
 | `snddump.lua` | Sound records `A2AE:4800` and each sound's wave RAM words at every snapshot time (`snd_dir.log`, `wave_<t>_idx<i>.bin`; `SNDDUMP_PCM=0` for the directory only) |
 | `wcu_dump.lua` | V53 wait control / refresh registers after 1 s (`wcu.txt`) |
 | `cave_watch.lua` | Reads (including fetches) and writes of the code cave in EPROM and in the Route A RAM copy (`cave.txt`) |
+
+## Cycle profiler (`emu/profile.py`, fork `nec_prof`)
+
+The fork's NEC core profiles every instruction when `NEC_PROF_DIR` is set
+(physical address, cycles, call edges, inclusive cost per callee, interrupt
+vectors, stack-segment contexts, I/O ports, fetch/read/write coverage maps;
+`NEC_PROF_WINDOWS=s:e,...` dumps one `prof_<i>.txt` per emulated-time
+window). `NEC_CPU_DIV=2` runs the V53 core at the physical 16 MHz (X1/2);
+the default 1 keeps the historical 32 M cycles/s that every pinned suite
+was timed against.
+
+```bash
+python3 -m emu.profile              # nine workload windows -> build/emu/prof/<workload>/
+python3 tools/prof_report.py        # -> build/emu/prof/report.md, report.json
+python3 -m unittest emu.test_profile -v
+```
+
+Trace points (`NEC_TRACE_FILE`, `NEC_TRACE_AT`, `NEC_TRACE_IO`,
+`NEC_TRACE_FROM`) snapshot registers and memory at chosen physical
+instruction addresses and log external I/O with data; `emu/s1_characterize.py`
+uses them on the note-on path (`python3 -m emu.s1_characterize`,
+`python3 -m unittest emu.test_s1_characterize -v`).
+
+Results and the backlog: [`../notes/performance.md`](../notes/performance.md).
+The profiler, trace points and `NEC_CPU_DIV` are fork commit `b4ab57e6`; all
+three are inert unless their environment variables are set.
 
 ## WAVE / MUTE GROUPS suites (`emu/harness.py`)
 

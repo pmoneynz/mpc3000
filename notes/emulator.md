@@ -9,7 +9,7 @@ The MAME driver lives in a fork; the harness lives in this tree
 
 | Path | Role |
 |------|------|
-| MAME fork `pmoneynz/mame` `mpc3000-accuracy` | Upstream MAME `9ede38cb` + driver commits, pinned `14ffa559` |
+| MAME fork `pmoneynz/mame` `mpc3000-accuracy` | Upstream MAME `9ede38cb` + driver commits, pinned `b4ab57e6` |
 | `emu/mpc3k.py` | Headless runner: fresh NVRAM/cfg per run, LCD text capture |
 | `emu/romset.py` | Romset from `07-rom/` + placeholders, in `build/roms/` |
 | `emu/probe.lua` | I/O first-access log, LC7981 register log, screen dump |
@@ -222,6 +222,7 @@ blink period are **UNDETERMINED** (one still frame).
 | U-TCLK | V53 TCLK fixed at 4 MHz in MAME (FIXME: DAWCK from DSP) | Timer-derived tempo accuracy |
 | U-DSP-AUDIO | L7A1045 voice/filter/effects accuracy | Audio not validated |
 | U-V53-TIMING | Base instruction clocks and prefetch come from MAME's NEC core; its V33 prefetch size/cost is marked "complete guess" | Absolute CPU speed unverified; section 7 adds only the bus waits |
+| U-V53-CLOCK | MAME's `v53_device` ran the core at the crystal rate (32 M cycles/s); the data book divides X1 by 2 for the CPU (16 MHz). Fork `b4ab57e6`: `NEC_CPU_DIV=2` (default 1 until the suites are re-timed) | Every CPU-bound duration measured before 2026-10-13 is half the physical value; timer-driven events are unaffected ([`performance.md`](performance.md) §1.1) |
 | U-DMA-BUS | DMA cycles do not stall the CPU (MAME grants the bus at once and the CPU keeps running) | CPU time during floppy/SCSI/DSP DMA is optimistic |
 | U-REFRESH-QUEUE | Every refresh cycle is charged to the CPU; the V53 queue can hide some while the bus is idle | CPU slowed by up to 4/272 (1.5%) too much |
 | U-BUS-SIZE | Every access is modelled as a 16-bit bus cycle (no BS8). NVRAM chip LC3517 is 8-bit | NVRAM word accesses may take one cycle too few |
@@ -252,6 +253,11 @@ at the same offset. `M3K316.SYS` has no `MOV DX` to any of these ports.
 | `FFF5` | WCY3 | `31` | External I/O: 3 waits; 1 MiB area upper: 1 wait |
 | `FFF6` | WCY4 | `31` | DMA: 3 waits; refresh: 1 wait |
 | `FFF2` | RFC | `90` | Refresh on, N = 17: every 272 clocks (17 us at 16 MHz) |
+
+Clock caveat (2026-10-13): the clocks in this section are MAME core cycles,
+which the pinned fork runs at 32 MHz, twice the physical CPU clock
+([`performance.md`](performance.md) §1.1); the refresh period "17 us" is
+therefore 8.5 us in the pinned build and correct only under `NEC_CPU_DIV=2`.
 
 So ROM (`0x000000`), work RAM (`0x300000`) and NVRAM (`0x500000`) all take
 1 wait per bus cycle. Before the stub runs, every cycle takes 7 (WCY reset

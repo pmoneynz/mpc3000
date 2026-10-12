@@ -1,5 +1,35 @@
 # Audited project status
 
+**2026-10-13 S1a implemented (not deployed):** `mods/S1A.args` + `mods/s1a.asm` redirect
+the 17 divide calls of the note-on layer `CFC6:039E` to a 116-byte cave doing two DIV
+steps (fallback to the BIOS runtime). PROVEN: the cave and the runtime execute
+identically on 6,800 edge and random operand pairs (tests/test_s1a_divide.py);
+PROVEN (trace, MAME 16 MHz): over 640 input tuples in stock and S1a runs, no call
+result, voice-start parameter or own-stack DSP access differs; the layer costs
+7,530 instead of 13,633 cycles (-45 %), 9,725 instead of 18,370 on the varied
+program (MAME pin b4ab57e6). Physical behaviour UNDETERMINED (H4/H7). notes/performance.md section 9.6.
+
+**2026-10-13 S1 characterization:** fork trace points traced 960 note-ons of
+`CFC6:039E` (all 64 pads x 5 velocities, three runs). PROVEN (trace): every runtime
+call result and every DSP write sequence is a function of the traced inputs only;
+tempo is not an input (PROVEN, code). Divides are 56 % of a default layer (about
+1,446 cycles per long-path call); a two-step DIVU model is exact on all 9,978 traced
+divides. The per-pad precompute is demoted: velocity reaches every block once any
+velocity sensitivity is non-zero. Next: S1a, a fast exact divide at 14 call sites
+(Route A), about -46 % per layer. notes/performance.md section 9.
+
+**2026-10-13 performance map:** a cycle profiler (`nec_prof`) is in the MAME fork's
+NEC core (working tree, uncommitted) and `emu/profile.py` drives nine stock-3.50
+workloads; `tools/prof_report.py` writes the map. PROVEN (data book + code):
+the pinned fork runs the V53 core at 32 M cycles/s, twice the physical 16 MHz;
+`NEC_CPU_DIV=2` corrects it (default unchanged). PROVEN (trace, 16 MHz): the OS
+is 8 % busy idle and at most 24 % in the heaviest workload (66 pad hits/s with
+sounds); the "idle" is task 7 polling the key queue; the sequencer tick ISR
+costs 2,121 cycles even when stopped, a note-on 23 k cycles (1.46 ms, 45 % in
+32-bit runtime arithmetic), a received serial byte 1,053 cycles. Pad/MIDI
+events are drained only on the tick (latency 0-1 tick + 1.5 ms). Backlog,
+hardware tests and the first experiment (note-on precompute): notes/performance.md.
+
 **2026-10-03 WAVE BENCH 07 built (not deployed):** BENCH 06 plus the review
 fixes. Payload `2cea7a48...79fb`, image `dc953ab5...a057`. PROVEN in MAME:
 135 emulator tests (22 suites, no skips), 67 builder tests, 171 boot checks,
