@@ -98,22 +98,40 @@ LIST_SELECTION equ 0xE0F7       ; E40A: sorted Sound list position, word
 
 ; ---------------------------------------------------------------- CHOP (wave_chop.inc)
 
-; 3.16 has 8 stock Do options, no "safe lock" and no Edit Sound mute
-; (CHOP_SAFE_LOCK / CHOP_MUTE_EDIT stay undefined), no ZONE%03d naming
+; 3.16 has 8 stock Do options (handlers 0B72:[1244]); the cave adds Vailixi's
+; COPY ZONE-> SND and TRUNC SFT ST+END in Vailixi's list order (CHOP_EDITDO),
+; under PMONEY's names ZONE->NEW SOUND and CROP SOFT ST-END.
+; Stock 3.16 has no "safe lock" and no Edit Sound mute; PMONEY adds both as
+; Extra Settings (xparams316.inc), stored inverted (0 = ON), with the lock
+; checked for the stock handlers too (CHOP_LOCK_STOCK).  It has no ZONE%03d naming
 ; (CHOP_OWN_NAMES), and no allocation rebuild at Edit Sound entry
 ; (CHOP_REBUILD_FIRST).
-CHOP_SEQ_STATE equ 0xA49B       ; A7AE: transport state (HYPOTHESIS); unused here
+CHOP_SEQ_STATE equ 0xA49B       ; A7AE: transport state (HYPOTHESIS)
+CHOP_SAFE_LOCK equ 0x831D       ; 862F: Extra Settings "Lock Edit Sound <Do>" (inverted)
+CHOP_MUTE_EDIT equ 0x8317       ; 8629: Extra Settings "Mute outputs during sound edits" (inverted)
+%define CHOP_HAS_SAFE_LOCK
+%define CHOP_HAS_EDIT_MUTE
+%define CHOP_SETTINGS_INVERTED
+%define CHOP_LOCK_STOCK
 CHOP_DO        equ 0xE454       ; EDB5: Do choice index
 CHOP_DO_LABEL  equ 0x33F3       ; 3781: "Do:"
-%define CHOP_STOCK_OPTIONS 8        ; COPY ZONE->TEMP .. REVERSE ZONE
-CHOP_OPT_0     equ 0x32C6       ; COPY ZONE-> TEMP
-CHOP_OPT_1     equ 0x32D7       ; INS TMP-> ZON ST
-CHOP_OPT_2     equ 0x32E8       ; INS TMP-> ZN END
-CHOP_OPT_3     equ 0x32F9       ; DELETE ZONE
-CHOP_OPT_4     equ 0x3305       ; DEL BEFR SOFT ST
-CHOP_OPT_5     equ 0x3316       ; DEL AFTR SFT END
-CHOP_OPT_6     equ 0x3327       ; SILENCE ZONE
-CHOP_OPT_7     equ 0x3334       ; REVERSE ZONE
+%define CHOP_STOCK_OPTIONS 10       ; Do list before CHOP ZONE, in Vailixi 3.50 order
+%define CHOP_EDITDO                 ; COPY ZONE-> SND and TRUNC SFT ST+END run in the cave
+%define CHOP_CAVE_OPTS 0x0082       ; list entries 1 and 7 are cave strings (segment CAVE_SEG)
+CHOP_OPT_0     equ 0x32C6       ; COPY ZONE-> TEMP      3.16 stock 0
+CHOP_OPT_1     equ editdo_copy_text  ; ZONE->NEW SOUND  cave (Vailixi COPY ZONE-> SND, DS 3643)
+CHOP_OPT_2     equ 0x32D7       ; INS TMP-> ZON ST      3.16 stock 1
+CHOP_OPT_3     equ 0x32E8       ; INS TMP-> ZN END      3.16 stock 2
+CHOP_OPT_4     equ 0x32F9       ; DELETE ZONE           3.16 stock 3
+CHOP_OPT_5     equ 0x3305       ; DEL BEFR SOFT ST      3.16 stock 4
+CHOP_OPT_6     equ 0x3316       ; DEL AFTR SFT END      3.16 stock 5
+CHOP_OPT_7     equ editdo_trunc_text ; CROP SOFT ST-END cave (Vailixi TRUNC SFT ST+END, DS 36A4)
+CHOP_OPT_8     equ 0x3327       ; SILENCE ZONE          3.16 stock 6
+CHOP_OPT_9     equ 0x3334       ; REVERSE ZONE          3.16 stock 7
+EDITDO_TEMP_NAME equ 0x3446     ; 37D4: "TEMPORARY999"
+EDITDO_SOFTKEYS  equ 0x3420     ; 37AE: "<Ply/Stp> <Best st>  <Play X>    <Do>"
+%define T_B99A_22C4 0x0B72:0x1DF1       ; delete frames [from,to) of a Sound (index, from, to)
+%define T_B99A_0FA9 0x0B72:0x0DFF       ; DEL BEFR SOFT ST handler (Vailixi: after its safe lock)
 %define CHOP_OWN_NAMES
 %define CHOP_REBUILD_FIRST
 %define T_B1B1_0026 0x0427:0x0030       ; cursor position (INT 43 AX=3)
@@ -152,6 +170,18 @@ MUTE_PAD_MODE  equ 0x8063       ; 8375: non-zero: pad slot notes come from MUTE_
 MUTE_PAD_NOTES equ 0x8064       ; 8376: 64 pad slot notes used while MUTE_PAD_MODE is set
 %define T_F800_20FA 0x0009:0x20F6       ; signed 32-bit divide: 3.16's linked copy of the BIOS runtime (image 0x2186)
 %define T_F800_2101 0x0009:0x20FD       ; unsigned 32-bit divide (same copy)
+FIELD_INDEX    equ 0x7A67       ; 7D79: field committed by T_B060_035D (byte)
+%define T_B1B1_0002 0x0427:0x000C       ; clear the text screen (INT 43 AX=1)
+%define T_B509_2289 0x077D:0x1A35       ; new page: field list reset, clear, "== title ==" (far)
+%define T_B354_03B1 0x05C8:0x03B5       ; add a numeric field (label, ptr, width, min, max, flags)
+%define T_B99A_16DF 0x0B72:0x134F       ; "(ST)" or blanks for a Sound (index, row, col)
+%define T_B77C_20C5 0x0955:0x20BF       ; '=' rule on row 6, cursor (7,0)
+%define T_B060_0AD9 0x02D7:0x0AD3       ; redraw field n
+%define T_B060_035D 0x02D7:0x0357       ; field editor key loop (flags) -> 0 on commit, else the key
+%define T_B1FF_000C 0x0476:0x0006       ; spaces from the cursor to column n
+%define T_B1BC_01EE 0x0432:0x01F8       ; printf at the cursor (far format, varargs)
+%define T_E21A_000B 0x383B:0x0007       ; free sequence memory, bytes (DX:AX)
+%define T_D6A0_0213 0x2CCC:0x0205       ; I-0055 probe (port 50h): AX = 1 present, 0 absent
 
 ; ---------------------------------------------------------------- mute UI (mute_ui.inc)
 
@@ -168,3 +198,122 @@ MUTE_NOTE_MIDI equ 0xD39B       ; D6AE: note of the last MIDI event
 ; ---------------------------------------------------------------- start-up (entry316.inc)
 
 POOL_INIT_IMM equ 0x48535       ; image offset of 3.16's MOV BX,6FFFh pool end
+
+; ---------------------------------------------------------------- Extra Settings (xparams316.inc)
+
+; Settings in the zeroed reserve at the end of the parameter block (7C61,
+; 6C2h bytes; Vailixi's block is one byte longer, so its offsets are +312h).
+; Stored = shown XOR Vailixi default; 831B/831C are F12/F13 (scsi316.inc), 831E sync out.
+XP_SND_STOP    equ 0x8316       ; 8628: stop sounds on STOP (default OFF, direct)
+XP_MUTE_EDIT   equ 0x8317       ; 8629: mute during sound edits (default ON, inverted)
+XP_WARN        equ 0x8318       ; 862A: transport warnings (default ON, inverted)
+XP_STAY_EDIT   equ 0x8319       ; 862B: stay in Edit Sound on PLAY (default OFF)
+XP_STAY_MIXER  equ 0x831A       ; 862C: stay in Mixer on PLAY (default OFF)
+XP_SAFE_LOCK   equ 0x831D       ; 862F: Edit Sound Do lock (default ON, inverted)
+XP_OFF_ON      equ 0x0030       ; 0020: far pointers "OFF", "ON ", NULL
+XP_STR_OFF     equ 0x06BE       ; 0698: "OFF"
+XP_STR_ON      equ 0x06C2       ; 069C: "ON "
+XP_PLAY_SCREEN equ 0xD39C       ; D6AF: mode returned on PLAY / <Do it>
+XP_SEQ_STATE   equ 0x8EF5       ; 9208: current-sequence byte (0 = record ready, HYPOTHESIS)
+XP_POST_STOP   equ 0xA44F       ; A762: post-stop work done
+%define T_E704_0007 0x3D25:0x0003       ; stop the transport and wait
+%define T_C84C_016D 0x19D0:0x0165       ; Other page: cmp bx,5 / soft-key table
+%define T_C84C_01DB 0x19D0:0x01CE       ; Other page: or dx,dx / return or key loop
+%define T_DE5C_087D 0x3481:0x0839       ; key filter: return [bp+6]
+%define T_DE5C_02F0 0x3481:0x02C2       ; key filter 'Q': jnz after cmp mode,'S'
+%define T_DE5C_05BE 0x3481:0x057A       ; key filter STOP: after the post-stop work
+%define T_C303_0386 0x148A:0x037E       ; Main: warning box and sequence switch
+%define T_C303_03B4 0x148A:0x03AC       ; Main: Seq field reverts
+%define T_B99A_175E 0x0B72:0x13A8       ; copy wrapper: add sp,4 after the TEMP lookup
+%define T_B99A_17A7 0x0B72:0x1409       ; copy wrapper: allocation succeeded
+%define T_B99A_1A02 0x0B72:0x15AD       ; insert: add sp,4 after cursor (7,0)
+%define T_B99A_1E59 0x0B72:0x19E2       ; reverse: same
+%define T_B99A_215B 0x0B72:0x1CA2       ; silence: same
+%define T_B99A_22FE 0x0B72:0x1E1A       ; delete: same
+%define T_B99A_2081 0x0B72:0x1BD9       ; reverse epilogue
+%define T_B99A_22C0 0x0B72:0x1DED       ; silence epilogue
+%define T_B99A_2615 0x0B72:0x2120       ; delete epilogue
+
+; ---------------------------------------------------------------- Timing Correct (tc316.inc)
+
+TC_NOTE      equ 0x7EBD         ; 81CF: TC note value; here always the stock index 0..6 (param block +25Ch)
+TC_NV_DIRTY  equ 0xD38E         ; D6A1: parameter-block NVRAM save request (task 2FDF:0097)
+TC_HELD      equ 0xA4A2         ; A7B5: TIMING CORRECT held, note repeat armed (2B6D:035A)
+TC_PTRS      equ 0x6782         ; 6D02: 13 label far pointers + NULL (patched DGROUP)
+TC_TICKS     equ 0x67BA         ; 6D3A: 13 intervals in ticks (patched DGROUP)
+TC_PROJ      equ 0x67C7         ; new, patched DGROUP: extended index -> stock index
+TC_CANON     equ 0x67D4         ; new, patched DGROUP: stock index -> extended index
+TC_EXT       equ 0x67DB         ; new, patched DGROUP: extended (Vailixi) index 0..12, RAM only
+%define TC_REPEAT_GATE
+%define T_EC05_02B0 0x422F:0x02C0       ; playback tick after the repeat gate: CMP [95C8],0 (drum/MIDI repeat)
+%define T_EC05_02C8 0x422F:0x02D8       ; playback tick: MOV AX,[86EE] (record-flush arm, repeat skipped)
+
+; ---------------------------------------------------------------- Erase all (Disk 7, Vailixi B509:0BB3 / B766:0003)
+%define T_B509_0C34 0x077D:0x0C38       ; Erase a File: stock <Erase it> arm
+%define T_B509_21A1 0x077D:0x194D       ; raw file name -> NAME.EXT (src far, dst far)
+%define T_CEE6_0175 0x200D:0x017B       ; find first (pattern far, 27-byte record far) -> 0 / <0
+%define T_CEE6_01E1 0x200D:0x01E7       ; find next (same arguments)
+%define T_CEE6_00C2 0x200D:0x00C8       ; delete file (raw name far) -> 0 / error
+%define T_CF0C_0006 0x2033:0x000C       ; INT 41 service (fn, a, b, c)
+%define T_D6E0_0000 0x2D0B:0x0002       ; wait for and take one key (AL)
+%define T_D6E0_008B 0x2D0B:0x008D       ; drop queued soft keys
+%define T_D6F3_000E 0x2D1F:0x0000       ; AX = keys queued
+DISK_INDEX  equ 0x799D                  ; 7CAF: selected disk (0 = floppy)
+DISK_LABELS equ 0x060C                  ; 05FC: disk label far pointers
+S_DISK_FMT  equ 0x242A                  ; 2447: "Disk:%s"
+
+; ---------------------------------------------------------------- Sync out (syncout316.inc)
+
+SO_CLK_PORT  equ 0x7EAA         ; 81BC: Sync Out MIDI clock port, 0 OFF, 1-4 OUT A-D (block +249h)
+SO_MTC_PORT  equ 0x8310         ; 8622: Sync Out MIDI time code port, same values (block +6AFh)
+SO_ALL       equ 0x831E         ; 8630: block reserve; PMONEY bit 0 clock, bit 1 MTC on all four
+SO_ERR       equ 0x9331         ; 9644: MIDI output suppressed while non-zero
+SO_TXSH      equ 0x9315         ; 9628: TE7774 control shadows OUT A..D (bit 1 transmit interrupt)
+SO_RTQ       equ 0x1244         ; 125C: real-time ring OUT A (16 bytes); B..D at +18h, +30h, +48h
+SO_LBL_CLK   equ 0x6612         ; 6B92: "MIDI clock:"
+SO_LBL_MTC   equ 0x663A         ; 6BBA: "MIDI tm code:"
+SO_STR_OFF   equ 0x654B         ; 6AC7: "OFF"
+SO_STR_OUT_A equ 0x654F         ; 6ACB: "OUT A"; "OUT B".."OUT D" at +6, +12, +18
+SO_STR_ALL   equ 0x3287         ; 6AE3: 3.16's own "ALL" (choice list ALL/ZONE/TEMP/..., far ptr at DS:321E)
+%define T_DC5B_0097 0x3286:0x008F       ; real-time sender after its entry test: DEC BX / JS ...
+%define T_DA09_0000 0x3033:0x000E       ; queue CL in the DS:BX ring; keeps BX, CX, SI
+%define T_DC5B_003B 0x3286:0x0039       ; buffer sender (buffer far, count, port word)
+
+; ---------------------------------------------------------------- SCSI (scsi316.inc, Vailixi F12/F13)
+%define T_D470_024F 0x2AB2:0x019C   ; sector I/O, multi-sector command (CMP [799A],5 ...)
+%define T_D470_0249 0x2AB2:0x0196   ; sector I/O, stock one-block loop test (OR SI,SI / JNZ / JMP)
+%define T_D470_02AF 0x2AB2:0x01FC   ; sector I/O epilogue: MOV AX,DX / POP DI / POP SI / LEAVE / RETF
+%define T_D510_0006 0x2B36:0x000A   ; SCSI command with retries (id, cdb far, 6, buf far, bytes) -> AX
+%define T_D3A7_0014 0x2A66:0x0012   ; SPC init: A2<-C0, check, A0<-07, AA<-00, A2<-08; AX 0/1
+SCSI_CDB        equ 0x7984         ; 7C96: 6-byte CDB buffer (opcode, LBA 3, count, control)
+SCSI_BLKSIZE    equ 0x7998         ; 7CAA: device block size from READ CAPACITY (200h / 800h)
+SCSI_DEVTYPE    equ 0x799A         ; 7CAC: 0 = 512-byte blocks, 5 = 2048-byte blocks
+SCSI_SYQUEST    equ 0xF16C         ; FACE: bit 0 = one block per command (INQUIRY "SyQuest SQ52")
+SCSI_MULTI_OFF  equ 0x831B         ; 862D: multi-sector transfers, stored inverted (0 = ON, Vailixi default)
+SCSI_UNIT       equ 0x830F         ; 8621: Make Active unit, 0 AUTO, 1-7 = ID 0-6
+SCSI_AUTO_RESET equ 0x831C         ; 862E: reset the SPC after each failed ID probe (0 = OFF, Vailixi default)
+
+; ---------------------------------------------------------------- Disk utilities (diskutil316.inc, Vailixi H6/F11/F14/F15)
+; Port spec: notes/vailixi_features.md (F11, F14, F15, F16).  Each T_ below: first
+; instruction shapes equal to the Vailixi routine (builder check).
+%define T_B509_0FB3 0x077D:0x0F84   ; Copy/Format/Other: shl bx,1 / jmp [cs:bx+0FB1h], options 1-4
+%define T_B509_13DE 0x077D:0x122E   ; Format Hard Disk: READ CAPACITY, stock partition-count page
+%define T_B77C_20EA 0x0955:0x20E4   ; '=' rule row 6, cursor (7,0), "<Do it>"
+%define T_EBC8_0003 0x41F3:0x0002   ; "Select option:" digit 1..max (byte far, max, flags) -> 0 / key
+%define T_D470_02B5 0x2AB2:0x0202   ; READ(6) (unit, lba lo, lba hi, count, buffer far) -> 0 / code
+%define T_D470_02D5 0x2AB2:0x0222   ; WRITE(6) (same)
+%define T_D470_03AD 0x2AB2:0x02FA   ; READ CAPACITY (unit) -> DX:AX blocks (0: none); writes [SCSI_BLKSIZE]
+%define T_D470_0458 0x2AB2:0x03A5   ; scan per [830F], mount, select partition A -> AX
+%define T_D470_075E 0x2AB2:0x05A2   ; partition reader after push 61h/push 0D05h: Akai test
+%define T_D510_008D 0x2B36:0x0091   ; SCSI code -> OS error number
+%define T_F800_20C4 0x0009:0x20C0   ; DX:AX * CX:BX -> DX:AX (runtime copy)
+SCSI_CHANGED    equ 0x799B         ; 7CAD: media changed, set by the partition writers (2A8A:0099 / D3CB:00A0)
+SCSI_STATUS     equ 0x799E         ; 7CB0: last scan/mount result (byte; 077D:1113, 13F6)
+DISK_LAYOUT     equ 0x79A4         ; 7CB6: 0 none, 1 MPC partitions, 2/3 Akai (byte; 2AB2:0548)
+SCSI_ACTIVE     equ 0x79A6         ; 7CB8: active SCSI unit 0..6 (word; 2AB2:03D7)
+PART_HEADS      equ 0x79A8         ; 7CBA: heads for INT 40 CHS->LBA (byte; 2A44:01DE)
+PART_SPT        equ 0x79A9         ; 7CBB: sectors/track for the same (byte)
+PART_COUNT      equ 0x79AA         ; 7CBC: volumes found, 0..26 (byte; 2AB2:070E clamps the disk index)
+PART_TABLE      equ 0x79AF         ; 7CC1: 26 volume start LBAs (dwords, end 7A17 = 7D29)
+S_FMT_TITLE     equ 0x289F         ; 28FA: Format page title "Format Hard Disk"
+S_MENU_ITEM4    equ 0x2786         ; 27E9: "4.SCSI status, make SCSI device active\n"

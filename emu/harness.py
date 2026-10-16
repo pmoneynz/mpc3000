@@ -850,10 +850,13 @@ class EmuSuite(unittest.TestCase):
 
         def go(key, job):
             profile, runs, spec = job
+            kwargs = dict(spec.kwargs or {})
+            # A case may boot cold (kwargs snapshot=False), e.g. one that adds a
+            # device the boot snapshot does not have.
+            snapshot = kwargs.pop("snapshot", None if cls.SNAPSHOT else False)
             return run_case(profile, runs, key[1], times=spec.times, events=spec.events,
                             files=list(spec.files), parts=spec.parts, env=spec.env,
-                            prelude=spec.prelude, snapshot=None if cls.SNAPSHOT else False,
-                            **(spec.kwargs or {}))
+                            prelude=spec.prelude, snapshot=snapshot, **kwargs)
         cls.results = run_parallel(jobs, go, cls.WORKERS)
 
     def view(self, label: str) -> float:

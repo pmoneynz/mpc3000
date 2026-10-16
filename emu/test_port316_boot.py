@@ -132,8 +132,14 @@ class Port316Boot(unittest.TestCase):
             with self.subTest(bios=bios):
                 s = {t: text(x) for t, x in zip(VIEW_TIMES, screens)}
                 raw = screens[VIEW_TIMES.index(31.5)]["rows"]               # spaces print as "."
-                self.assertEqual(raw[3], "." * 7 + "WAVEFORM/ZONES/MUTE.GROUP" + "." * 8)   # cave banner316
-                self.assertEqual(raw[4], "." * 12 + "PMONEY.BETA.1.0" + "." * 13)
+                self.assertEqual(raw[1], "." * 7 + "WAVEFORM/ZONES/MUTE.GROUP" + "." * 8)   # cave banner316
+                self.assertEqual(raw[2], "." * 12 + "PMONEY.BETA.1.0" + "." * 13)
+                # cave sysinfo316: stock Free(snd)/Free(seq) formulas; MAME's 2 MB board gives
+                # 1916K; the pool ends at L-1 (entry316), so 411K with L=6900 and 439K with L=7000
+                seq = 411 if self.profiles[bios].load_segment == 0x6900 else 439
+                self.assertEqual(raw[3].replace(".", " "), f"Sound memory free (SND/PGM/SET):  {1916:5d}K")
+                self.assertEqual(raw[4].replace(".", " "), f"Seq memory free (SEQ/ALL/MID):    {seq:5d}K")
+                self.assertEqual(raw[5].strip("."), "")                  # no I-0055 (MAME echoes port 50h)
                 self.assertIn("Searching SCSI", s[32.6])
                 self.assertIn("Play/Record", s[34.0].splitlines()[0])
                 self.assertIn("Load/Erase/Rename", s[38.5])
@@ -187,13 +193,17 @@ class Port316Boot(unittest.TestCase):
                     self.assertEqual(row["pool_opcode"], 0xBB, t)               # MOV BX,imm16
                     self.assertEqual(row["pool_imm"], 0x68FF if L == 0x6900 else 0x6FFF, t)
                 # At Play/Record, before any key reached the cave, its home is
-                # byte for byte the loader simulation (relocated words, entry
+                # the loader simulation (relocated words, entry
                 # copy).  Later its variables change, so only this dump is exact.
                 home = profile.cave_home_image()
                 ram = (d / f"cave_{h.label(VIEW_DUMPS[0])}.bin").read_bytes()
                 self.assertEqual(len(ram), len(home))
-                diff = [i for i in range(len(home)) if ram[i] != home[i]]
+                # Boot itself writes one cave variable: the System Information
+                # option probe caches its result (FFh until probed).
+                written = {profile.symbols()["si_option"]}
+                diff = [i for i in range(len(home)) if ram[i] != home[i] and i not in written]
                 self.assertEqual(diff, [], "cave home differs from the loader simulation")
+                self.assertEqual(home[profile.symbols()["si_option"]], 0xFF)
 
     # ---------------------------------------------------------------- song
 

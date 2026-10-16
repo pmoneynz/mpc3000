@@ -1013,6 +1013,13 @@ draw:
  %define S1A_IDIV_RUNTIME T_F800_20FA
  %define S1A_UDIV_RUNTIME T_F800_2101
  %include "s1a_divide.inc"             ; the 17 divides of the note-on layer (WAVE316.args)
+ %include "compress.inc"               ; Program/Sounds 9: compression (Vailixi port)
+ %include "xparams316.inc"             ; Other -> Extra Settings, real-time sample editing
+ %include "tc316.inc"                  ; timing correct: Vailixi's 13 note values, swing
+ %include "eraseall316.inc"             ; Disk 7: erase all files (Vailixi port)
+ %include "syncout316.inc"              ; MIDI clock / time code to all four outputs (Vailixi port)
+ %include "scsi316.inc"                 ; SCSI multi-sector and AUTO-search reset (Vailixi port)
+ %include "diskutil316.inc"              ; SCSI disk copy, zero-fill, PC-readable partitions (Vailixi port)
 %endif
 
 ; Per pair: label strings, label columns, value columns.
@@ -1081,5 +1088,6 @@ num:    times 11 db 0
 %ifdef PROFILE_316
 %include "entry316.inc"
 %include "banner316.inc"
+%include "sysinfo316.inc"
 %endif
 cave_end:                               ; end of everything the 3.16 entry copies

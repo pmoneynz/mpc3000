@@ -74,7 +74,9 @@ ENTRY316 = ("fc", "ba{dx}", "81fa{halt_bound}", "7739", "0e", "1f", "b8{home}", 
 NOT_OPERANDS = (("cmp", "2e3b06", 1),   # CMP AX,[CS:disp16]: opcode 3B and ModRM 06
                 ("mov", "ba20", 0),     # MOV DX,0020h (BOT-TOP+1 rows): opcode BA and the immediate's low byte
                 ("call", "9a", 1),      # CALL FAR's offset word; its segment word (position 3) is the relocated one
-                ("mov", "bb0900", 1))   # MOV BX,9 in draw: the sound name's text column, equal to segment 0009
+                ("mov", "bb0900", 1),   # MOV BX,9 in draw: the sound name's text column, equal to segment 0009
+                ("mov", "2e8a14", 1),   # MOV DL,[CS:SI]: opcode 8A and ModRM 14, equal to segment 148A
+                ("mov", "368a14", 1))   # MOV DL,[SS:SI]: the same bytes after an SS prefix
 
 
 def _profile_values() -> tuple[dict[str, tuple[int, int]], dict[str, int]]:
@@ -187,8 +189,16 @@ def _imm(buf: bytes | bytearray, base: int, op: tuple[int, int]) -> int:
     return int.from_bytes(buf[base + op[0]:base + op[0] + op[1]], "little")
 
 
+def _names_label(line: kit.ListingLine, value: int, labels: dict[str, int]) -> bool:
+    """The source operand is a cave label whose offset is `value`: an offset in the cave, not a segment."""
+    return any(labels.get(word) == value for word in re.findall(r"[A-Za-z_.][\w.]*", line.source))
+
+
 def _not_operand(line: kit.ListingLine, at: int) -> bool:
-    return any(line.source.split()[:1] == [mnemonic] and line.data.startswith(bytes.fromhex(code))
+    words = line.source.split()
+    if words and words[0].endswith(":"):        # a label on the instruction's line
+        words = words[1:]
+    return any(words[:1] == [mnemonic] and line.data.startswith(bytes.fromhex(code))
                and at - line.offset == pos for mnemonic, code, pos in NOT_OPERANDS)
 
 
@@ -240,7 +250,7 @@ def verify(result: rc.Result, cave: bytes, labels: dict[str, int], listing: list
             value = struct.unpack_from("<H", cave, at)[0]
             if value not in scanned or at in marked:
                 continue
-            if _not_operand(line, at):
+            if _not_operand(line, at) or _names_label(line, value, labels):
                 not_operands += 1
             else:
                 suspects.append(f"cave+0x{at:X}={value:04X} ({built.label_at(at)}: {line.source.strip()})")

@@ -14,19 +14,19 @@ Covers (notes/wave_zones.md "State lifetime", notes/wave_chop.md hooks):
 
 Payloads come from emu.harness: capture for every case, generic for GENERIC,
 and every case on the 316 profile (WAVE316.SYS on OS 3.16; one BIOS set per
-load segment by default, all four in release mode) except SKIP_316.  Times
+load segment by default, all four in release mode).  Times
 are relative to the profile's timeline (V = profile.view: 40 s on Vailixi,
 52 s on 3.16).  Observers only read RAM.  Each case also checks that the
 stock action really happened (positive control), so an unexecuted action
 cannot pass.
 
 The ``Do:`` cases are named by the Vailixi option index k (``do0`` ..
-``do9``, the order of OPS).  3.16 has eight stock options, not ten (image
-bytes: 3.16 DGROUP 32C6..3341 holds the eight strings in DO_INDEX_316
-order, and its dispatch 0B72:0B0A is ``cmp bx,7`` where Vailixi B99A:0B05
-is ``cmp bx,9``).  It lacks COPY ZONE-> SND (k=1) and
-TRUNC SFT ST+END (k=7): those two cases are SKIP_316; every other case
-selects the same operation by its 3.16 index and asserts the same result.
+``do9``, the order of OPS).  Stock 3.16 has eight options (DGROUP
+32C6..3341; dispatch 0B72:0B0A ``cmp bx,7``); PMONEY lists all ten in
+Vailixi's order (mods/wave_chop.inc CHOP_EDITDO): COPY ZONE-> SND (k=1) and
+TRUNC SFT ST+END (k=7) run in the cave under PMONEY's names ZONE->NEW SOUND
+and CROP SOFT ST-END (OPS_316), so every case runs on 3.16 with the same
+index and asserts the same result.
 """
 from __future__ import annotations
 
@@ -46,8 +46,10 @@ FOUR = [LEN * i // 4 for i in range(5)]
 OPS = ["COPY ZONE-> TEMP", "COPY ZONE-> SND ", "INS TMP-> ZON ST", "INS TMP-> ZN END",
        "DELETE ZONE", "DEL BEFR SOFT ST", "DEL AFTR SFT END", "TRUNC SFT ST+END",
        "SILENCE ZONE", "REVERSE ZONE"]
-# Vailixi option index k -> 3.16 option index (3.16 DGROUP 32C6..3341).
-DO_INDEX_316 = {k: i for i, k in enumerate((0, 2, 3, 4, 5, 6, 8, 9))}
+# PMONEY on 3.16 lists the Do options in Vailixi's order (mods/wave_chop.inc
+# CHOP_EDITDO); options 1 and 7 run in the cave under PMONEY's own names.
+DO_INDEX_316 = {k: k for k in range(10)}
+OPS_316 = [{1: "ZONE->NEW SOUND ", 7: "CROP SOFT ST-END"}.get(k, op) for k, op in enumerate(OPS)]
 # Two sounds loaded one after the other.  After the first <Load> the second
 # file is selected once the first sound is in RAM: 4.5 s on Vailixi (108 KB
 # SINE441 done by 31 s after <Load> at 26.5 s), 5.0 s on 3.16 (done by 43.8 s
@@ -82,8 +84,7 @@ class Lifecycle(h.EmuSuite):
     RUNS = RUNS
     GENERIC = frozenset({"do4", "do8", "import_ms", "abba", "delete_source"})
     PROFILE_NAMES = h.ALL_PROFILES
-    # Not on 3.16: COPY ZONE-> SND and TRUNC SFT ST+END do not exist there.
-    SKIP_316 = frozenset({"do1", "do7"})
+    SKIP_316 = frozenset()
     VA: dict = {}
 
     @classmethod
@@ -153,7 +154,8 @@ class Lifecycle(h.EmuSuite):
                     r = zone_rows(d)
                     # The map existed when Do was pressed on op k ...
                     self.assertEqual((r[V + 14.5]["valid"], r[V + 14.5]["count"]), (1, 4))
-                    self.assertIn(f"Do:{OPS[k]}", screens[1]["rows"][5].replace(".", " "))
+                    ops = OPS_316 if prof.startswith("316") else OPS
+                    self.assertIn(f"Do:{ops[k]}", screens[1]["rows"][5].replace(".", " "))
                     # ... and the dispatch invalidated it before the stock op.
                     self.assertEqual(r[V + 15.5]["valid"], 0)
                     self.assertEqual(r[V + 18]["valid"], 0)

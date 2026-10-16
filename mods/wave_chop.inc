@@ -8,6 +8,9 @@ CHOP_MIN_FRAMES equ 441
 CHOP_ERR_EMPTY equ -0x0101
 CHOP_ERR_MAP equ -0x0102
 CHOP_ERR_SHORT equ -0x0103
+%ifndef CHOP_CAVE_OPTS
+ %define CHOP_CAVE_OPTS 0
+%endif
 
 ; Stock Edit Sound safety (Vailixi profiles, CHOP_HAS_SAFE_LOCK and
 ; CHOP_HAS_EDIT_MUTE).  Every stock Do handler refuses through B99A:1595
@@ -52,7 +55,11 @@ chop_do_dispatch:
         cmp byte [CHOP_SEQ_STATE], 0
         je .unlocked
         cmp byte [CHOP_SAFE_LOCK], 0
+ %ifdef CHOP_SETTINGS_INVERTED
+        je .leave                       ; 3.16 stores the setting inverted: 0 = ON
+ %else
         jne .leave
+ %endif
 .unlocked:
 %endif
         ; Keep the page's current selection even when an old map is rejected.
@@ -127,9 +134,243 @@ chop_do_dispatch:
         FCALL T_B99A_16BB
 .leave: FJMP T_B99A_1595
 .stock:
+%ifdef CHOP_LOCK_STOCK
+        ; Vailixi's per-handler safe lock (B99A:0B2F..0B3D in every Do
+        ; handler; their preambles before it only read), for 3.16's stock
+        ; handlers and the cave's two.
+        cmp byte [CHOP_SEQ_STATE], 0
+        je .stock_unlocked
+        cmp byte [CHOP_SAFE_LOCK], 0
+        je .leave                       ; inverted: 0 = ON
+.stock_unlocked:
+%endif
         mov byte [cs:zones_valid], 0
         mov byte [cs:zones_resume], 0
+%ifdef CHOP_EDITDO
+        mov bl, [cs:editdo_map+bx]      ; list index -> 3.16 handler 0..7, or 80h/81h
+        or bl, bl
+        js editdo_run
+%endif
         FJMP T_B99A_0B0D
+
+%ifdef CHOP_EDITDO
+; Vailixi 3.50's two extra Edit Sound Do options on a stock list without
+; them (OS 3.16).  Entered from chop_do_dispatch with BL = 80h (COPY ZONE->
+; SND, Vailixi B99A:0B92) or 81h (TRUNC SFT ST+END, Vailixi B99A:121C).
+; BP = the suspended Edit Sound frame, [BP-1] = 0, DI = the page's sound
+; count (never written here), SS:SP at the page's level, DS = DGROUP.
+editdo_run:
+        cmp bl, 0x81
+        je editdo_trunc
+        ; Vailixi B99A:0B92..0BAB: nothing unless zone end > zone start
+        ; (high words signed, low words unsigned).
+        mov dx, [ZONE_EN+2]             ; DX: CMP AX,[disp16] would encode 3B 06,
+        cmp dx, [ZONE_ST+2]             ; a word equal to segment 063B
+        jg .zone_ok
+        jl .leave
+        mov dx, [ZONE_EN]
+        cmp dx, [ZONE_ST]
+        jbe .leave
+.zone_ok:
+        xor ax, ax
+        mov al, [ss:bp-2]
+        lea si, [bp-0x0BC]
+        add si, ax
+        mov al, [ss:si]
+        mov [cs:chop_selected_record], al
+        call editdo_copy
+        or ax, ax
+        jns .refresh
+        cmp ax, CHOP_ERR_SHORT
+        jne .stock_error
+        mov si, chop_short_text
+        call chop_show_status
+        jmp .refresh
+.stock_error:
+        mov si, ax                      ; Vailixi B99A:0BEE..0C03
+        FCALL T_B1B1_004F
+        neg si
+        push si
+        FCALL T_B3C7_0007
+        add sp, 2
+        FCALL T_B1B1_0055
+.refresh:
+        jmp chop_do_dispatch.refresh    ; rebuild list, reselect source, redraw
+.leave: FJMP T_B99A_1595
+
+; TRUNC SFT ST+END = Vailixi B99A:122D..124E (delete [Soft end, Length))
+; followed by its DEL BEFR SOFT ST code, which on 3.16 is the stock handler
+; 0B72:0DFF: delete [0, Soft start), reload the page caches, print Length,
+; clamp Zone end, redraw, leave.  Page caches (dwords, low word first):
+; [BP-28h] Soft start, [BP-2Ch] Soft end, [BP-30h] Length.
+editdo_trunc:
+        push word [bp-0x2E]
+        push word [bp-0x30]
+        push word [bp-0x2A]
+        push word [bp-0x2C]
+        xor ax, ax
+        mov al, [ss:bp-2]
+        lea bx, [bp-0x0BC]
+        add bx, ax
+        mov al, [ss:bx]
+        push ax
+        FCALL T_B99A_22C4
+        add sp, 10
+        FJMP T_B99A_0FA9
+
+; COPY ZONE-> SND engine: Vailixi B99A:1728 with mode 1, on 3.16's own
+; allocator and copy.  In: chop_selected_record, ZONE_ST, ZONE_EN.  Out: AX =
+; 0, an allocator result (-1 name, -2 memory, -3 records) or CHOP_ERR_SHORT.
+; Preserves SI, DI, BP, DS.
+editdo_copy:
+        push si
+        push di
+        push es
+        mov ax, [ZONE_ST]
+        mov dx, [ZONE_ST+2]
+        mov [cs:chop_start], ax
+        mov [cs:chop_start+2], dx
+        mov ax, [ZONE_EN]
+        mov dx, [ZONE_EN+2]
+        sub ax, [cs:chop_start]
+        sbb dx, [cs:chop_start+2]
+        mov [cs:chop_count], ax
+        mov [cs:chop_count+2], dx
+        ; PMONEY rule (not Vailixi): below 441 frames D0C0:0611 records 441
+        ; but allocates fewer words; refuse as CHOP ZONE does.
+        or dx, dx
+        jnz .long_enough
+        cmp ax, CHOP_MIN_FRAMES
+        jae .long_enough
+        mov ax, CHOP_ERR_SHORT
+        jmp .return_unmuted
+.long_enough:
+        mov al, 1                       ; Vailixi B99A:1732: mute at entry
+        call chop_mute
+%ifdef CHOP_REBUILD_FIRST
+        FCALL T_D0C0_086F               ; Vailixi rebuilds at page entry (B99A:0024)
+%endif
+        ; Vailixi B99A:1755..1773: delete TEMPORARY999 if it exists.  PMONEY
+        ; keeps it when it is the source (Vailixi would delete the source).
+        push ds
+        push EDITDO_TEMP_NAME
+        FCALL T_D0C0_0D17
+        add sp, 4
+        or ax, ax
+        js .no_temp
+        cmp al, [cs:chop_selected_record]
+        je .no_temp
+        push 1
+        push 0
+        push ax
+        FCALL T_D0C0_0B19
+        add sp, 6
+.no_temp:
+        call chop_make_name             ; Vailixi C6C2:173D(name, 1): ZONEnnn
+        call editdo_source_record
+        xor ax, ax
+        mov al, [es:bx+0x13]
+        mov [cs:chop_source_stereo], al
+        push ax
+        push word [cs:chop_count+2]
+        push word [cs:chop_count]
+        push strict word CAVE_SEG
+        RELOC_PREV
+        push chop_name
+        FCALL T_D0C0_0611
+        add sp, 10
+        mov [cs:chop_dest_index], ax
+        push 0                          ; Vailixi B99A:1801..1816
+        push 7
+        FCALL T_B1B1_0026
+        add sp, 4
+        push strict word CAVE_SEG
+        RELOC_PREV
+        push editdo_copying_text
+        FCALL T_B1B1_005B
+        add sp, 4
+        mov ax, [cs:chop_dest_index]
+        or ax, ax
+        jns .allocated
+        call editdo_softkeys            ; Vailixi B99A:1830..184B
+        mov ax, [cs:chop_dest_index]
+        jmp .return
+.allocated:
+        mov dx, 0x24
+        mul dx
+        add ax, SND_DIR
+        mov bx, ax
+        mov ax, SND_SEG
+        RELOC_PREV
+        mov es, ax
+        mov ax, [es:bx+0x20]
+        mov dx, [es:bx+0x22]
+        mov [cs:chop_dest], ax
+        mov [cs:chop_dest+2], dx
+        ; Source base after allocation: D0C0:0611 may have compacted.
+        call editdo_source_record
+        mov ax, [es:bx+0x1C]
+        mov dx, [es:bx+0x1E]
+        mov [cs:chop_source_len], ax
+        mov [cs:chop_source_len+2], dx
+        mov ax, [es:bx+0x20]
+        mov dx, [es:bx+0x22]
+        add ax, [cs:chop_start]
+        adc dx, [cs:chop_start+2]
+        mov [cs:chop_src], ax
+        mov [cs:chop_src+2], dx
+        call chop_copy_plane            ; Vailixi B99A:184F..189E
+        cmp byte [cs:chop_source_stereo], 1
+        jne .copied
+        mov ax, [cs:chop_source_len]    ; Vailixi B99A:18BB..1925
+        mov dx, [cs:chop_source_len+2]
+        add [cs:chop_src], ax
+        adc [cs:chop_src+2], dx
+        mov ax, [cs:chop_count]         ; = new record +1C (>= 441 frames)
+        mov dx, [cs:chop_count+2]
+        add [cs:chop_dest], ax
+        adc [cs:chop_dest+2], dx
+        call chop_copy_plane
+.copied:
+        FCALL T_D0C0_086F               ; Vailixi B99A:1928
+        call editdo_softkeys            ; Vailixi B99A:192D..1942
+        xor ax, ax
+.return:
+        push ax                         ; Vailixi B99A:181F / 1945: unmute on both exits
+        mov al, 0
+        call chop_mute
+        pop ax
+.return_unmuted:
+        pop es
+        pop di
+        pop si
+        ret
+
+; ES:BX = record of chop_selected_record.  Clobbers AX, DX.
+editdo_source_record:
+        xor ax, ax
+        mov al, [cs:chop_selected_record]
+        mov dx, 0x24
+        mul dx
+        add ax, SND_DIR
+        mov bx, ax
+        mov ax, SND_SEG
+        RELOC_PREV
+        mov es, ax
+        ret
+
+; Bottom row back to the stock soft keys.
+editdo_softkeys:
+        push 0
+        push 7
+        FCALL T_B1B1_0026
+        add sp, 4
+        push ds
+        push EDITDO_SOFTKEYS
+        FCALL T_B1B1_005B
+        add sp, 4
+        ret
+%endif
 
 ; Lifecycle hook for D0C0:[0B19,0B1F).  It recreates the replaced
 ; prologue, invalidates a map before its source record is deleted, and then
@@ -490,11 +731,16 @@ chop_refresh_source_base:
 chop_mute:
 %ifdef CHOP_HAS_EDIT_MUTE
         cmp byte [CHOP_MUTE_EDIT], 0
+ %ifdef CHOP_SETTINGS_INVERTED
+        jne .done                       ; 3.16: 0 = ON
+        call xp_audio                   ; xparams316.inc: Vailixi D980:000C in the cave
+ %else
         je .done
         cbw
         push ax
         FCALL T_D980_000C
         add sp, 2
+ %endif
 %endif
 .done:  ret
 
@@ -573,7 +819,11 @@ chop_do_options:
 %assign CHOP_I 0
 %rep CHOP_STOCK_OPTIONS
         dw CHOP_OPT_%[CHOP_I]
+ %if (CHOP_CAVE_OPTS >> CHOP_I) & 1
+        dw CAVE_SEG
+ %else
         dw DGROUP_SEG
+ %endif
         RELOC_PREV
 %assign CHOP_I CHOP_I+1
 %endrep
@@ -582,6 +832,13 @@ chop_do_options:
         RELOC_PREV
         dd 0
 chop_do_text: db "CHOP ZONE", 0
+%ifdef CHOP_EDITDO
+; PMONEY's own wording for the two ported options (16-character list width).
+editdo_copy_text: db "ZONE->NEW SOUND ", 0              ; Vailixi's COPY ZONE-> SND
+editdo_trunc_text: db "CROP SOFT ST-END", 0             ; Vailixi's TRUNC SFT ST+END
+editdo_copying_text: db "Copying zone to a new sound...          ", 0   ; 40 columns
+editdo_map: db 0, 0x80, 1, 2, 3, 4, 5, 0x81, 6, 7    ; list index -> 3.16 handler
+%endif
 chop_empty_text: db "EMPTY ZONE - ADJUST BOUNDARIES", 0
 chop_stale_text: db "REOPEN WAVE VIEW FOR THIS SOUND", 0
 chop_short_text: db "ZONE MUST BE AT LEAST 10ms", 0

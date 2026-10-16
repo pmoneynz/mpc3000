@@ -24,9 +24,9 @@ from mods import buildkit as kit  # noqa: E402
 from mods import route_c as rc  # noqa: E402
 
 HAVE_TOOLS = shutil.which("nasm") is not None and shutil.which("ndisasm") is not None
-SYS_SHA256 = "d80745384128fc58348f2ff603b00f6a3d5c2f90482b0d5d0b80eeec0cc0b214"
-IMG_SHA256 = "a0b1ba1073c02a04b261b5f3f13c3f92febcc19d601e76fd746a312cbc4120f3"
-CAVE_SHA256 = "1ea7a56ed8d409ee8f55c4fa5a31c19bc6e422c72bff198415e0f5d0e313b288"
+SYS_SHA256 = "227bad563ee2b9db523c60d384e5f0571c12d60ed10931f64edb0e44fa03af99"
+IMG_SHA256 = "c29e0119327f5dc546a80def41b213076a67cb437c8a0c9a748643a7da5d4732"
+CAVE_SHA256 = "03885338784553a6dfea7a5fe586c351c72e0a1356fc55150c1b3d611d8777a7"
 HOOK = 0x2298F                  # chop_sound_delete hook, on T_D0C0_0B19 = 21E7:0B1F
 
 
@@ -42,8 +42,11 @@ class PinnedBuild(unittest.TestCase):
             self.assertEqual(kit.sha256((out / "wave316.cave.bin").read_bytes()), CAVE_SHA256)
         sim = m["simulation"]
         self.assertEqual((sim["6900"]["pool_end"], sim["7000"]["pool_end"]), ("68FF", "6FFF"))
-        self.assertEqual((sim["copy_words"], sim["halt_above"]), ("1962", "72D2"))
-        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (118, 23))   # +6: banner316
+        self.assertEqual((sim["copy_words"], sim["halt_above"]), ("292E", "70D9"))
+        # +6 banner316; S1a, compress, sysinfo316, editdo, xparams316, tc316,
+        # eraseall316, syncout316 and scsi316 (Vailixi ports,
+        # notes/vailixi_features.md) bring 280 and 46; diskutil316 +60 and +2
+        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (340, 48))
 
 
 @unittest.skipUnless(HAVE_TOOLS, "needs nasm and ndisasm")
