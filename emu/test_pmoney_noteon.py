@@ -7,15 +7,18 @@
    bytes are the verified S1A routines except for their fallback far jumps,
    which go to 3.16's linked runtime copy; that copy is byte-identical to
    the BIOS runtime tests/test_s1a_divide.py executes.
-2. mute_pad_of_note gives the stock answer: in one PMONEY run, every MIDI
-   note's stock lookup (T_D9F2_003D called at 3.16 image 0x3086B) and the
-   cave's lookup in mute_note_on_wrapper return the same pad, in both
-   table modes.  The only direct writer of the mode byte DS:8063 zeroes it
-   at start-up (image 0x04ABF), so for the second pass
+2. The pad lookups agree.  P4 (notes/performance.md) redirects the stock
+   lookup calls at 3.16 image 0x3086B (MIDI note handler) and 0x3266 (field
+   editor) from T_D9F2_003D to the cave's pad_lookup_far;
+   tests/test_perf316_diff.py proves pad_lookup_far equal to the stock
+   routine by executing both, for every note word and both table modes.
+   Here, in one PMONEY run, every MIDI note's lookup at the handler site and
+   the lookup in mute_note_on_wrapper (mute_pad_of_note) return the same
+   pad, in both table modes, and the stock routine is never entered for
+   these notes (all below 80h).  The only direct writer of the mode byte
+   DS:8063 zeroes it at start-up (image 0x04ABF), so for the second pass
    emu/lua/pad_mode_inject.lua sets it and fills the 64-byte table at 8064
-   (reversed notes, a duplicate, a missing note, a byte >= 80h).  Both
-   lookups read that same memory; this tests their equivalence, not when
-   the OS uses the table.
+   (reversed notes, a duplicate, a missing note, a byte >= 80h).
 """
 from __future__ import annotations
 
@@ -37,7 +40,9 @@ LAYER = 0x21274                 # 3.16 image offset of the note-on layer (Vailix
 LAYER_LEN = 1927
 RUNTIME = (0x2183, 0x2231)      # 3.16 image: linked copy of F800:20F7..21A5
 BIOS_RUNTIME = (0x7A0F7, 0x7A1A5)
-STOCK_LOOKUP_RETURN = 0x30870   # after CALLF 301D:003B in the MIDI note handler (image 0x3086B)
+STOCK_LOOKUP_RETURN = 0x30870   # after the lookup CALLF in the MIDI note handler (image 0x3086B)
+LOOKUP_SITES = (0x3086B, 0x3266)    # P4: both name pad_lookup_far
+STOCK_LOOKUP = 0x3020B          # T_D9F2_003D = 301D:003B
 MODE = 0x8063                   # 3.16 DGROUP: pad slot notes from the 8064 table while non-zero
 NOTES = [0x10, 0x22, *range(0x23, 0x63), 0x63, 0x7F]
 FIRST, SECOND, GAP = 68.0, 80.0, 0.1
@@ -84,6 +89,12 @@ class PmoneyNoteOn(unittest.TestCase):
             mine[jmp + 1:jmp + 5] = ref[jmp + 1:jmp + 5]            # compare all else byte for byte
         self.assertEqual(bytes(mine), bytes(ref))
 
+    def test_lookup_sites_call_the_cave(self) -> None:
+        image = self.p.relocated_image()
+        want = b"\x9a" + struct.pack("<HH", self.syms["pad_lookup_far"], self.p.cave_segment)
+        for site in LOOKUP_SITES:
+            self.assertEqual(image[site:site + 5], want, f"image 0x{site:05X}")
+
     def test_cave_lookup_agrees_with_stock_in_both_modes(self) -> None:
         RUNS.mkdir(parents=True, exist_ok=True)
         tone = RUNS / "TEST.SND"
@@ -106,7 +117,8 @@ class PmoneyNoteOn(unittest.TestCase):
         dg = self.p.dgroup_segment
         trace = RUNS / "lookup.trace"
         spec = (f"{cave_at:X}=CAVE,pb6:4,a{dg:04X}:{MODE:04X}:1;"
-                f"{self.p.image_phys(STOCK_LOOKUP_RETURN):X}=STOCK,s0:2,a{dg:04X}:{MODE:04X}:1")
+                f"{self.p.image_phys(STOCK_LOOKUP_RETURN):X}=STOCK,s0:2,a{dg:04X}:{MODE:04X}:1;"
+                f"{self.p.image_phys(STOCK_LOOKUP):X}=OLD,s4:2")
         end = SECOND + len(NOTES) * GAP + 1.0
         run(self.p.bios, [end], RUNS / "run", floppy=image, rompath=self.p.rompath,
             panel=write_smf(RUNS / "panel.mid", panel),
@@ -120,6 +132,8 @@ class PmoneyNoteOn(unittest.TestCase):
             f = line.split()
             if f[0] != "H":
                 continue
+            if f[2] == "OLD":
+                self.fail(f"stock lookup 301D:003B entered: {line}")
             ax = int(f[4], 16)
             items = dict(x.split("=", 1) for x in f[16:])
             mode = int(next(v for k, v in items.items() if k.startswith("a")), 16)

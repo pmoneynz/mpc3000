@@ -69,6 +69,10 @@ audition:
         cmp ax, [cs:aud_start]
         jbe .done
 .bounds:
+        ; The playback task must not start a sequenced voice of this sound
+        ; while its record holds the audition range: hold the playback lock
+        ; (its tick only tests BUSY at entry, so the call below cannot wait on it).
+        inc byte [BUSY]
         mov ax, SND_SEG
         RELOC_PREV
         mov es, ax
@@ -106,6 +110,7 @@ audition:
         mov dx, [cs:aud_saved_end+2]
         mov [es:si+0x18], ax
         mov [es:si+0x1A], dx
+        dec byte [BUSY]
 .done:  pop es
         pop ds
         popa

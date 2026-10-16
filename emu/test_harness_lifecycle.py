@@ -10,7 +10,18 @@ Covers (notes/wave_zones.md "State lifetime", notes/wave_chop.md hooks):
   path: the pair is clamped between its outer neighbours);
 - A -> B -> A sound selection on field 0 (B99A:04DB commit hook);
 - deleting the map's source sound, and another sound, on Program/Sounds 7
-  (D0C0:0B19 prologue hook).
+  (D0C0:0B19 prologue hook);
+- TEMPORARY999 (made by Do COPY ZONE-> TEMP) across the waveform view: the
+  stock page exit (3.16 0B72:1212, Vailixi B99A:159E) deletes it whenever
+  [bp-1] != 0, and a waveform Help / Exit leaves the page only to re-enter
+  it.  On 3.16 PMONEY replaces the exit's lookup (zones_exit_temp, patch at
+  image 0xC932) and keeps TEMPORARY999 while zones_resume is set
+  (``temp_kept_by_view``; before 2026-10-16 Help then Exit deleted it, audit
+  B1, MAME); leaving Edit Sound for the main screen still deletes it, as
+  stock does (``temp_deleted_on_leave``, and the end of ``temp_kept_by_view``).
+  zones_exit_temp exists on 3.16 only (``%ifdef PROFILE_316``): on the
+  capture profile Exit still deletes TEMPORARY999 (MAME, 2026-10-16), so the
+  keep assertion is checked on 3.16 only (TEMP_KEPT_BY_VIEW).
 
 Payloads come from emu.harness: capture for every case, generic for GENERIC,
 and every case on the 316 profile (WAVE316.SYS on OS 3.16; one BIOS set per
@@ -56,6 +67,8 @@ OPS_316 = [{1: "ZONE->NEW SOUND ", 7: "CROP SOFT ST-END"}.get(k, op) for k, op i
 # after <Load> at 39.0 s, harness.TIMELINE_316).  The view opens 7 s after the
 # second <Load> (130 KB STEREO1: 6.0 s on 3.16).
 FIRST_LOADED, FIRST_LOADED_316 = 4.5, 5.0
+# Profiles whose waveform Exit keeps TEMPORARY999 (zones_exit_temp, 3.16 only).
+TEMP_KEPT_BY_VIEW = ("316",)
 SECOND_LOADED = 7.0
 
 
@@ -116,6 +129,15 @@ class Lifecycle(h.EmuSuite):
             cases[name] = h.Case(events=h.wave_events(events + taps((V + 19, "help")), profile=profile),
                                  times=[V + 6, V + 18, V + 21], files=[(one, "TEST.SND")],
                                  env={"SNDDUMP_PCM": "0"})
+        # TEMPORARY999: exit the view, Right x16 to Do: (COPY ZONE-> TEMP), Do.
+        copy_temp = stock_field(V + 1, 16) + taps((V + 9, "soft4"))
+        cases["temp_kept_by_view"] = h.Case(
+            events=h.wave_events(copy_temp + taps((V + 13, "help"), (V + 18, "soft4"), (V + 23, "main_screen")),
+                                 profile=profile),
+            times=[V + 8, V + 12, V + 17, V + 22, V + 27], files=[(one, "TEST.SND")], parts=("wave_zones",))
+        cases["temp_deleted_on_leave"] = h.Case(
+            events=h.wave_events(copy_temp + taps((V + 13, "main_screen")), profile=profile),
+            times=[V + 8, V + 12, V + 17], files=[(one, "TEST.SND")], parts=("wave_zones",))
         _, VA = two_sound_events(profile)
         cls.VA[profile.label] = VA
         # A -> B -> A on field 0, then reopen.
@@ -255,6 +277,35 @@ class Lifecycle(h.EmuSuite):
                 self.assertEqual(r[VA + 19]["bounds"][:5], FOUR)
                 names = [x["name"] for x in sound_records(d, VA + 19).values()]
                 self.assertEqual(names, ["AAA"])                    # BBB really deleted
+
+    def temp_names(self, d: Path, t: float) -> list[str]:
+        return [r["name"] for r in sound_records(d, t).values()]
+
+    def test_temp_kept_by_view(self):
+        for prof, d, screens in self.each("temp_kept_by_view"):
+            with self.subTest(profile=prof):
+                V = self.view(prof)
+                self.assertEqual(self.temp_names(d, V + 8), ["TEST"])
+                self.assertIn("Do:COPY ZONE-> TEMP", screens[0]["rows"][5].replace(".", " "))
+                self.assertEqual(self.temp_names(d, V + 12), ["TEST", "TEMPORARY999"])
+                # Help opened the view; Soft Key 4 Exit returned to the page.
+                self.assertIn("mode=32", screens[2]["head"])
+                self.assertEqual(self.temp_names(d, V + 17), ["TEST", "TEMPORARY999"])
+                self.assertIn("Edit Snd:TEST", screens[3]["rows"][0])
+                if self.profiles[prof].name in TEMP_KEPT_BY_VIEW:
+                    self.assertEqual(self.temp_names(d, V + 22), ["TEST", "TEMPORARY999"])
+                # Leaving Edit Sound afterwards still deletes it.
+                self.assertNotIn("Edit Snd", screens[4]["rows"][0])
+                self.assertEqual(self.temp_names(d, V + 27), ["TEST"])
+
+    def test_temp_deleted_on_leave(self):
+        for prof, d, screens in self.each("temp_deleted_on_leave"):
+            with self.subTest(profile=prof):
+                V = self.view(prof)
+                self.assertEqual(self.temp_names(d, V + 8), ["TEST"])
+                self.assertEqual(self.temp_names(d, V + 12), ["TEST", "TEMPORARY999"])
+                self.assertNotIn("Edit Snd", screens[2]["rows"][0])
+                self.assertEqual(self.temp_names(d, V + 17), ["TEST"])
 
 
 if __name__ == "__main__":

@@ -534,6 +534,7 @@ mute_states:      times MUTE_STORAGE_ALL_BYTES db 0
 ; the same call.  mute_staging stays at mute_state_bx(24) (test_mute_range).
 mute_staging:
 cave_pool:        times 4 * COLS + 28 db 0
+cave_pool_end:
 mute_read_header  equ cave_pool + MUTE_STORAGE_ALL_BYTES
 %else
 mute_read_header: times MUTE_STORAGE_HEADER_BYTES db 0

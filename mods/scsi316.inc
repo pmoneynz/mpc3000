@@ -84,6 +84,10 @@ scsi_scan_reset:
 ; Adds the two choice fields on rows 2 and 3 before the stock unit (row 4) and
 ; timeout (row 5) fields.  Keeps SI, DI, BP, DS.
 scsi_page_rows:
+        ; The stock page re-renders after <Make active> without resetting its
+        ; field list: rebuild it on every pass, or the rows are added again
+        ; and the cursor index lands on a duplicate.
+        mov word [FIELD_PTR], FIELD_FIRST
         mov al, 2
         call du_at
         push byte 3

@@ -21,6 +21,15 @@ CFB3:0008 = 20DA:000E, note-off stop call CFB3:0125 = 20DA:012B) and the
 voice allocator CF37:0002 = 205E:0008 (Cutoff stop call CF37:0071 =
 205E:0077).  3.16 boots later and its start-up loader takes longer over the
 529 KB TEST.SND, so every time from Main Screen on is shifted by shift().
+
+Stale tags (case ``stale``): a voice that ends by itself is stopped by stock
+code (3.16 234D:0064 writes the owner byte DS:E286+ch = FFh; Vailixi
+D21F:006C, DS:E599; capture E597), which never clears the cave's tag.  The
+allocation wrapper's choke scan therefore skips a channel whose stock owner
+byte is FFh and drops its tag (MUTE_OWNER, mods/profile_*.inc).  Before
+that fix a grouped hit stopped every ended channel again: 40 short notes on
+pad 1, then pad 2 of the same group with all channels idle, made 32 cave
+stops on 3.16 (audit 2026-10-16 F1, MAME).
 """
 from __future__ import annotations
 
@@ -56,6 +65,9 @@ MAIN = 72.0             # Main Screen after the PGM load; later times are relati
 # Soft Key 4 cancels it here; the Disk keys then follow profile.timeline.
 STARTUP_316 = 51.0
 NOTE_EVENT_SEG_316 = 0x20DA     # CFB3: entry 20DA:000E (CALLF sites 0x311C6, 0x33B15, 0x4104E)
+# stale case (Vailixi times, moved by shift()): MIDI notes on MIDI In 1.
+STALE_NOTES, STALE_FIRST, STALE_PAD2, STALE_PAD1 = 40, 74.5, 77.5, 77.6
+STALE_FRAMES = 8820             # 0.2 s at 44.1 kHz
 
 
 @dataclass(frozen=True)
@@ -271,6 +283,16 @@ class MuteVoice(unittest.TestCase):
         add("duplicate_alias", enabled=True, groups={0: 1, 1: 2}, duplicate=True,
             hits=[(1, 75.0, 3.0), (2, 75.5, 3.0)])
 
+        # Stale tags: 40 notes on pad 1 (a 0.2 s sound, 25 ms apart) end by
+        # 75.7; pad 2 of the same group at 77.5 finds every tagged channel
+        # idle.  Pad 1 at 77.6 then hits while pad 2's voice still sounds.
+        short = runs / "SHORT.SND"
+        short.write_bytes(snd("TEST", [sine(STALE_FRAMES)]))
+        add("stale", enabled=True, groups={0: 1, 1: 1}, hits=[], sound=short,
+            external_midi=[(STALE_FIRST + i * 0.025, bytes((0x90, 0x23, 0x7F))) for i in range(STALE_NOTES)]
+            + [(STALE_PAD2, bytes((0x90, 0x24, 0x7F))), (STALE_PAD1, bytes((0x90, 0x23, 0x7F)))],
+            end=79.0)
+
         # Tag pad 1 while disabled/Off, then enable the program and assign its
         # group through the real UI before pad 2 arrives.
         live = []
@@ -439,6 +461,30 @@ class MuteVoice(unittest.TestCase):
                                      for event in self.events(p, "program_isolation", "STOP")))
                 programs = [event["value"] for event in self.allocations(p, "program_isolation")]
                 self.assertEqual(set(programs), {1, 2})
+
+    def test_ended_voices_are_not_stopped_again(self) -> None:
+        for p, _, s in self.each():
+            with self.subTest(profile=p):
+                starts = self.events(p, "stale", "KEYON")
+                self.assertEqual(len(starts), STALE_NOTES + 2)
+                pad2, pad1 = starts[-2:]
+                self.assertGreater(pad2["t"], STALE_PAD2 + s)
+                self.assertLess(pad2["t"], STALE_PAD1 + s)
+                self.assertGreater(pad1["t"], STALE_PAD1 + s)
+                # Positive control: the 40 pad-1 voices left program-1 / pad-0
+                # tags on several channels, and the last of those voices had
+                # ended (0.2 s sound) well before pad 2 arrived.
+                tagged = {t["ch"] for t in self.firmware_tags(p, "stale")
+                          if t["table"] == "program" and t["value"] == 1 and t["t"] < STALE_PAD2 + s}
+                self.assertGreaterEqual(len(tagged), 2, tagged)
+                self.assertLess(starts[STALE_NOTES - 1]["t"] + STALE_FRAMES / 44_100 + 1.0, pad2["t"])
+                # Pad 2 stops nothing (every pad-1 channel is idle) ...
+                stops = self.custom_stops(p, "stale")
+                self.assertEqual([e for e in stops if e["t"] < STALE_PAD1 + s], [])
+                # ... and pad 1 still chokes pad 2's sounding voice, once.
+                self.assertEqual([e["ch"] for e in stops], [pad2["ch"]])
+                self.assertGreater(stops[0]["t"], STALE_PAD1 + s)
+                self.assertLess(stops[0]["t"], pad1["t"])
 
 
 if __name__ == "__main__":

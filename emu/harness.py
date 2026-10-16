@@ -258,7 +258,7 @@ def cave_copy_end(map_path: Path) -> int:
 # Equates of profile_316.inc that carry a generic address but are not DGROUP
 # offsets (segments and a code offset).
 _NOT_DGROUP_316 = {"SND_SEG", "DGROUP_SEG", "PLAYER_SEG", "CAVE_SEG", "CAVE_HOME", "PLAYER_CE9_RET",
-                   "POOL_INIT_IMM"}
+                   "POOL_INIT_IMM", "RING_SEG"}
 
 
 def dgroup316_table() -> dict[int, int]:

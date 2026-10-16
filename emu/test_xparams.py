@@ -12,6 +12,14 @@ Every case first records a short sequence (Rec + Play through the driver's
 inputs, STOP), because PLAY on an unused sequence starts no run.
   - Stop all sounds on STOP: STOP after a run calls the stop-all-voices
     routine (3.16 20ED:0D99, T_CFC6_0D93; fork trace point), else not.
+  - Allow seq change while running (row 2, default ON; labelled "Warn on seq
+    change while running" before 2026-10-16, audit F-5): with record-ready
+    running, selecting sequence 2 shows the stock Attention box, the
+    transport stops and sequence 2 is selected (ON); OFF refuses the change
+    and the transport keeps running, as Vailixi does.  Transport state is
+    read from the screen's Now counter and DS:A49B (mods/profile_316.inc
+    CHOP_SEQ_STATE, a HYPOTHESIS there; 06h running, 0 stopped in these
+    runs), through emu/lua/dg_words316.lua (read-only).
 
 The Edit Sound safe lock and mute are covered by emu/test_wave_chop_safety.py.
 """
@@ -28,6 +36,11 @@ DEFAULTS = ["OFF", "ON", "OFF", "OFF", "ON", "ON"]
 # Rec + Play through MAME's inputs (the driver's panel HLE), as in
 # emu/test_wave_chop_safety.py: records into sequence 1 until STOP.
 RECORD = [(51.5, "Y7", "Rec", 0.3), (51.6, "Y7", "Play", 0.1)]
+SEQ_STATE = 0xA49B
+# Record-ready run: STOP the recording, PLAY (record ready stays on), then
+# sequence 2 typed on the Seq field.  ON: <Exit> (Soft Key 1) leaves the Attention box.
+SEQ_CHANGE = h.taps((56.0, "stop"), (57.5, "play"), (59.0, "2"), (59.3, "enter"))
+SEQ_TIMES = [58.8, 59.8, 61.0, 62.5, 64.0]
 
 
 def set_row(row: int) -> list:
@@ -60,6 +73,10 @@ class ExtraSettings(unittest.TestCase):
                 "stay_mixer_off": (load + mixer, [60.0, 62.0], None),
                 "stop_on": (load + set_row(1) + stop, [61.5], p.target("T_CFC6_0D93").phys),
                 "stop_off": (load + stop, [61.5], p.target("T_CFC6_0D93").phys),
+                "seq_on": (h.taps((p.timeline.cancel, "soft4")) + SEQ_CHANGE + h.taps((61.5, "soft1")),
+                           SEQ_TIMES, None),
+                "seq_off": (h.taps((p.timeline.cancel, "soft4")) + set_row(2) + SEQ_CHANGE, [50.2] + SEQ_TIMES,
+                            None),
             }
             for name, (events, times, trace) in cases.items():
                 jobs[(p.label, name)] = (p, name, events, times, trace)
@@ -68,17 +85,22 @@ class ExtraSettings(unittest.TestCase):
             p, name, events, times, trace = job
             runs = RUNS / p.label
             runs.mkdir(parents=True, exist_ok=True)
-            env = {}
+            env, parts = {}, []
             if trace:
                 env = {"NEC_TRACE_FILE": str(runs / f"{name}.trace"), "NEC_TRACE_FROM": "53.0",
                        "NEC_TRACE_AT": f"{trace:X}=STOPALL"}
+            if name.startswith("seq_"):
+                env, parts = {"DG_BYTES": f"{SEQ_STATE:X}"}, ["dg_words"]
             press = [] if name == "page" else RECORD
             screens = h.run_case(p, runs, name, times=times, events=events, files=[(src, "SINE441.SND")],
-                                 parts=[], env=env, press=press or None)
+                                 parts=parts, env=env, press=press or None)
             hits = None
             if trace:
                 hits = sum(1 for line in (runs / f"{name}.trace").read_text().splitlines()
                            if line.startswith("H ") and float(line.split()[1]) >= 59.0)
+            if name.startswith("seq_"):
+                from emu.test_scsi316 import dg_bytes
+                hits = {t: v[SEQ_STATE] for t, v in dg_bytes(runs / name).items()}
             return screens, hits
 
         cls.results = h.run_parallel(jobs, execute)
@@ -93,6 +115,7 @@ class ExtraSettings(unittest.TestCase):
                 self.assertIn("Extra Settings", rows[0])
                 self.assertEqual([r[37:40].strip() for r in rows[1:7]], DEFAULTS)
                 self.assertTrue(rows[1].startswith("Stop all sounds on sequencer STOP:"))
+                self.assertTrue(rows[2].startswith("Allow seq change while running:"), rows[2])
                 self.assertTrue(rows[6].startswith("Lock Edit Sound <Do> while running:"))
                 self.assertIn("<Do it>", rows[7])
 
@@ -122,6 +145,36 @@ class ExtraSettings(unittest.TestCase):
         for label, (_, hits) in self.each("stop_off"):
             with self.subTest(set=label, setting="OFF"):
                 self.assertEqual(hits, 0)
+
+    def test_allow_seq_change_while_running(self) -> None:
+        def now(screen):
+            return screen["rows"][6].replace(".", " ")
+        for label, (screens, state) in self.each("seq_on"):
+            with self.subTest(set=label, setting="ON"):
+                rows = [[r.replace(".", " ") for r in s["rows"]] for s in screens]
+                self.assertIn("Record Ready", rows[0][0])
+                self.assertIn("Seq: 1-SEQ01", rows[0][1])
+                self.assertNotEqual(state[58.8], 0)                         # running before the change
+                self.assertIn("Attention", rows[1][0])
+                self.assertIn("To change sequences while playing", rows[1][1])
+                self.assertEqual(state[59.8], 0)                            # the transport stopped
+                # <Exit>: sequence 2 selected, the transport still stopped.
+                self.assertIn("Play/Record", rows[3][0])
+                self.assertIn("Seq: 2-", rows[3][1])
+                self.assertEqual(now(screens[3]), now(screens[4]))
+                self.assertEqual((state[62.5], state[64.0]), (0, 0))
+        for label, (screens, state) in self.each("seq_off"):
+            with self.subTest(set=label, setting="OFF"):
+                page, *screens = screens
+                self.assertIn("Allow seq change while running:      OFF", page["rows"][2].replace(".", " "))
+                state = {t: v for t, v in state.items() if t in SEQ_TIMES}
+                rows = [[r.replace(".", " ") for r in s["rows"]] for s in screens]
+                for k, screen in enumerate(rows):
+                    self.assertIn("Record Ready", screen[0], k)            # no Attention box
+                    self.assertIn("Seq: 1-SEQ01", screen[1], k)            # the change is refused
+                nows = [now(s) for s in screens]
+                self.assertEqual(len(set(nows)), len(nows), nows)          # the transport keeps running
+                self.assertTrue(all(v != 0 for v in state.values()), state)
 
 
 if __name__ == "__main__":

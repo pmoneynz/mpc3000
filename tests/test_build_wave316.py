@@ -24,15 +24,29 @@ from mods import buildkit as kit  # noqa: E402
 from mods import route_c as rc  # noqa: E402
 
 HAVE_TOOLS = shutil.which("nasm") is not None and shutil.which("ndisasm") is not None
-SYS_SHA256 = "23602133059f0f9880618c4e5faf665d198b9b0f36ecd4a1da2db46b95ad7855"
-IMG_SHA256 = "db13a7a0959d3960c66d0a5c6ea27b1044afea5a77cb1380c315ae2baab10a3c"
-CAVE_SHA256 = "56846b9538876294e453a27b3a12f1215fc8cb5df00019e6701deb640dc419fb"
+SYS_SHA256 = "90ccc730d6cd7b64bbff7a6b3d780243964a334410bf68f0f660df35d3e757c0"
+IMG_SHA256 = "fbb438b0650d09e8f874dc85e88f72f76e90b06ae66b1ce4fdd5b4a997fb6f00"
+CAVE_SHA256 = "0d4f13fa52369e27b78fcf80df4827b58598e074fe891813800dc7c969ed64e2"
 # Size budget (notes/performance.md, cave size): the 3.08/3.11 EPROMs load at
 # L = 7000, so the cave home 7E00 must end below F400h: 24,576 bytes.  Lower
 # HOME_BUDGET after each size step; raise it only with a note.
 HOME_LIMIT_L7000 = 0xF4000 - 0x70000 - 0x7E00 * 16
-HOME_BUDGET = 19_200            # bytes entry316 copies to the home
-HOME_HEADROOM = 4_096           # kept free under the 3.08/3.11 limit for future features
+CAVE_HOME_IMAGE = 0x7E00 * 16      # image offset of the cave home (relative paragraph 7E00)
+HOME_BUDGET = 21_140            # bytes entry316 copies to the home (19,200 after the size
+                                # pass; +350 for the audit and stock-bug fixes, 2026-10-16;
+                                # 20,690 with the performance pass, perf316.inc and the view's
+                                # fast paths without S6 and D1a, 2026-10-16; 21,140 with the
+                                # crash fixes C1-C3 and scsistack316, 2026-10-17)
+HOME_HEADROOM = 3_400           # kept free under the 3.08/3.11 limit for future features
+                                # (4,096 before the performance pass)
+# Stock 3.16's SCSI file-list reader 2AB2:04F7 does SUB SP,100Eh on the UI stack (SS rel
+# 73E1) entered with SP ~ 07D2: SP wraps to ~F7C4 (image ~0x835D4) and the calls below the
+# frame write lower still, into the bytes above the cave home.  Deepest write seen image
+# 0x8350A (Erase all on SCSI), typically 0x83564, stock and PMONEY on every BIOS set (monkey
+# soak 2026-10-16, failure 2).  scsistack316 now runs that reader on a private stack, but it
+# falls back to the stock frame when the private stack is busy or missing, so the home
+# (image 0x7E000 + copied) must still end at or below 0x83300.
+STACK_WRAP_LIMIT = 0x83300
 HOOK = 0x2298F                  # chop_sound_delete hook, on T_D0C0_0B19 = 21E7:0B1F
 
 
@@ -47,16 +61,20 @@ class PinnedBuild(unittest.TestCase):
             self.assertEqual(kit.sha256((out / "WAVE316.img").read_bytes()), IMG_SHA256)
             self.assertEqual(kit.sha256((out / "wave316.cave.bin").read_bytes()), CAVE_SHA256)
         sim = m["simulation"]
-        self.assertEqual((sim["6900"]["pool_end"], sim["7000"]["pool_end"]), ("68FF", "6FFF"))
-        self.assertEqual((sim["copy_words"], sim["halt_above"]), ("257C", "714F"))
+        self.assertEqual((sim["6900"]["pool_end"], sim["7000"]["pool_end"]), ("67DF", "6EDF"))
+        self.assertEqual((sim["copy_words"], sim["halt_above"]), ("294A", "70D5"))
         copied = 2 * int(sim["copy_words"], 16)
         self.assertLessEqual(copied, HOME_BUDGET, f"cave home {copied} B over budget")
         self.assertGreaterEqual(HOME_LIMIT_L7000 - copied, HOME_HEADROOM)
+        self.assertLessEqual(CAVE_HOME_IMAGE + copied, STACK_WRAP_LIMIT,
+                             "cave home reaches the SCSI file-list stack wrap (2AB2:04F7)")
         # +6 banner316; S1a, compress, sysinfo316, editdo, xparams316, tc316,
         # eraseall316, syncout316 and scsi316 (Vailixi ports,
         # notes/vailixi_features.md) bring 280 and 46; diskutil316 +60 and +2;
-        # the size pass (push cs, shared ui316 helpers) 251 and 36
-        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (251, 36))
+        # the size pass (push cs, shared ui316 helpers) 251 and 36; the audit
+        # and stock-bug fixes (bugfix316.inc) 259 and 35; the performance pass
+        # (perf316.inc, R5 so_mtc_send, the view's fast paths) 267 and 40
+        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (276, 41))
 
 
 @unittest.skipUnless(HAVE_TOOLS, "needs nasm and ndisasm")
@@ -105,19 +123,24 @@ class Checks(unittest.TestCase):
                                self.used if used is None else used, **kw)
 
     def test_unmutated_inputs_pass(self) -> None:
-        self.assertEqual(self.verify()["7000"]["pool_end"], "6FFF")
+        self.assertEqual(self.verify()["7000"]["pool_end"], "6EDF")
         self.assertEqual(len(self.check_targets()), len(self.used))
 
     # A. entry316 is run, not assumed.
+
+    def test_pool_leaves_the_scsi_reader_stack(self) -> None:
+        # entry316 lowers the pool end by SCSI_STK_PARAS (scsistack316.inc's stack)
+        with self.assertRaisesRegex(ValueError, "pool end 68FF, expected 67DF"):
+            self.verify(**self.poke_op("pool_room", 0))
 
     def test_cave_end_label_is_the_cave_size(self) -> None:
         with self.assertRaisesRegex(ValueError, "cave_end label"):
             self.verify(labels=dict(self.labels, cave_end=self.labels["cave_end"] - 2))
 
     def test_entry316_must_assemble_to_the_modelled_routine(self) -> None:
-        at = self.ops["pool_limit"][0] + 2              # JAE .pool_done -> JB
-        with self.assertRaisesRegex(ValueError, "entry316 assembles 7203 here, expected 7303"):
-            self.verify(**self.poke(at, b"\x72"))
+        at = self.ops["pool_limit"][0] + 2              # JB .below -> JAE
+        with self.assertRaisesRegex(ValueError, "entry316 assembles 7303 here, expected 7203"):
+            self.verify(**self.poke(at, b"\x73"))
 
     def test_copy_count_covers_the_cave(self) -> None:
         count = (len(self.cave) + 1) // 2

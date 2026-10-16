@@ -36,6 +36,13 @@ Stage 2:
   - f16: on a 32 MB board, the hyb5 disk with a 16,696,260-frame sound
     (33,392,558 bytes) in volume A: PMONEY loads it, saves it into volume B,
     and the saved file has every frame of the original;
+  - zero_leave: the src disk, mounted by the boot scan (1 volume); <Zero>,
+    <Zero now>, then a mode key (Disk) on the layout page and Disk 6 <Do it>.
+    A successful zero rescans: no partition is left mounted (PART_COUNT 0,
+    read by emu/lua/dg_words316.lua), Disk offers no "Select disk", Save
+    Parameters offers no SCSI DISK, and the save does not touch the zeroed
+    disk.  Before the fix the old mount survived and PARAMS.PAR was written
+    into the zeroed disk (audit 2026-10-16 F-2, MAME);
   - stock: the unmodified M3K316.SYS with the hyb5 disk: Disk 9 4 <Make
     active> searches until the time-out and shows box FF48 ("No SCSI device
     was found"), as for a blank disk; no partition is mounted and the disk
@@ -53,7 +60,7 @@ from emu import harness as h
 from emu.mpc3k import run
 from emu.panel import write_smf
 from emu.snd import disk as floppy
-from emu.test_scsi316 import fat_file
+from emu.test_scsi316 import dg_bytes, dg_env, fat_file
 
 RUNS = h.BUILD / "emu" / "diskutil-tests"
 CYL = 16065
@@ -207,6 +214,12 @@ def big_sound() -> bytes:
 # Cancel the boot scan (an unrecognised disk is searched until the time-out),
 # then Disk 9 4 <Make active>: a scan that mounts unit 0 if it can.
 MAKE_ACTIVE = h.taps((h.CANCEL_SCSI_316, "soft4"), (35, "disk"), (36, "9"), (37.5, "4"), (39, "soft1"))
+# zero_leave: the boot scan mounts the src disk (~39 s); Disk 9 3, AUTO (unit 0),
+# <Zero>, <Zero now> (9 MiB: done well before 66 s); then Disk (a mode key) on
+# the layout page, 6 (Save Parameters), <Do it>.
+ZERO_LEAVE = h.taps((40, "disk"), (41, "9"), (42.5, "3"), (45, "soft1"), (47, "soft3"), (49, "soft1"),
+                    (70, "disk"), (71.5, "6"), (74.5, "soft1"))
+ZERO_LEAVE_TIMES = [44.0, 48.0, 69.0, 71.0, 74.0, 80.0]
 
 
 class DiskUtil316(unittest.TestCase):
@@ -253,8 +266,9 @@ class DiskUtil316(unittest.TestCase):
                 screens = run(p.bios, times, runs / name, floppy=img, panel=write_smf(runs / f"{name}.mid", events),
                               rompath=p.rompath, extra=scsi(*paths), words=WORDS)
             else:
-                screens = h.run_case(p, runs, name, times=times, events=events, parts=[], snapshot=False,
-                                     extra=scsi(*paths), words=WORDS, **kwargs)
+                kwargs = dict(kwargs)
+                screens = h.run_case(p, runs, name, times=times, events=events, parts=kwargs.pop("parts", []),
+                                     snapshot=False, extra=scsi(*paths), words=WORDS, **kwargs)
             return {"screens": screens, "before": before, "after": [path.read_bytes() for path in paths],
                     "words": words(runs / name, p.dgroup_segment)}
 
@@ -294,6 +308,8 @@ class DiskUtil316(unittest.TestCase):
             job2("mount_vx", [("mount_vx.hd", "vx_model.hd")], MOUNT + h.dial(4, 43.0) + h.taps((47, "disk"), (48.5, "6")),
                  [42.5, 45.0, 50.0])
             job2("stock", [("stock.hd", "hyb5.hd")], MAKE_ACTIVE, [41.0, 84.0], stock=True)
+            job2("zero_leave", [("zero_leave.hd", src)], ZERO_LEAVE, ZERO_LEAVE_TIMES,
+                 parts=["dg_words"], env=dg_env([PART_COUNT, DISK_LAYOUT]))
 
         cls.res.update(h.run_parallel(stage2, execute))
 
@@ -418,6 +434,30 @@ class DiskUtil316(unittest.TestCase):
                 for lba in (0, 1, 63, 126, 4095, 4096, 9000, n // 2, n - 2, n - 1):
                     self.assertEqual(sector(image, lba), bytes(512), f"LBA {lba}")
                 self.assertEqual(image, bytes(len(image)))
+
+    def test_zero_then_leaving_the_layout_page_unmounts(self) -> None:
+        for label in self.labels():
+            with self.subTest(set=label):
+                r = self.get(label, "zero_leave")
+                s = r["screens"]
+                ram = dg_bytes(RUNS / label / "zero_leave")
+                mounted, *_, saved = (ram[t] for t in ZERO_LEAVE_TIMES)
+                # Positive control: the boot scan had mounted the src disk's volume.
+                self.assertEqual(mounted[PART_COUNT], 1)
+                self.assertTrue(any(r["before"][0]))
+                self.assertIn("Zero Hard Disk", s[1]["rows"][0])
+                self.assertIn("Choose the partition layout:", text(s[2]))
+                # The zero rescanned: nothing mounted from the layout page on.
+                for t in ZERO_LEAVE_TIMES[2:]:
+                    self.assertEqual(ram[t][PART_COUNT], 0, t)
+                self.assertIn("Select option:", s[3]["rows"][7])         # the Disk page
+                self.assertNotIn("Select disk", text(s[3]))
+                self.assertIn("Save Parameters", s[4]["rows"][0])
+                self.assertNotIn("SCSI DISK", text(s[4]))
+                self.assertNotIn("SCSI DISK", text(s[5]))
+                self.assertEqual(saved[PART_COUNT], 0)
+                # The save went elsewhere: the zeroed disk is still all zero.
+                self.assertEqual(r["after"][0], bytes(len(r["after"][0])))
 
     def test_zero_stop_leaves_a_prefix(self) -> None:
         for label in self.labels():

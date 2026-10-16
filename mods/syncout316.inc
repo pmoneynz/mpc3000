@@ -15,7 +15,8 @@
 ;   CMP BYTE [9331],0 / JNZ 00B4   (7 bytes; 2 NOPs follow the JMPF).
 ; In: BL = port 0..5 (0 off, 1-4 OUT A-D, 5 all four), CL = byte, DS = DGROUP,
 ; caller's CALLF frame.  Out: as stock.  Clobbers AX, BX, DX, flags (stock: the
-; same).  CL kept.  Runs inside the tick ISR (after its STI).
+; same).  CL kept.  Called with IF = 0 from the tick ISR (MTC before its STI,
+; F8 after its CLI) and with IF = 1 from the UI task (start/stop/continue).
 so_rt_send:
         cmp byte [SO_ERR], 0
         jne .ret
@@ -25,15 +26,34 @@ so_rt_send:
         ja .ret                         ; stock would index past its tables
         FJMP T_DC5B_0097                ; dec bx / js 00B4 / ...: stock single port, RETF
 .ret:   retf
-.all:   mov bx, SO_RTQ                  ; real-time queues OUT A..D, 18h bytes apart
-.q:     FCALL T_DA09_0000               ; queue CL at DS:BX; keeps BX, CX, SI
-        add bx, 0x18
+        ; All four outputs under one interrupt-off section: the byte lands in
+        ; every ring before any tick can queue another (same order on every
+        ; output), and the tick ISR, which already runs with IF = 0 here,
+        ; pays no far calls.  Each ring insert is T_DA09_0000 (3033:000E)
+        ; inline: [bx] capacity, [bx+2] count, [bx+4] put index (counts down,
+        ; wraps at 0), data at [bx+8]; a full ring drops the byte, as stock.
+.all:   push si
+        pushf
+        cli
+        mov bx, SO_RTQ                  ; real-time queues OUT A..D, 18h bytes apart
+.q:     mov ax, [bx]
+        mov si, [bx+2]
+        cmp si, ax
+        jae .full
+        inc si
+        mov [bx+2], si
+        mov si, [bx+4]
+        or si, si
+        jnz .put
+        mov si, ax
+.put:   dec si
+        mov [bx+4], si
+        mov [bx+si+8], cl
+.full:  add bx, 0x18
         cmp bx, SO_RTQ + 4*0x18
         jb .q
         mov bx, SO_TXSH                 ; TE7774 control shadows, one per output
         mov dx, 0xC6
-        pushf
-        cli
 .o:     or byte [bx], 2                 ; transmitter interrupt on, as the stock path
         mov al, [bx]
         out dx, al
@@ -42,32 +62,40 @@ so_rt_send:
         cmp dl, 0xE6
         jb .o
         popf
+        pop si
         retf
 
 ; CALLF from the tick ISR 2C45:0851 (Vailixi D61A:084F, CL = F8h) and from the
 ; transport sender 32C6:012A (Vailixi DCA2:0128, CL = FAh/FBh/FCh), replacing
 ;   MOV BL,[7EAA] [/ XOR BH,BH] / CALLF 3286:0086   (11 / 9 bytes; NOPs follow).
+; Port 0 (off) returns at once with BX = FFFF, as the stock sender does for it
+; (SUB BH,BH / DEC BX / JS: RETF), without the far jump into it.
 so_clk_send:
         mov bl, [SO_CLK_PORT]
+        or bl, bl
+        jz .off
         cmp bl, 1
         jne so_rt_send
         test byte [SO_ALL], 1
         jz so_rt_send
         mov bl, 5
         jmp so_rt_send
-
-; CALLF from the tick ISR 2C45:013B (Vailixi D61A:0139), replacing
-;   MOV AL,[8310] / OR AL,AL   (5 bytes); the JNZ after it tests ZF (RETF keeps it).
-; Out: AL = MTC port for this frame (copied to [7038] by the stock code), ZF.
-so_mtc_port:
-        mov al, [SO_MTC_PORT]
-        cmp al, 1
-        jne .z
-        test byte [SO_ALL], 2
-        jz .z
-        mov al, 5
-.z:     or al, al
+.off:   mov bx, 0xFFFF
         retf
+
+; CALLF from the tick ISR's two MTC sends 2C45:0208 (F1h) and 2C45:021B (the quarter
+; frame) (Vailixi D61A:0206 / 0219), replacing CALLF 3286:0086 with BL = [7038], the
+; stock MTC port byte [8310] that 2C45:0149 copies each frame.  The effective port
+; is decided here, only when a quarter frame is sent, instead of on every tick at
+; 2C45:013B: OUT A plus SO_ALL bit 1 means all four.  [7038] has that one writer
+; and these two readers (3.16 image 0x2C599, 0x2C652, 0x2C667).
+so_mtc_send:
+        cmp bl, 1
+        jne so_rt_send
+        test byte [SO_ALL], 2
+        jz so_rt_send
+        mov bl, 5
+        jmp so_rt_send
 
 ; CALLF from the pending-MIDI routine 30C6:035C (Vailixi DA9B:035E), replacing
 ;   CALLF 3286:0039   for the Song Position Pointer (port word, count 3, buffer).
@@ -76,11 +104,15 @@ so_mtc_port:
 so_spp:
         push bp
         mov bp, sp
-        cmp byte [bp+12], 1
+        mov al, [bp+12]
+        cmp al, 5                       ; a stray 5 (Vailixi block) is all four too
+        je .all
+        ja .drop                        ; not a port: the stock sender would misindex
+        cmp al, 1
         jne .one
         test byte [SO_ALL], 1
         jz .one
-        push si
+.all:   push si
         mov si, 4
 .l:     push si                         ; OUT D .. OUT A
         push word [bp+10]
@@ -95,6 +127,9 @@ so_spp:
         retf
 .one:   pop bp
         FJMP T_DC5B_003B
+.drop:  xor ax, ax
+        pop bp
+        retf
 
 ; CALLF from the Sync screen 1E9A:0388 / 1E9A:0456 (Vailixi CD75:0383 / 0451),
 ; replacing the stock MIDI clock / MIDI time code choice field (22 bytes; NOPs

@@ -113,6 +113,20 @@ zones_reopen:
         popf
         ret
 
+%ifdef PROFILE_316
+; Replaces 0B72:[1212,121B) (Vailixi B99A:[159E,15A7)), the page exit's
+; TEMPORARY999 lookup.  A waveform Exit/Help leaves the page only to re-enter
+; it (zones_reopen armed zones_resume): keep TEMPORARY999 then.
+zones_exit_temp:
+        cmp byte [cs:zones_resume], 0
+        jne .keep
+        push ds
+        push EDITDO_TEMP_NAME
+        FCALL T_D0C0_0D17
+        FJMP T_B99A_15A7
+.keep:  FJMP T_B99A_15BE
+%endif
+
 ; Current source is rec/sound_index/len/wbase/stereo. Preserve all registers.
 ; A different descriptor identity starts a fresh whole-sound division.
 zones_enter:

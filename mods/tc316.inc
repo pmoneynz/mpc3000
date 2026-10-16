@@ -40,6 +40,14 @@ tc_grid_interval:
         mov al, [bx+TC_TICKS]
         retf
 
+; CALLF from the .PAR loader 2D62:006A (image 0x2D68A) in place of CALLF
+; 0F78:0136 (apply parameters).  The loaded block may hold a stock index whose
+; projection equals the live extended value's: force tc_grid_interval to
+; re-derive the extended value from the loaded one.
+tc_par_apply:
+        mov byte [TC_EXT], 0xFF
+        FJMP T_BDF1_012B
+
 %ifdef TC_REPEAT_GATE
 ; JMPF from the playback tick 422F:02B9 (Vailixi EC05:02A9), replacing
 ;   CMP BYTE [A4A2],0 / JZ 02D8   (7 bytes; 2 NOPs follow the JMPF)

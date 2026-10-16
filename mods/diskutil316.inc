@@ -534,8 +534,11 @@ sw_zero:
         mov di, [SCSI_ACTIVE]
         call xfer
         or ax, ax
-        jz .ret
-        cmp ax, 1
+        jnz .fail
+        call du_rescan              ; the zeroed disk is no longer what the OS mounted
+        xor ax, ax                  ; on to the layout page
+        jmp .ret
+.fail:  cmp ax, 1
         je .stop
         call du_box
 .stop:  call du_rescan              ; the active disk is no longer what the OS mounted

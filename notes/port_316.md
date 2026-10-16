@@ -244,6 +244,63 @@ host was loaded by other jobs). **PROVEN (trace)** for these cases only: a
 case whose assertions do not depend on the boot could still differ; boot-path
 suites set `SNAPSHOT = False`.
 
+## SCSI reader stack (2026-10-16, stock 3.16 defect, fixed in the cave)
+
+Addresses are relative 3.16 (image offset = `seg*16+off`, runtime logical =
+`L*16` + image offset, physical = `0x300000` + logical; 3.16 runs with the
+loader's third PGR and no `BRKXA`).
+
+**Defect (stock and PMONEY).** The SCSI partition reader `2AB2:04F7` (image
+`0x2B017`, Vailixi `D470:05B6`, same bytes) opens `PUSH BP / MOV BP,SP /
+SUB SP,100Eh`: a 4 KB sector buffer at `[bp-100Eh]` plus locals
+`[bp-0Eh..-2]`. With a SCSI disk active, Disk 7 enters it on the UI task with
+`SP = 07D2`, so `SP` wraps to `F7C2` and the frame and its callees write at
+`73E1:F6xx..FFFF` = image `0x835xx..0x83E0F` (deepest seen `0x8350A`), above
+3.16's extent (`0x7DFB0`) and inside the range the cave home grows into.
+
+| Fact | Evidence | Tag |
+|------|----------|-----|
+| UI task (create-table record 7, image `0x483CA`): `0281:0034`, `SS:SP 73E1:3E80` (16,000 bytes); task 6 is `73A2:03F0`, so UI `SS:0000` (image `0x73E10`) is task 6's initial-SP word (`FFFF`, written at image `0x40FE3`) | table bytes, init code | PROVEN |
+| Disk 7 page `077D:042D` (image `0x7BFD`) opens `SUB SP,3652h` (13,906 bytes), the only frame in 3.16 code above `100Eh` (12 frames of `400h` or more) | bytes, whole-code scan for `55 8B EC 81 EC` | PROVEN |
+| Chain at the low entry: `077D:045D` `CALLF 2033:000C` (function 0, media check) -> `2033:0028` `CALLF 2AB2:0767` -> `2AB2:076E` `PUSH CS / CALL 04F7`. Stack at entry: `[07D2]=0772 [07D4]=2AB2 [07D6]=002D [07D8]=2033 [07DA]=3E38 (BP) [07DC]=0462 [07DE]=077D`; Disk 7's frame base is `BP=3E38`, 0x48 bytes below the stack top. The UI stack is 13,998 bytes deep at entry, 13,906 of them Disk 7's frame; the reader then needs 109Ah more | MAME, `default` and `v308`, stock and PMONEY, one execution each (boot with the SCSI disk, Disk, 7) | PROVEN (this path) |
+| Other entries: `2AB2:047F` (in the scan `2AB2:03A5`, near) and `2AB2:076F`; `2AB2:0767` from image `0x11069` and `0x20358`; `2033:000C` from 51 call sites. Boot scan enters with `SP = 3E5A`, `3E1E`; Erase all on SCSI (Disk 7, Soft Key 2, 2, 1) with `0776` and `07D2` | static call search; MAME | callers PROVEN; depth at the other 50 `2033:000C` sites UNDETERMINED |
+| Wrapped writes: the stock reads (one block, 512 or 2048 bytes at `[bp-100Eh]`) stay in `F7C2..FFC1`; the callee frames and one IRQ entry reach `F6FA`. The SCSI data arrive by DMA (the write taps see them while other tasks run, e.g. `422F:0162`). PMONEY's `mnt_hybrid` reads LBA 63 into `[bp-100Eh+800h]` = `FFC2..01C1`, crossing into UI `SS:0000..01C1` (image `0x73E10..0x73FD1`): the UI stack's own free space below `SP`, plus task 6's initial-SP word at `0x73E10` (reader of that word UNDETERMINED) | arithmetic from the bytes, MAME | PROVEN (addresses) |
+
+**Fix (`mods/scsistack316.inc`, hook `--patch=2b017:558bec81ec0e10:ea{scsi_stack}9090`).**
+The reader runs on a private stack of `SCSI_STK_PARAS` = `120h` paragraphs
+(4,608 bytes) between 3.16's sequence pool and its image: `entry316` now sets
+the pool-end immediate (image `0x48535`) to `min(L-1, 6FFFh) - 120h`
+(`67DF` with `L = 6900`, `6EDF` with `L = 7000`), so the stack is logical
+`0x67E00..0x68FFF` / `0x6EE00..0x6FFFF`. The wrapper takes it only when the
+live immediate leaves that room, and only for one user at a time (an `XCHG`
+flag; a second entry runs the stock prologue). It then runs the replaced
+prologue and the body (`T_D470_05BD` = `2AB2:04FE`) with `SS` = that segment,
+switches back, and returns with the body's `AX`; an `ES` equal to the private
+segment is set to the caller's `SS`, which is what the stock body leaves.
+
+| Claim | Evidence | Tag |
+|-------|----------|-----|
+| The pool never reaches the stack: every reader of the pool variables `[8B13]..[8B19]` uses the variables set from the immediate (pool fix above), and the pool's last word is `imm:000E` | code (pool-fix review) | PROVEN |
+| A task switch or interrupt during the reader keeps the private stack: AMX's ISR entry and exit (`47BF:0151..01C8`) and dispatcher (`01C9..0225`) save and reload `SS:SP` verbatim | code | PROVEN |
+| Nothing unwinds past the wrapper: the only `SS`/`SP` loads in 3.16 code are start-up (`0x0005`), the AMX kernel (`0x47C3E..0x47E39`) and the OS reload (`0x485AB`) | linear scan of image `0..0x485EA` (data in `0x23xxx..0x29xxx` decodes as noise) | HYPOTHESIS (no `setjmp`/`longjmp` found) |
+| Size: deepest use 109Ah (frame 1010h, `SI`/`DI`, READ `2AB2:0202` -> `00FF` -> `2B36` -> `2A66`, and one AMX IRQ entry of 1Ah); 120h paragraphs leave 166h | MAME write taps on the stack, boot scan + Disk 7 + Erase all, `default` and `v308` | PROVEN (these paths); other IRQ nesting UNDETERMINED |
+| After the fix no write lands in `[cave end, image 0x84000)` during Disk 7 or Erase all on SCSI; the reader's entries on the UI stack still come with `SP = 07D2`; Disk 7 lists the files and Erase all erases them | MAME, `default` and `v308`; `emu.test_scsi316` `test_disk7_reader_runs_on_its_own_stack` | PROVEN (these paths) |
+
+Cost: the sequence pool is 4,608 bytes smaller on every EPROM (Seq memory free
+407K with L = 6900, 435K with L = 7000, was 411K and 439K); the cave home grows by 140 bytes (wrapper and its variables).
+The stack lives outside the cave home, so the 3.08/3.11 home budget is
+unchanged apart from those bytes.
+
+Separate finding (not fixed here): at boot `0281:0094` calls the FDC check
+`3E16:043C`, whose result reader `3E16:01F6` stores the status byte with
+`STOSB` at `ES:7319` and later reads `DS:[7319]` (`3E16:0224`). In PMONEY the
+cave's boot pages leave `ES` = the cave segment, so the byte goes to
+`CAVE_SEG:7319`: image `0x85319` with `L = 6900` (free RAM above the home) and
+logical `0xF5319` with `L = 7000`, i.e. page 61, NVRAM. MAME: `default` write
+tap `image=85318 mask=FF00 es=E700`; `v308` `ES:DI = EE00:7319` at
+`3E16:021C`. PROVEN (one execution per set). Stock's `ES` there is not traced
+(UNDETERMINED); the routine as written needs `ES = DS`.
+
 ## Status
 
 | Work | State |

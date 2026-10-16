@@ -99,6 +99,19 @@ uses them on the note-on path (`python3 -m emu.s1_characterize`,
 `python3 -m emu.pmoney_profile` profiles PMONEY BETA 1.0 against stock 3.16
 (`build/emu/pmoney/report.md`).
 
+`emu/cycle_budget.py` is the per-event cycle budget of the current PMONEY
+payload against stock 3.16 at 16 MHz (Vailixi 3.50 set): tick ISR and
+playback-task cycles per tick, worst interrupt-off window and tick completion
+(trace points on every executed CLI/STI/POPF/IRET/INT), serial ISRs, note-on,
+pad lookup, chord latency, INT 43, screen and wave-view redraws, Edit Sound
+REVERSE/SILENCE per frame, the FAT12 free-cluster search.  Budgets and the
+stock column are in `emu/fixtures/cycle_budget_316.json`;
+`python3 -m unittest emu.test_cycle_budget -v` is the release-gate check
+(15 MAME runs, about 4 min on two workers), and
+`python3 -m emu.cycle_budget --refresh-stock` re-measures stock after a MAME
+pin change.  `emu/test_midi_wake316.py` checks R3 (a stopped MIDI note-on
+wakes the playback task at stock latency; other messages wait for the tick).
+
 Results and the backlog: [`../notes/performance.md`](../notes/performance.md).
 The profiler, trace points and `NEC_CPU_DIV` are fork commit `b4ab57e6`; all
 three are inert unless their environment variables are set.

@@ -18,6 +18,21 @@ OS 3.16 differences, each asserted as 3.16 behaves:
 - memory_full loads its 540,000-frame source from a raw SCSI disk (MAME
   -scsi:0 harddisk) in the stock MPC layout instead of the floppy, which
   holds WAVE316.SYS and has no room for it; see memory_case().
+
+Refusal messages replace the whole soft-key row (row 7): before 2026-10-16
+the soft-key text after the message stayed on screen (audit B3), so the
+empty/stale/short checks compare all 40 columns.
+
+zone_stale_display: four zones, exit, Zone end typed as 800 ms on the stock
+page (beyond the next boundary), then CHOP ZONE.  CHOP imports the stock
+pair into the map (zones_import), which clamps Zone end to the next boundary
+and writes the clamped pair back to ZONE_ST/ZONE_EN (3.16 DS:E45A/E456,
+Vailixi EDBB/EDB7), and refuses with EMPTY ZONE.  The page's own component
+triples ([BP-0Ch], [BP-12h]) are now resynchronised from that pair
+(chop_sync_zone_fields), so the page shows the pair a following DELETE ZONE
+acts on.  Before the fix the page kept showing 800 ms while DELETE ZONE
+removed the clamped zone (audit B2, MAME).  The pair is read by a read-only
+prelude (zonepair.log).
 """
 from __future__ import annotations
 
@@ -98,6 +113,66 @@ def scsi_source(runs: Path, src: Path, name: str) -> Path:
     return image
 
 
+# Frame counts and the stock Edit Sound text MAME showed for them (this suite
+# and emu/test_harness_lifecycle.py).
+SHOWN = {1000: "000.022.30", 3445: "000.078.06", 13913: "000.315.22", 27562: "000.625.00",
+         35302: "000.800.22", 50000: "001.133.35", 55125: "001.250.00"}
+
+
+def text_frames(text: str) -> int:
+    """Frames of the page's sss.mmm.ff: milliseconds * 44.1 rounded down, plus
+    the frame digits (agrees with every SHOWN pair).  The text of a frame
+    count is not unique (27562 also reads as 000.624.44), so tests compare
+    frames, not text."""
+    sec, ms, rest = (int(x) for x in text.split("."))
+    return (sec * 1000 + ms) * 441 // 10 + rest
+
+
+def zone_field(screen: dict, name: str) -> str:
+    """'Zone st' / 'Zone end' text of the stock page (rows 2 and 3, columns 21-39)."""
+    import re
+    row = screen["rows"][2 if name == "Zone st" else 3]
+    match = re.search(r"(\d{3}\.\d{3}\.\d{2})$", row[21:].rstrip())
+    assert match and row[21:].replace(".", " ").startswith(name), row
+    return match.group(1)
+
+
+def zone_pair_prelude(profile: h.Profile) -> str:
+    """Read-only Lua: ZONE_ST / ZONE_EN dwords (DGROUP) at each probe time -> zonepair.log."""
+    return f"""
+local machine = manager.machine
+local cpu = machine.devices[":maincpu"]
+local prog, ioport = cpu.spaces["program"], cpu.spaces["io"]
+local zlog = assert(io.open((os.getenv("PROBE_OUT") or ".") .. "/zonepair.log", "w"))
+local ztimes = {{}}
+for t in string.gmatch(os.getenv("PROBE_TIMES") or "", "[^,]+") do ztimes[#ztimes + 1] = tonumber(t) end
+local function phys(seg, off)
+    local a = ((seg << 4) + off) & 0xfffff
+    if cpu.state["XA"].value ~= 0 then
+        return ((ioport:read_u16(0xff00 + (a >> 14) * 2) & 0x3ff) << 14) | (a & 0x3fff)
+    end
+    return a
+end
+local zi = 1
+emu.register_periodic(function()
+    if zi > #ztimes or machine.time:as_double() < ztimes[zi] - 0.05 then return end
+    zlog:write(string.format("t=%g zst=%d zen=%d\\n", ztimes[zi],
+        prog:read_u32(phys(0x{profile.dgroup_segment:04X}, 0x{profile.dgroup(0xEDBB):04X})),
+        prog:read_u32(phys(0x{profile.dgroup_segment:04X}, 0x{profile.dgroup(0xEDB7):04X}))))
+    zlog:flush()
+    zi = zi + 1
+end)
+"""
+
+
+def zone_pairs(d: Path) -> dict[float, tuple[int, int]]:
+    out = {}
+    for line in (d / "zonepair.log").read_text().splitlines():
+        t, st, en = (f.split("=")[1] for f in line.split())
+        out[round(float(t), 3)] = (int(st), int(en))
+    return out
+
+
 def records(case: Path | str, time: float) -> dict[int, dict]:
     """Sound directory at a probe time; a str names a legacy RUNS/<case> directory."""
     return sound_records(RUNS / case if isinstance(case, str) else case, time)
@@ -153,6 +228,18 @@ class WaveChop(h.EmuSuite):
                                "ZZSOURCE", do(V + 7) + taps(*[(V + t, "soft4")
                                                               for t in (19, 22, 25, 28, 31, 34, 37)]),
                                [V, V + 36, V + 39], {}),
+            # Zone end typed beyond the next boundary, CHOP refused (EMPTY ZONE),
+            # acknowledged, then DELETE ZONE (Do #4) on the same page.
+            "zone_stale_display": (sine441(), "ZSTALE", four + taps((V + 7, "soft4"))
+                                   + taps(*[(V + 9 + i * .2, "right") for i in range(11)])
+                                   + taps((V + 13, "8"), (V + 13.3, "0"), (V + 13.6, "0"), (V + 14, "enter"))
+                                   + taps(*[(V + 15 + i * .2, "right") for i in range(5)])
+                                   + dial(CHOP_DO_316 if profile.is316 else CHOP_DO, V + 17)
+                                   + taps((V + 20, "soft4"), (V + 23, "left"))
+                                   + dial(4 - (CHOP_DO_316 if profile.is316 else CHOP_DO), V + 25)
+                                   + taps((V + 28, "soft4")),
+                                   [V + 6, V + 14.8, V + 19.5, V + 22, V + 24.5, V + 27.5, V + 32],
+                                   {"prelude": zone_pair_prelude(profile)}),
             "memory_full": ([[i % 32767 for i in range(memory_frames)]], "MEMORY",
                             do(memory_view + 9), [memory_view, memory_after],
                             {"view_at": memory_view_at}),
@@ -183,8 +270,13 @@ class WaveChop(h.EmuSuite):
                 timeline = h.load_sound_events(profile=profile) + no_help + events
             else:
                 timeline = h.wave_events(events, view_at=options.get("view_at"), profile=profile)
-            cases[name] = h.Case(events=timeline, times=times, files=[(src, sound_name + ".SND")])
+            cases[name] = h.Case(events=timeline, times=times, files=[(src, sound_name + ".SND")],
+                                 prelude=options.get("prelude", ""))
         return cases
+
+    def assert_status(self, screen: dict, message: str):
+        """The refusal message owns the whole soft-key row: no soft-key remnants."""
+        self.assertEqual(screen["rows"][7].replace(".", " "), message.ljust(40))
 
     def assert_chop(self, d: Path, before: float, after: float, bounds: list[int], repeats: int = 1):
         old, new = records(d, before), records(d, after)
@@ -230,7 +322,7 @@ class WaveChop(h.EmuSuite):
             with self.subTest(profile=prof):
                 V = self.view(prof)
                 self.assertEqual(records(d, V), records(d, V + 21))
-                self.assertIn("10ms", "".join(screens[-1]["rows"]))
+                self.assert_status(screens[-1], "ZONE MUST BE AT LEAST 10ms")
 
     def test_edited_outer_boundaries_are_respected(self):
         for prof, d, _ in self.each("partial"):
@@ -251,14 +343,14 @@ class WaveChop(h.EmuSuite):
             with self.subTest(profile=prof):
                 V = self.view(prof)
                 self.assertEqual(records(d, V), records(d, V + 28))
-                self.assertIn("EMPTY ZONE", "".join(screens[-1]["rows"]))
+                self.assert_status(screens[-1], "EMPTY ZONE - ADJUST BOUNDARIES")
 
     def test_no_zone_map_refuses_without_creating_sounds(self):
         for prof, d, screens in self.each("stale"):
             with self.subTest(profile=prof):
                 V = self.view(prof)
                 self.assertEqual(records(d, V), records(d, V + 18))
-                self.assertIn("REOPEN WAVE VIEW", "".join(screens[-1]["rows"]))
+                self.assert_status(screens[-1], "REOPEN WAVE VIEW FOR THIS SOUND")
 
     def test_full_directory_preflight_creates_no_partial_set(self):
         bounds = [DIRECTORY_SOURCE * i // 16 for i in range(17)]
@@ -286,7 +378,7 @@ class WaveChop(h.EmuSuite):
                 # Reopening the stock page keeps the source selected even though
                 # the four new alphabetically earlier names changed its position.
                 self.assertIn("ZZSOURCE", "".join(screens[1]["rows"]))
-                self.assertIn("REOPEN WAVE VIEW", "".join(screens[2]["rows"]))
+                self.assert_status(screens[2], "REOPEN WAVE VIEW FOR THIS SOUND")
                 self.assertIn("ZONE003", "".join(screens[2]["rows"]))
                 self.assertIn("ZONE003", "".join(screens[3]["rows"]))
 
@@ -304,6 +396,39 @@ class WaveChop(h.EmuSuite):
                 final = text(screens[-1]).replace(".", " ")
                 self.assertIn("Attention", final)
                 self.assertIn("sound memory", final)
+
+    def test_text_frames_matches_the_stock_page(self):
+        for frames, shown in SHOWN.items():
+            self.assertEqual(text_frames(shown), frames)
+
+    def test_refused_chop_shows_the_imported_zone_pair(self):
+        length = 55125
+        for prof, d, screens in self.each("zone_stale_display"):
+            with self.subTest(profile=prof):
+                V = self.view(prof)
+                pair, zones = zone_pairs(d), h.zone_rows(d)
+                self.assertEqual(zones[V + 6]["bounds"][:5], [length * i // 4 for i in range(5)])
+                # Positive control: the typed 800 ms reached the DS pair and the page.
+                self.assertEqual(pair[V + 14.8], (0, 35302))
+                self.assertEqual(zone_field(screens[1], "Zone end"), "000.800.22")
+                # CHOP: the import clamped the end to B[2] (map and DS pair), EMPTY ZONE.
+                self.assertIn("CHOP ZONE", screens[2]["rows"][5])
+                self.assertIn("EMPTY ZONE", screens[3]["rows"][7])
+                clamped = zones[V + 22]["bounds"][2]
+                self.assertEqual(zones[V + 22]["bounds"][:3], [0, clamped, clamped])
+                self.assertEqual(pair[V + 22], (0, clamped))
+                # The page shows the pair DELETE ZONE will use.
+                for screen, t in ((screens[4], V + 24.5), (screens[5], V + 27.5)):
+                    shown = (text_frames(zone_field(screen, "Zone st")), text_frames(zone_field(screen, "Zone end")))
+                    self.assertEqual(shown, pair[t], t)
+                self.assertIn("DELETE ZONE", screens[5]["rows"][5])
+                # DELETE ZONE removed exactly the shown range.
+                shown = (text_frames(zone_field(screens[5], "Zone st")),
+                         text_frames(zone_field(screens[5], "Zone end")))
+                after = records(d, V + 32)[0]
+                self.assertEqual(after["length"], length - (shown[1] - shown[0]))
+                self.assertEqual(pcm(d, V + 32, 0), pcm(d, V + 6, 0)[:2 * shown[0]] + pcm(d, V + 6, 0)[2 * shown[1]:])
+                self.assert_status(screens[3], "EMPTY ZONE - ADJUST BOUNDARIES")
 
 
 if __name__ == "__main__":

@@ -106,6 +106,9 @@ view:
         mov [cs:full_ok], al
         mov [cs:plane], al
         mov [cs:onview], al
+%ifdef PROFILE_316
+        mov [cs:fvalid], al             ; fine columns belong to one view() call
+%endif
         mov [cs:aud_too_short], al
         mov word [cs:zoom], ZOOM0
         call zones_enter
@@ -265,7 +268,11 @@ view:
 .zoom:  mov [cs:zoom], cx
 .redraw:
         call refresh
+%ifdef PROFILE_316
+        call fast_blit                  ; T_C4C8_0F0D's LC7981 sequence, ~4.6x faster
+%else
         FCALL T_C4C8_0F0D               ; blit
+%endif
         jmp .key
 .exit:  push ax
         FCALL T_C4C8_0409               ; clear, text mode, INT 43 AX=1
@@ -296,7 +303,11 @@ refresh:
         call point
         mov [cs:center], ax
         mov [cs:center+2], dx
+%ifdef PROFILE_316
+        call fine_columns
+%else
         call scan
+%endif
         jmp draw
 .full:  cmp byte [cs:full_ok], 0
         jne draw
@@ -472,9 +483,16 @@ clampx:
 .r:     ret
 
 ; Read min(BUF_W, len - cur) words from wave + cur into A2AE:0000.
+; 3.16: min(BUF_W, fend - cur), fend = the end of the columns being scanned
+; (<= len), so a fine view reads its window, not a whole buffer.
 fill:
+%ifdef PROFILE_316
+        mov ax, [cs:fend]
+        mov dx, [cs:fend+2]
+%else
         mov ax, [cs:len]
         mov dx, [cs:len+2]
+%endif
         sub ax, [cs:cur]
         sbb dx, [cs:cur+2]
         jnz .full
@@ -510,10 +528,30 @@ fill:
 ; Column c covers [bound(c), max(bound(c+1), bound(c)+1)). Samples outside
 ; [0, len) count as 0.
 scan:
+%ifdef PROFILE_316
+        mov word [cs:scol_lo], 0
+        mov word [cs:scol_hi], COLS
+scan_range:                             ; columns [scol_lo, scol_hi)
+        mov cx, [cs:scol_hi]            ; fend = clamp(end of the last column)
+        call bound
+        cmp byte [cs:fine], 0
+        jne .fe
+        mov ax, [cs:len]                ; full: column 239 ends at len
+        mov dx, [cs:len+2]
+.fe:    call clampx
+        mov [cs:fend], ax
+        mov [cs:fend+2], dx
+        xor ax, ax
+        mov [cs:bend], ax               ; empty buffer: first sample refills
+        mov [cs:bend+2], ax
+        mov ax, [cs:scol_lo]
+        mov [cs:col], ax
+%else
         xor ax, ax
         mov [cs:bend], ax               ; empty buffer: first sample refills
         mov [cs:bend+2], ax
         mov [cs:col], ax
+%endif
 .col:   mov cx, [cs:col]
         call bound
         mov [cs:cur], ax
@@ -611,9 +649,118 @@ scan:
         mov [cs:si+bx+COLS], al         ; bottom row
         inc bx
         mov [cs:col], bx
+%ifdef PROFILE_316
+        cmp bx, [cs:scol_hi]
+%else
         cmp bx, COLS
+%endif
         jb .col
         ret
+
+%ifdef PROFILE_316
+; Fine columns for the current centre.  Column c covers [centre + (c-120)*zoom,
+; + zoom), so after the centre moves by k*zoom (same wave, same zoom) column c is
+; the old column c+k: shift the arrays and scan only the k new columns.  Anything
+; else (first fine redraw of this view, plane or zoom change, a move that is not a
+; whole number of columns or not under 240 of them) scans all 240.
+fine_columns:
+        cmp byte [cs:fvalid], 0
+        je .all
+        mov ax, [cs:wave]
+        cmp ax, [cs:fwave]
+        jne .all
+        mov ax, [cs:wave+2]
+        cmp ax, [cs:fwave+2]
+        jne .all
+        mov cx, [cs:zoom]
+        cmp cx, [cs:fzoom]
+        jne .all
+        mov ax, [cs:center]
+        mov dx, [cs:center+2]
+        sub ax, [cs:fcenter]
+        sbb dx, [cs:fcenter+2]          ; DX:AX = delta, signed
+        mov bx, ax
+        sar bx, 15
+        cmp bx, dx                      ; delta must fit 16 bits signed ...
+        jne .all
+        mov bx, ax
+        or bx, bx
+        jns .m
+        neg bx                          ; ... and |delta| < 240*zoom
+        js .all                         ; delta = -8000h
+.m:     push ax
+        mov ax, COLS
+        mul cx                          ; 240*zoom <= 15,360
+        cmp bx, ax
+        pop ax
+        jae .all
+        cwd
+        idiv cx                         ; AX = k, DX = remainder
+        or dx, dx
+        jnz .all
+        or ax, ax
+        jz .keep
+        push si
+        push di
+        push ds
+        push es
+        push cs
+        pop ds
+        push cs
+        pop es
+        mov cx, COLS
+        jl .right
+        sub cx, ax                      ; k > 0: columns move left, scan [240-k, 240)
+        cld
+        mov si, ftops
+        add si, ax
+        mov di, ftops
+        call .move
+        mov si, fbots
+        add si, ax
+        mov di, fbots
+        call .move
+        mov [cs:scol_lo], cx
+        mov word [cs:scol_hi], COLS
+        jmp .scan
+.right: neg ax                          ; k < 0: columns move right, scan [0, -k)
+        sub cx, ax
+        std
+        mov si, ftops + COLS - 1
+        sub si, ax
+        mov di, ftops + COLS - 1
+        call .move
+        mov si, fbots + COLS - 1
+        sub si, ax
+        mov di, fbots + COLS - 1
+        call .move
+        cld
+        mov word [cs:scol_lo], 0
+        mov [cs:scol_hi], ax
+.scan:  pop es
+        pop ds
+        pop di
+        pop si
+        call scan_range
+        jmp .keep
+.all:   call scan
+.keep:  mov ax, [cs:center]
+        mov [cs:fcenter], ax
+        mov ax, [cs:center+2]
+        mov [cs:fcenter+2], ax
+        mov ax, [cs:wave]
+        mov [cs:fwave], ax
+        mov ax, [cs:wave+2]
+        mov [cs:fwave+2], ax
+        mov ax, [cs:zoom]
+        mov [cs:fzoom], ax
+        mov byte [cs:fvalid], 1
+        ret
+.move:  push cx                         ; CX bytes DS:SI -> ES:DI (both CS), direction DF
+        rep movsb
+        pop cx
+        ret
+%endif
 
 ; ---------------------------------------------------------------- draw
 
@@ -690,6 +837,9 @@ text:
         shl bx, 1
         add bx, dx
         shl bx, 1
+%ifdef PROFILE_316
+        call pixel                      ; DI, CL = the first cell's top-left pixel; each
+%endif                                  ; glyph then advances it by its 6 columns
 .ch:    mov dl, [cs:si]
         or dl, dl
         jz .end
@@ -709,7 +859,9 @@ text:
         shl si, 1
         add si, dx                      ; 5 column bytes per glyph
         add si, font
+%ifndef PROFILE_316
         call pixel                      ; DI, CL = the glyph's top-left pixel
+%endif
         mov dh, 5
 .c:     mov dl, [cs:si]                 ; bit 0 = top row
         inc si
@@ -725,6 +877,10 @@ text:
         adc di, 0
         dec dh
         jnz .c
+%ifdef PROFILE_316
+        ror cl, 1                       ; the blank sixth column: = pixel(BX + 6, AX)
+        adc di, 0
+%endif
         add bx, 6
         pop si
         jmp .ch
@@ -797,6 +953,27 @@ draw:
         rep stosw
         mov si, [cs:cols]               ; the active mode's column arrays
         xor bx, bx
+%ifdef PROFILE_316
+        mov dl, 0x80                    ; pixel() in line: the mask rotates with BX
+.x:     mov al, [cs:si+bx]
+        mov ah, ROW
+        mul ah
+        add ax, FB
+        mov di, bx
+        shr di, 3
+        add di, ax
+        mov cl, [cs:si+bx+COLS]
+        sub cl, [cs:si+bx]
+        inc cl
+        xor ch, ch
+.y:     or [di], dl
+        add di, ROW
+        loop .y
+        ror dl, 1
+        inc bx
+        cmp bx, COLS
+        jb .x
+%else
 .x:     mov al, [cs:si+bx]
         xor ah, ah
         call pixel
@@ -811,6 +988,7 @@ draw:
         inc bx
         cmp bx, COLS
         jb .x
+%endif
         mov al, [cs:sel]                ; region: columns overlapping [a, b]
         and al, 2
         push ax
@@ -824,6 +1002,58 @@ draw:
         mov [cs:pb+2], dx
         xor si, si                      ; bound and the column end never
         mov di, -1                      ; decrease: the columns are one run
+%ifdef PROFILE_316
+        cmp byte [cs:fine], 0
+        jne .rc
+        mov ax, [cs:len+2]              ; full: len = 240*Q + R, so
+        xor dx, dx                      ; bound(c) = c*Q + floor(c*R/240), stepped
+        mov cx, COLS                    ; per column instead of MUL/DIV twice
+        div cx
+        mov [cs:fq+2], ax
+        mov ax, [cs:len]
+        div cx
+        mov [cs:fq], ax
+        mov [cs:fr], dx
+        xor ax, ax
+        mov [cs:cur], ax                ; bound(0)
+        mov [cs:cur+2], ax
+        xor bx, bx                      ; (c*R) mod 240
+.fc:    mov ax, [cs:cur]
+        mov dx, [cs:cur+2]
+        cmp dx, [cs:pb+2]               ; first sample <= b ?
+        jg .rv
+        jl .f1
+        cmp ax, [cs:pb]
+        ja .rv
+.f1:    add ax, [cs:fq]                 ; bound(c+1)
+        adc dx, [cs:fq+2]
+        add bx, [cs:fr]
+        cmp bx, COLS
+        jb .f2
+        sub bx, COLS
+        add ax, 1
+        adc dx, 0
+.f2:    mov [cs:cur], ax
+        mov [cs:cur+2], dx
+        cmp si, COLS - 1                ; the last column ends past len
+        jb .f3
+        mov ax, [cs:len]
+        mov dx, [cs:len+2]
+        add ax, 1
+        adc dx, 0
+.f3:    cmp dx, [cs:pa+2]               ; end > a ?
+        jl .fn
+        jg .fx
+        cmp ax, [cs:pa]
+        jbe .fn
+.fx:    cmp di, -1
+        jne .fn
+        mov di, si
+.fn:    inc si
+        cmp si, COLS
+        jb .fc
+        jmp .rv
+%endif
 .rc:    mov cx, si
         call bound
         cmp dx, [cs:pb+2]               ; first sample <= b ?
@@ -1016,6 +1246,9 @@ draw:
  %include "syncout316.inc"              ; MIDI clock / time code to all four outputs (Vailixi port)
  %include "scsi316.inc"                 ; SCSI multi-sector and AUTO-search reset (Vailixi port)
  %include "diskutil316.inc"              ; SCSI disk copy, zero-fill, PC-readable partitions (Vailixi port)
+ %include "scsistack316.inc"             ; private stack for the SCSI partition reader (stock 3.16 overrun)
+ %include "bugfix316.inc"               ; stock 3.16 bug fixes (load/save, errors, mixer)
+ %include "perf316.inc"                 ; performance items (notes/performance.md)
 %endif
 
 ; Per pair: label strings, label columns, value columns.
@@ -1046,6 +1279,59 @@ s_exit:  db "<Exit>", 0
 modes:   db "LMFJGUSlsOK", 0            ; mode keys (D547:0006 codes)
 
 %include "wave_font.inc"
+
+%ifdef PROFILE_316
+; T_C4C8_0F0D (1650:0F01) in the cave: LC7981 instructions 0Ah = 0 and 0Bh = 0, then
+; for each of the 1,920 framebuffer bytes from FB: wait until port E2h bit 7 is
+; clear, instruction 0Ch to E2h, the byte bit-reversed to E0h, the same command and
+; data stream as the stock blit.  A table replaces the stock 8-step bit loop; the gap
+; between the two writes is at least the stock blit's.  DS = DGROUP.  Keeps SI, DI,
+; BP, DS, ES, CX; clobbers AX, BX, flags (stock: AX, BX, DX).
+fast_blit:
+        push si
+        push cx
+        mov ax, 0x0A00                  ; AH = instruction, AL = data
+        call .put
+        mov ax, 0x0B00
+        call .put
+        mov si, FB
+        mov bx, bitrev
+        mov cx, ROW * 64
+.b:     lodsb
+        cs xlatb
+        mov ah, al                      ; AH = data
+.w:     in al, 0xE2
+        test al, 0x80
+        jnz .w
+        mov al, 0x0C
+        out 0xE2, al
+        mov al, ah
+        nop
+        nop
+        out 0xE0, al
+        loop .b
+        pop cx
+        pop si
+        ret
+.put:   push ax
+.p:     in al, 0xE2
+        test al, 0x80
+        jnz .p
+        pop ax
+        xchg al, ah
+        out 0xE2, al                    ; instruction
+        mov al, ah
+        nop
+        nop
+        out 0xE0, al                    ; data
+        ret
+bitrev:
+%assign i 0
+%rep 256
+        db ((i & 1) << 7) | ((i & 2) << 5) | ((i & 4) << 3) | ((i & 8) << 1) | ((i & 16) >> 1) | ((i & 32) >> 3) | ((i & 64) >> 5) | ((i & 128) >> 7)
+%assign i i+1
+%endrep
+%endif
 
 align 2
 rec:    dw 0
@@ -1078,6 +1364,17 @@ bstart: dd 0
 bend:   dd 0
 vmax:   dw 0
 vmin:   dw 0
+%ifdef PROFILE_316
+fend:   dd 0                            ; end of the columns being scanned (fill)
+fcenter: dd 0                           ; fine columns: centre, wave and zoom they hold
+fwave:  dd 0
+fq:     dd 0                            ; full-mode bounds: len div 240
+fzoom:  dw 0
+scol_lo: dw 0                           ; scan_range columns
+scol_hi: dw COLS
+fr:     dw 0                            ; len mod 240
+fvalid: db 0
+%endif
 %ifdef PROFILE_316                     ; in the session pool (mute_storage.inc)
 tops    equ cave_pool
 bots    equ tops + COLS

@@ -441,6 +441,9 @@ chop_create_all:
         ; leaving the waveform view.  Identity and current/count bounds have
         ; already been checked, so zones_offset cannot escape the table.
         call zones_import
+        push cx
+        call chop_sync_zone_fields      ; the page shows the imported pair
+        pop cx
 
         ; The editable domain is [B[0],B[N]] within the source.  Every
         ; interval must be positive and at least 441 frames.  D0C0:0611
@@ -679,6 +682,19 @@ chop_create_all:
         mov word [cs:chop_result], CHOP_ERR_SHORT
         jmp .return
 
+; The page's zone triples ([BP-0Ch], [BP-12h]) from ZONE_ST/EN, BP = page.
+; zones_import may clamp the pair; without this the page shows the old pair
+; while a stock Do (DELETE ZONE ...) acts on the new one.
+chop_sync_zone_fields:
+        mov ax, [ZONE_ST]
+        mov dx, [ZONE_ST+2]
+        lea bx, [bp-0x0C]
+        call numeric_store_components
+        mov ax, [ZONE_EN]
+        mov dx, [ZONE_EN+2]
+        lea bx, [bp-0x12]
+        jmp numeric_store_components
+
 ; ES:BX = source sound record.  Clobbers AX, DX.
 chop_source_record:
         mov ax, [cs:zones_source]
@@ -787,6 +803,9 @@ chop_show_status:
         push si
         FCALL T_B1B1_005B
         add sp, 4
+%ifdef PROFILE_316
+        call du_eol                     ; clear the soft-key text behind the message
+%endif
         push 0
         FCALL T_BDE3_000E
         add sp, 2
@@ -819,9 +838,15 @@ editdo_trunc_text: db "CROP SOFT ST-END", 0             ; Vailixi's TRUNC SFT ST
 editdo_copying_text: db "Copying zone to a new sound...", 0   ; du_eol blanks to column 40
 editdo_map: db 0, 0x80, 1, 2, 3, 4, 5, 0x81, 6, 7    ; list index -> 3.16 handler
 %endif
+%ifdef PROFILE_316                      ; chop_show_status blanks the row (du_eol)
 chop_empty_text: db "EMPTY ZONE - ADJUST BOUNDARIES", 0
 chop_stale_text: db "REOPEN WAVE VIEW FOR THIS SOUND", 0
 chop_short_text: db "ZONE MUST BE AT LEAST 10ms", 0
+%else                                   ; padded to 40 columns over the soft-key row
+chop_empty_text: db "EMPTY ZONE - ADJUST BOUNDARIES          ", 0
+chop_stale_text: db "REOPEN WAVE VIEW FOR THIS SOUND         ", 0
+chop_short_text: db "ZONE MUST BE AT LEAST 10ms              ", 0
+%endif
 
 %ifdef PROFILE_316                     ; one Do dispatch: the session pool (mute_storage.inc)
 chop_result          equ cave_pool

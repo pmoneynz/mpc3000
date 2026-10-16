@@ -284,7 +284,7 @@ xp_on_off:
 xp_s_keys:       db "<Init PAR><Rec 16 Chs><Version>  <Extra>", 0
 xp_s_title:      db "Extra Settings", 0
 xp_s_snd_stop:   db "Stop all sounds on sequencer STOP:   ", 0
-xp_s_warn:       db "Warn on seq change while running:    ", 0
+xp_s_warn:       db "Allow seq change while running:      ", 0   ; ON: warn, stop, switch; OFF: change refused
 xp_s_stay_edit:  db "Stay in Edit Sound on PLAY/START:    ", 0
 xp_s_stay_mixer: db "Stay in Mixer on PLAY/START:         ", 0
 xp_s_mute:       db "Mute outputs during sound edits:     ", 0

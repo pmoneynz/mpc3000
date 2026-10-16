@@ -154,7 +154,17 @@ mute_ui:
 ; program is still current; any other key cancels, and a mode key leaves.
 .confirm:
         cmp bl, 'z'
+        je .confirmed
+        ; Pad hits and MIDI notes arrive as keys too (an external sequencer
+        ; sends them continuously): they leave the prompt open.
+        cmp bl, 'D'
+        je .keep_prompt
+        cmp bl, 'N'
         jne .cancel
+.keep_prompt:
+        mov [cs:mu_confirm], ax
+        jmp .key
+.confirmed:
         cmp ah, [cs:mu_program]
         jne .redraw
         dec ax
@@ -256,7 +266,11 @@ mute_ui:
         call mute_set_group
 .redraw:
         call mute_ui_draw
+%ifdef PROFILE_316
+.blit:  call fast_blit                  ; wave.asm: T_C4C8_0F0D's LC7981 sequence
+%else
 .blit:  FCALL T_C4C8_0F0D
+%endif
         jmp .key
 
 ; AX value in [0,DX], BL +/- and CX repeat. Saturating unsigned arithmetic.

@@ -117,6 +117,8 @@ mute_voice_alloc_wrapper:
         inc al                           ; stored program tag is 1..24
         cmp byte [cs:mute_voice_program+di], al
         jne .next
+        cmp byte [MUTE_OWNER+di], 0xFF  ; stock idle mark (stop writes FF)
+        je .forget                       ; already stopped: drop the stale tag
         mov al, [cs:mute_voice_pad+di]
         cmp al, [bp-4]
         je .next
@@ -131,6 +133,9 @@ mute_voice_alloc_wrapper:
         FCALL T_D21F_0008               ; stock one-channel stop primitive
         add sp, 2
         mov si, 1
+        jmp .next
+.forget:
+        mov byte [cs:mute_voice_program+di], 0
 .next:
         inc di
         cmp di, MUTE_VOICE_COUNT

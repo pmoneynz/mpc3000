@@ -11,7 +11,8 @@ product at the sound length (mods/wave.asm).
 Here bursts are sent 1 ms apart on the panel link (a 3-byte frame takes
 0.96 ms at 31,250 baud), so the first event is read at once and the rest
 queue up while the view redraws (about 34 ms full / 53 ms fine since the
-column caches; 63 ms before).  emu/lua/repeat_watch logs the count WAVE
+column caches, 63 ms before, on Vailixi; 3.16's full redraw takes about 12 ms
+at the harness clock since the performance pass, notes/performance.md).  emu/lua/repeat_watch logs the count WAVE
 copied for every key (read-only).
 
 What the assertions rely on, and why:
@@ -26,7 +27,9 @@ What the assertions rely on, and why:
   20-event overflow) additionally need the whole burst to arrive before the
   cave's second key read.  `burst_inside_first_redraw` checks that from the
   log first, so a faster redraw makes the test fail with that reason instead
-  of silently testing something else.
+  of silently testing something else.  The overflow burst is 10 events (1 read
+  at once, 8 queued, 1 dropped): its last frame arrives 9.96 ms after the first,
+  inside 3.16's 12 ms full redraw; 20 events no longer fit.
 Payloads come from emu.harness: capture and generic for every case, and the
 316 profile (WAVE316.SYS on OS 3.16; one BIOS set per load segment by
 default, all four in release mode).  Times are relative to V = profile.view
@@ -51,6 +54,7 @@ STEP = LEN // 240                   # 229 frames per full-view wheel step
 SHORT = 480                         # frames (>= the loader minimum 441): 64 x 8 > 480
 QUEUE = 8
 FRAME = 30 / 31250                  # one 3-byte link frame, 8N1
+OVERFLOW = QUEUE + 2                # events in the overflow burst: one more than 1 + QUEUE
 
 
 def points(d: Path) -> dict[float, tuple[int, int, int]]:
@@ -87,7 +91,7 @@ class Bursts(h.EmuSuite):
                     + taps((V + 6, "right")) + burst(9, V + 7)          # End -> len (480)
                     + burst(-9, V + 9)                                  # End -> Start (200)
                     + taps((V + 11, "left")) + burst(-9, V + 12))       # Start -> 0
-        overflow = burst(20, V + 1)
+        overflow = burst(OVERFLOW, V + 1)
         return {
             "motion": h.Case(events=h.wave_events(motion, profile=profile), files=[(mono, "MONO.SND")],
                              times=[V, V + 2, V + 4, V + 7, V + 10, V + 12],
@@ -158,7 +162,7 @@ class Bursts(h.EmuSuite):
     def test_burst_beyond_queue_capacity(self):
         """Stock limit, not a WAVE property.
 
-        When all 20 frames arrive while the cave is still busy with the first
+        When all OVERFLOW frames arrive while the cave is still busy with the first
         key, the stock FIFO keeps exactly its capacity and drops the rest, so
         1 + capacity steps apply.  The precondition is checked from the log.
         """
@@ -168,7 +172,7 @@ class Bursts(h.EmuSuite):
                 queue = [v for k, v in h.parse_kv_log(d / "repeat.log", hex_keys={"mask"},
                                                        text_keys={"sym"}) if k == "QUEUE"]
                 self.assertEqual([q["capacity"] for q in queue], [QUEUE])
-                self.burst_inside_first_redraw(d, V + 1, 20)
+                self.burst_inside_first_redraw(d, V + 1, OVERFLOW)
                 applied = sum(h.repeats(d, start=V + 1, end=V + 2))
                 self.assertEqual(applied, 1 + QUEUE)
                 self.assertEqual(points(d)[V + 2][0], START + applied * STEP)

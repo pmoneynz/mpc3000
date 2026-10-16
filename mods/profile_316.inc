@@ -49,6 +49,8 @@ KEY_REPEAT equ 0xD387           ; D69A: normalized-key repeat count (2D0B:001D)
 %define T_C4C8_0F5F 0x1650:0x0F53       ; graphics mode + blit FB
 %define T_B99A_1595 0x0B72:0x1209       ; leave Edit Sound for the menu
 %define T_B99A_16BB 0x0B72:0x132B       ; redraw the 17 Edit Sound fields
+%define T_B99A_15A7 0x0B72:0x121B       ; page exit: add sp,4 after the TEMPORARY999 lookup
+%define T_B99A_15BE 0x0B72:0x1232       ; page exit: after the TEMPORARY999 delete
 
 ; ---------------------------------------------------------------- view (wave.asm)
 
@@ -166,11 +168,14 @@ MUTE_CURRENT_PROGRAM equ 0xE2FB ; E60E: selected program 0..23
 %define T_D1F7_0126 0x2325:0x011E       ; reserve AMX resource 1 (allocation lock)
 %define T_D21F_0008 0x234D:0x0000       ; one-channel stop (channel)
 %define T_D9F2_003D 0x301D:0x003B       ; first pad slot mapped to a note
+MUTE_OWNER     equ 0xE286       ; E599: stock channel owner notes, FF = idle (234D:0064 / 20ED:0B9C)
 MUTE_PAD_MODE  equ 0x8063       ; 8375: non-zero: pad slot notes come from MUTE_PAD_NOTES (301D:000A)
 MUTE_PAD_NOTES equ 0x8064       ; 8376: 64 pad slot notes used while MUTE_PAD_MODE is set
 %define T_F800_20FA 0x0009:0x20F6       ; signed 32-bit divide: 3.16's linked copy of the BIOS runtime (image 0x2186)
 %define T_F800_2101 0x0009:0x20FD       ; unsigned 32-bit divide (same copy)
 FIELD_INDEX    equ 0x7A67       ; 7D79: field committed by T_B060_035D (byte)
+FIELD_PTR      equ 0x7A69       ; 7D7B: field list append/current pointer (word)
+FIELD_FIRST    equ 0x7A6E       ; 7D80: first field record (02D7:0007)
 %define T_B1B1_0002 0x0427:0x000C       ; clear the text screen (INT 43 AX=1)
 %define T_B509_2289 0x077D:0x1A35       ; new page: field list reset, clear, "== title ==" (far)
 %define T_B354_03B1 0x05C8:0x03B5       ; add a numeric field (label, ptr, width, min, max, flags)
@@ -198,6 +203,7 @@ MUTE_NOTE_MIDI equ 0xD39B       ; D6AE: note of the last MIDI event
 ; ---------------------------------------------------------------- start-up (entry316.inc)
 
 POOL_INIT_IMM equ 0x48535       ; image offset of 3.16's MOV BX,6FFFh pool end
+SCSI_STK_PARAS equ 0x0120       ; paragraphs between the pool and the image: SCSI reader stack (scsistack316.inc)
 
 ; ---------------------------------------------------------------- Extra Settings (xparams316.inc)
 
@@ -245,6 +251,7 @@ TC_PROJ      equ 0x67C7         ; new, patched DGROUP: extended index -> stock i
 TC_CANON     equ 0x67D4         ; new, patched DGROUP: stock index -> extended index
 TC_EXT       equ 0x67DB         ; new, patched DGROUP: extended (Vailixi) index 0..12, RAM only
 %define TC_REPEAT_GATE
+%define T_BDF1_012B 0x0F78:0x0136       ; apply parameters (calls the grid)
 %define T_EC05_02B0 0x422F:0x02C0       ; playback tick after the repeat gate: CMP [95C8],0 (drum/MIDI repeat)
 %define T_EC05_02C8 0x422F:0x02D8       ; playback tick: MOV AX,[86EE] (record-flush arm, repeat skipped)
 
@@ -305,6 +312,7 @@ SCSI_AUTO_RESET equ 0x831C         ; 862E: reset the SPC after each failed ID pr
 %define T_D470_03AD 0x2AB2:0x02FA   ; READ CAPACITY (unit) -> DX:AX blocks (0: none); writes [SCSI_BLKSIZE]
 %define T_D470_0458 0x2AB2:0x03A5   ; scan per [830F], mount, select partition A -> AX
 %define T_D470_075E 0x2AB2:0x05A2   ; partition reader after push 61h/push 0D05h: Akai test
+%define T_D470_05BD 0x2AB2:0x04FE   ; partition reader after its prologue: PUSH SI / PUSH DI / MOV [79A4],0 (scsistack316.inc)
 %define T_D510_008D 0x2B36:0x0091   ; SCSI code -> OS error number
 %define T_F800_20C4 0x0009:0x20C0   ; DX:AX * CX:BX -> DX:AX (runtime copy)
 SCSI_CHANGED    equ 0x799B         ; 7CAD: media changed, set by the partition writers (2A8A:0099 / D3CB:00A0)
@@ -323,3 +331,27 @@ S_MENU_ITEM4    equ 0x2786         ; 27E9: "4.SCSI status, make SCSI device acti
 %macro PUSH_CAVE_SEG 0
         push cs
 %endmacro
+
+; ---------------------------------------------------------------- stock bug fixes (bugfix316.inc)
+%define T_CF0C_0056 0x2033:0x005C       ; INT 41 AX=8: three far out-pointers [bp+6],[bp+a],[bp+e] get the DX,CX,BX outs (free-K helper 1C35:13C8 uses the 1st and 3rd); -> AX status
+%define T_E905_000C 0x3F26:0x0008       ; save Sound (index): mute, create + write, close on error, unmute
+
+; ---------------------------------------------------------------- performance (perf316.inc, notes/performance.md)
+MIDI_PENDING   equ 0x965E       ; 9971: complete-message count per MIDI input (965E In A, 965F In B; RX ISR 2B6D:08FD/0990)
+MIDI_MSG       equ 0x7022       ; 7632: message bytes being parsed, two ports interleaved (status, +2, +4)
+MIDI_STATE     equ 0x701E       ; 762E: per-port parser state word (2B6D:092B)
+SEQ_TASK_STATE equ 0xA49B       ; A7AE: transport state last seen by the playback task (0 = stopped)
+SEQ_TICK_MSG   equ 0xD4ED       ; D800: tick-ISR state byte, the message posted to task 2
+RING_SEG       equ 0x77CA       ; 77CA: serial/event ring segment (relocated; MZ entries at 0x33B24, 0x2EF43)
+%define T_DA69_000A 0x3094:0x0008       ; live MIDI-in reader, called from the playback tick
+%define T_DA1A_000D 0x3045:0x000B       ; panel pad-event reader, called from the playback tick
+%define T_D8BC_001C 0x2EE7:0x001E       ; ring read (index, buffer far, count) -> AX bytes
+%define T_FB00_04AC 0x47BF:0x04A6       ; AMX wake (DL = task)
+%define T_FB00_03B3 0x47BF:0x03AD       ; AMX post (ES:BX message, CX)
+%define T_D547_090D 0x2B6D:0x0931       ; MIDI parser: RET after the state store
+; ---- C1/C2/C3 targets (append to profile_316.inc) ----
+%define T_D0C0_0D1D 0x21E7:0x0D23       ; find-by-name body (+6)  [C1]
+%define T_C20F_08E1 0x1396:0x08E7       ; PGM/APS sound worker body (+6)  [C1]
+%define T_D7FA_013E 0x2E26:0x0130       ; SND loader after the close call  [C2]
+%define T_C20F_0003 0x1396:0x0009       ; stock "Load a Program" (PGM) loader  [C3]
+%define T_C20F_04F6 0x1396:0x04FC       ; stock "Load All Programs & Sounds" (APS) loader  [C3]

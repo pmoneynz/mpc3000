@@ -16,7 +16,7 @@ and booted from the stock romset on all four MAME BIOS sets: `default`
   Main Screen and Disk; image bytes 0x0000..0x6FFF in RAM must still be the
   relocated WAVE316.SYS image.  With L = 6900h stock 3.16's sequence pool
   (logical 2000..6FFFE) overlaps exactly those image bytes; WAVE316's entry
-  routine lowers the pool end to L-1 (notes/port_316.md, mods/entry316.inc).
+  routine lowers the pool end to min(L-1, 6FFF) - 120h (notes/port_316.md, mods/entry316.inc).
 """
 from __future__ import annotations
 
@@ -135,8 +135,9 @@ class Port316Boot(unittest.TestCase):
                 self.assertEqual(raw[1], "." * 7 + "WAVEFORM/ZONES/MUTE.GROUP" + "." * 8)   # cave banner316
                 self.assertEqual(raw[2], "." * 12 + "PMONEY.BETA.1.0" + "." * 13)
                 # cave sysinfo316: stock Free(snd)/Free(seq) formulas; MAME's 2 MB board gives
-                # 1916K; the pool ends at L-1 (entry316), so 411K with L=6900 and 439K with L=7000
-                seq = 411 if self.profiles[bios].load_segment == 0x6900 else 439
+                # 1916K; the pool ends at min(L-1, 6FFF) - 120h (entry316: the SCSI reader stack above it), so
+                # 407K with L=6900 and 435K with L=7000
+                seq = 407 if self.profiles[bios].load_segment == 0x6900 else 435
                 self.assertEqual(raw[3].replace(".", " "), f"Sound memory free (SND/PGM/SET):  {1916:5d}K")
                 self.assertEqual(raw[4].replace(".", " "), f"Seq memory free (SEQ/ALL/MID):    {seq:5d}K")
                 self.assertEqual(raw[5].strip("."), "")                  # no I-0055 (MAME echoes port 50h)
@@ -191,7 +192,7 @@ class Port316Boot(unittest.TestCase):
                     self.assertEqual(row["xa"], 1, t)
                     self.assertEqual(row["cave_pgr"], profile.cave_phys, t)     # live PGR agrees
                     self.assertEqual(row["pool_opcode"], 0xBB, t)               # MOV BX,imm16
-                    self.assertEqual(row["pool_imm"], 0x68FF if L == 0x6900 else 0x6FFF, t)
+                    self.assertEqual(row["pool_imm"], 0x67DF if L == 0x6900 else 0x6EDF, t)
                 # At Play/Record, before any key reached the cave, its home is
                 # the loader simulation (relocated words, entry
                 # copy).  Later its variables change, so only this dump is exact.
@@ -229,7 +230,7 @@ class Port316Boot(unittest.TestCase):
             with self.subTest(bios=bios):
                 image = profile.relocated_image()[:HEAD]
                 for t, row in image_rows(d).items():
-                    self.assertEqual(row["pool_imm"], min(profile.load_segment - 1, 0x6FFF), t)
+                    self.assertEqual(row["pool_imm"], min(profile.load_segment - 1, 0x6FFF) - 0x120, t)
                     ram = (d / f"head_{h.label(t)}.bin").read_bytes()
                     self.assertEqual(len(ram), HEAD)
                     outside = [i for i in range(HEAD) if not HOOK[0] <= i < HOOK[1] and ram[i] != image[i]]

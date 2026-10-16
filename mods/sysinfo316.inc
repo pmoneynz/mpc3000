@@ -49,6 +49,12 @@ sysinfo316:
         FCALL T_B1BC_01EE               ; row 5
         add sp, 4
 .done:  FCALL T_B77C_20C5               ; the replaced stock call
+        ; Leave ES = DS: at boot 3.16's floppy check 3E16:01F6 stores its status
+        ; byte with STOSB to ES:7319 and reads it back from DS:[7319].  With ES
+        ; still on the cave it wrote image 0x85319 (L=6900) or NVRAM page 61
+        ; (L=7000, 3.08/3.11) on every boot.
+        push ds
+        pop es
         retf
 
 .kib:   push byte 0                     ; AX = DX:AX / 1024, signed

@@ -15,7 +15,8 @@ loader's work (route_c.simulate) and the cave's entry316 in Python at both
 load segments.  entry316 must assemble to the routine modelled here
 (ENTRY316); its copy count must cover the cave, its halt bound must be the
 highest L-1 whose home ends below page 61, the home must then hold the
-relocated cave and the pool end must be min(L-1, 6FFFh).  Every hook must
+relocated cave and the pool end must be min(L-1, 6FFFh) - SCSI_STK_PARAS
+(the SCSI reader's private stack sits between the pool and the image).  Every hook must
 land on its cave label at the cave's home and every cave far CALL/JMP on
 3.16 code outside the data segments.  Every relocated word must be a known
 segment (0000, FFFF and 4853 only at their entry316 sites) and no other
@@ -59,15 +60,15 @@ CODE_END = DGROUP_316 * 16      # 3.16 code and far data lie below DGROUP
 POOL_IMM = 0x48535              # MOV BX,6FFFh immediate the entry adjusts
 POOL_END = 0x6FFF               # its stock value
 SHAPE_INSNS = 6                 # instructions compared per stock target
-HOOK_TARGETS = frozenset({"T_D0C0_0B19"})   # targets that are a hook site: the cave calls through the hook
+HOOK_TARGETS = frozenset({"T_D0C0_0B19", "T_D0C0_0D17"})   # targets that are a hook site: the cave calls through the hook
 OUT = mod.OUT
 
 # entry316 as assembled, one NASM listing line per instruction.  {name} is the
 # instruction's trailing immediate, which verify() reads and runs.
-ENTRY316 = ("fc", "ba{dx}", "81fa{halt_bound}", "7739", "0e", "1f", "b8{home}", "8ec0", "31f6", "31ff",
-            "b9{count}", "f3a5", "b8{pool_seg}", "8ec0", "bb{pool_off}", "26807fff{pool_opcode}", "7510",
-            "26813f{pool_word}", "7509", "81fa{pool_limit}", "7303", "268917", "b84000", "8ed8",
-            "ea0000{start_seg}", "f4", "ebfd")
+ENTRY316 = ("fc", "ba{dx}", "81fa{halt_bound}", "7740", "0e", "1f", "b8{home}", "8ec0", "31f6", "31ff",
+            "b9{count}", "f3a5", "b8{pool_seg}", "8ec0", "bb{pool_off}", "26807fff{pool_opcode}", "7517",
+            "26813f{pool_word}", "7510", "89d0", "3d{pool_limit}", "7203", "b8{pool_cap}", "2d{pool_room}",
+            "268907", "b84000", "8ed8", "ea0000{start_seg}", "f4", "ebfd")
 
 # Unrelocated cave words equal to a segment value that are instruction bytes,
 # not operands: (mnemonic, instruction's first bytes, word position in them).
@@ -78,7 +79,8 @@ NOT_OPERANDS = (("cmp", "2e3b06", 1),   # CMP AX,[CS:disp16]: opcode 3B and ModR
                 ("mov", "2e8a14", 1),   # MOV DL,[CS:SI]: opcode 8A and ModRM 14, equal to segment 148A
                 ("mov", "368a14", 1),   # MOV DL,[SS:SI]: the same bytes after an SS prefix
                 ("call", "e8", 1),      # near CALL rel16: a displacement, never a segment
-                ("mov", "bf47", 0))     # MOV DI,2C47h (mu_grid+8): opcode BF and the immediate's low byte
+                ("mov", "bf47", 0),     # MOV DI,2C47h (mu_grid+8): opcode BF and the immediate's low byte
+                ("db", "5a4f4e45303030", 3))  # "ZONE000" (chop_name): text "E0" equals segment 3045 (T_DA1A_000D)
 
 
 def _profile_values() -> tuple[dict[str, tuple[int, int]], dict[str, int]]:
@@ -234,7 +236,7 @@ def verify(result: rc.Result, cave: bytes, labels: dict[str, int], listing: list
     if entry["halt_bound"] != bound:
         raise ValueError(f"entry316 halts above L-1 = {entry['halt_bound']:04X}, expected {bound:04X}")
     special = {ops["dx"][0]: 0xFFFF, ops["pool_seg"][0]: POOL_IMM >> 4, ops["start_seg"][0]: 0x0000}
-    data_segs = {consts["DGROUP_SEG"], consts["SND_SEG"]}
+    data_segs = {consts["DGROUP_SEG"], consts["SND_SEG"], consts["RING_SEG"]}
     allowed = {seg for seg, _ in targets.values()} | data_segs | {consts["PLAYER_SEG"], CAVE_HOME}
     reloc_words = {v: struct.unpack_from("<H", cave, v)[0]
                    for k, v in labels.items() if k.startswith("__reloc_")}
@@ -290,12 +292,17 @@ def verify(result: rc.Result, cave: bytes, labels: dict[str, int], listing: list
         if pool != load * 16 + POOL_IMM:
             raise ValueError(f"L={load:04X}: entry316 adjusts {live['pool_seg']:04X}:{live['pool_off']:04X}, "
                              f"not the pool-end immediate")
-        if (mem[pool - 1] == live["pool_opcode"] and _imm(mem, pool, (0, 2)) == live["pool_word"]
-                and dx < live["pool_limit"]):
-            struct.pack_into("<H", mem, pool, dx)
+        if mem[pool - 1] == live["pool_opcode"] and _imm(mem, pool, (0, 2)) == live["pool_word"]:
+            end = dx if dx < live["pool_limit"] else live["pool_cap"]
+            struct.pack_into("<H", mem, pool, (end - live["pool_room"]) & 0xFFFF)
         pool_end = _imm(mem, pool, (0, 2))
-        if pool_end != min(load - 1, POOL_END):
-            raise ValueError(f"L={load:04X}: pool end {pool_end:04X}, expected {min(load - 1, POOL_END):04X}")
+        want = min(load - 1, POOL_END) - consts["SCSI_STK_PARAS"]
+        if pool_end != want:
+            raise ValueError(f"L={load:04X}: pool end {pool_end:04X}, expected {want:04X}")
+        # The SCSI reader's private stack (scsistack316.inc): the paragraphs above
+        # the pool end up to the image, which the cave takes only when they fit.
+        if not pool_end + 1 + consts["SCSI_STK_PARAS"] <= load:
+            raise ValueError(f"L={load:04X}: no room for the SCSI reader stack above pool end {pool_end:04X}")
         for p in patches:                       # hooks land on their cave labels
             for at, name in p.labels:
                 off, seg = struct.unpack_from("<HH", mem, load * 16 + at)

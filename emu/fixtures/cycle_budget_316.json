@@ -1,0 +1,353 @@
+{
+ "_doc": "Cycle budgets for emu/test_cycle_budget.py (emu/cycle_budget.py). rule: abs = budget as written; stock = at most the stock 3.16 value; stock+P% / stock/N relative to it. Stock values are measured by `python3 -m emu.cycle_budget --refresh-stock` (re-run only when the MAME pin or the workloads change). pmoney = the value measured when the budgets were set (payload pmoney_payload_sha256). Rows whose note says 'pinned' hold PMONEY to its measured value + 2 %, because stock would let it regress by 20-50 % unnoticed.",
+ "mame_pin": "b4ab57e6",
+ "bios": "vailixi",
+ "cpu_div": 2,
+ "stock_m3k316_sha256": "cf997046c35d5eb720cd277f235f5503eba3e53c8518a7d3a782dd087fbde226",
+ "metrics": {
+  "idle_busy_pct": {
+   "rule": "abs",
+   "budget": 7.22,
+   "stock": 8.164,
+   "note": "busy % of 16 MHz, 120 BPM stopped, nothing loaded (idle and wait loops excluded); pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 7.074
+  },
+  "tick_isr_idle": {
+   "rule": "stock+0.5%",
+   "budget": 2149.249,
+   "stock": 2138.556,
+   "note": "tick ISR (vector 09) mean inclusive cycles, stopped",
+   "pmoney": 2139.047
+  },
+  "tick_isr_play120": {
+   "rule": "stock+0.5%",
+   "budget": 2462.682,
+   "stock": 2450.43,
+   "note": "tick ISR mean, dense playback 120 BPM, sync off",
+   "pmoney": 2448.717
+  },
+  "tick_isr_play300": {
+   "rule": "stock+0.5%",
+   "budget": 2457.031,
+   "stock": 2444.807,
+   "note": "tick ISR mean, dense playback 300 BPM, sync off",
+   "pmoney": 2446.36
+  },
+  "tick_isr_synca120": {
+   "rule": "abs",
+   "budget": 3270,
+   "stock": 3111.405,
+   "note": "tick ISR mean, MIDI clock + MTC to OUT A, 120 BPM (so_rt_send detour, R5 residue); PMONEY is +4.0 % over stock here (so_rt_send detour per byte), pinned at PMONEY + 1 %",
+   "pmoney": 3236.92
+  },
+  "tick_isr_allon300": {
+   "rule": "abs",
+   "budget": 3100,
+   "stock": 2810.671,
+   "note": "tick ISR mean, every feature on: clock + MTC to ALL four outputs, mute groups, 300 BPM (stock can send to OUT A only)",
+   "pmoney": 3050.063
+  },
+  "tick_body_idle": {
+   "rule": "abs",
+   "budget": 1100,
+   "stock": 1967.271,
+   "note": "task-2 tick body 422F:0052 mean, stopped (S3 gates)",
+   "pmoney": 1062.599
+  },
+  "tick_body_play120": {
+   "rule": "abs",
+   "budget": 4723,
+   "stock": 6381.16,
+   "note": "task-2 tick body mean, 120 BPM; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 4630.159
+  },
+  "tick_body_play300": {
+   "rule": "abs",
+   "budget": 4735,
+   "stock": 6422.596,
+   "note": "task-2 tick body mean, 300 BPM; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 4642.074
+  },
+  "tick_body_allon300": {
+   "rule": "abs",
+   "budget": 5073,
+   "stock": 6471.638,
+   "note": "task-2 tick body mean, every feature on, 300 BPM (stock: OUT A); pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 4973.12
+  },
+  "tick_sum_idle": {
+   "rule": "abs",
+   "budget": 3266,
+   "stock": 4105.827,
+   "note": "tick ISR + tick body per tick, stopped; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 3201.646
+  },
+  "tick_sum_play120": {
+   "rule": "abs",
+   "budget": 7221,
+   "stock": 8831.59,
+   "note": "tick ISR + tick body per tick, 120 BPM; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 7078.876
+  },
+  "tick_sum_play300": {
+   "rule": "abs",
+   "budget": 7231,
+   "stock": 8867.403,
+   "note": "tick ISR + tick body per tick, 300 BPM; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 7088.434
+  },
+  "tick_sum_allon300": {
+   "rule": "abs",
+   "budget": 8184,
+   "stock": 9282.309,
+   "note": "tick ISR + tick body per tick, every feature on vs stock OUT A; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 8023.183
+  },
+  "busy_pct_play120": {
+   "rule": "abs",
+   "budget": 13.61,
+   "stock": 15.536,
+   "note": "busy %, 120 BPM playback; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 13.341
+  },
+  "busy_pct_play300": {
+   "rule": "abs",
+   "budget": 32.92,
+   "stock": 37.965,
+   "note": "busy %, 300 BPM playback; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 32.271
+  },
+  "busy_pct_allon300": {
+   "rule": "stock",
+   "budget": 42.535,
+   "stock": 42.535,
+   "note": "busy %, every feature on vs stock OUT A",
+   "pmoney": 42.055
+  },
+  "isr09_own_max_play300": {
+   "rule": "stock+1%",
+   "budget": 2959.316,
+   "stock": 2930.016,
+   "note": "worst tick ISR own cycles (entry to CLI 2C45:085C, nested ISRs removed), 300 BPM",
+   "pmoney": 2934.992
+  },
+  "ifoff_max_us_play": {
+   "rule": "stock+1%",
+   "budget": 112.3,
+   "stock": 111.188,
+   "note": "worst interrupt-off window (us), playback 120 and 300 BPM, sync off",
+   "pmoney": 111.625
+  },
+  "ifoff_max_us_allon300": {
+   "rule": "abs",
+   "budget": 230,
+   "stock": 185.126,
+   "note": "worst interrupt-off window (us), every feature on (ALL); stock OUT A is the reference",
+   "pmoney": 222.563
+  },
+  "tick_done_max_ms_play120": {
+   "rule": "abs",
+   "budget": 2.96,
+   "stock": 4.315,
+   "note": "worst tick completion (ISR-09 entry to task-2 return, FIFO), 120 BPM; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 2.9
+  },
+  "tick_done_max_ms_play300": {
+   "rule": "abs",
+   "budget": 3.12,
+   "stock": 4.619,
+   "note": "worst tick completion, 300 BPM; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 3.055
+  },
+  "tick_done_max_ms_allon300": {
+   "rule": "abs",
+   "budget": 4.52,
+   "stock": 5.112,
+   "note": "worst tick completion, every feature on vs stock OUT A; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 4.426
+  },
+  "tx_isr_synca120": {
+   "rule": "stock+1%",
+   "budget": 1347.799,
+   "stock": 1334.454,
+   "note": "TX ISR (vector 0C) mean per interrupt, OUT A",
+   "pmoney": 1334.389
+  },
+  "tx_isr_allon300": {
+   "rule": "abs",
+   "budget": 2440,
+   "stock": 1339.531,
+   "note": "TX ISR mean per interrupt, ALL four outputs; stock TX ISR code serving four ports: 2,410 in PMONEY before this pass and 2,412 after (the proposal's 2,400 came from the 120 BPM runs)",
+   "pmoney": 2410.253
+  },
+  "rx_byte_stopped_cc": {
+   "rule": "abs",
+   "budget": 990,
+   "stock": 1203.371,
+   "note": "RX ISR (vector 0D) mean per byte, CC running-status flood, stopped; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 969.719
+  },
+  "rx_byte_stopped_pressure": {
+   "rule": "abs",
+   "budget": 1184,
+   "stock": 1841.222,
+   "note": "RX ISR mean per byte, poly aftertouch flood, stopped; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 1160.607
+  },
+  "rx_byte_stopped_sysex": {
+   "rule": "stock+0.5%",
+   "budget": 977.51,
+   "stock": 972.647,
+   "note": "RX ISR mean per byte, sysex flood, stopped; the sysex path is stock code (PMONEY = stock to 0.001 %)",
+   "pmoney": 972.786
+  },
+  "busy_pct_stopped_cc": {
+   "rule": "abs",
+   "budget": 37.95,
+   "stock": 54.616,
+   "note": "busy %, CC flood stopped (B6/B8 saving); pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 37.204
+  },
+  "busy_pct_stopped_pressure": {
+   "rule": "abs",
+   "budget": 40.54,
+   "stock": 89.488,
+   "note": "busy %, aftertouch flood stopped (B6/B8 saving); pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 39.743
+  },
+  "busy_pct_stopped_sysex": {
+   "rule": "abs",
+   "budget": 27.4,
+   "stock": 27.909,
+   "note": "busy %, sysex flood stopped; pinned at PMONEY + 2 % (stock is the ceiling)",
+   "pmoney": 26.853
+  },
+  "note_wrapper_off": {
+   "rule": "abs",
+   "budget": 10000,
+   "stock": 15129.573,
+   "note": "MIDI note-on, mute groups off: mute_note_on_wrapper (stock: note builder 20ED:000D); mean over a 16-note chord includes RX interrupts that nest in the call: 9,646-9,854 in PMONEY before this pass",
+   "pmoney": 9852.344
+  },
+  "note_wrapper_on": {
+   "rule": "abs",
+   "budget": 13200,
+   "stock": null,
+   "note": "MIDI note-on, mute groups on: mute_note_on_wrapper; 13,151-13,355 in PMONEY before this pass",
+   "pmoney": 12927.677
+  },
+  "pad_lookup": {
+   "rule": "abs",
+   "budget": 300,
+   "stock": 1944.208,
+   "note": "pad lookup per MIDI note-on, pads 1-16 (pad_lookup_far; stock 301D:003B)",
+   "pmoney": 271.5
+  },
+  "chord_midi_first_ms": {
+   "rule": "abs",
+   "budget": 3.0,
+   "stock": 2.861,
+   "note": "16-note MIDI chord, stopped: first voice set-up, worst of six (R3)",
+   "pmoney": 2.628
+  },
+  "chord_midi_last_ms": {
+   "rule": "abs",
+   "budget": 23.0,
+   "stock": 28.667,
+   "note": "16-note MIDI chord, stopped: last voice set-up, worst of six; the last voice moved by up to 1.3 ms between two builds with equal per-note costs (pads 20.2-21.5 ms, MIDI 20.9-21.7 ms; tick phase is the likely cause, HYPOTHESIS), so the budget keeps a fixed margin under stock instead of a 2 % pin",
+   "pmoney": 21.719
+  },
+  "chord_pad_last_ms": {
+   "rule": "abs",
+   "budget": 22.6,
+   "stock": 25.182,
+   "note": "16-pad chord: last voice set-up, worst of six; the last voice moved by up to 1.3 ms between two builds with equal per-note costs (pads 20.2-21.5 ms, MIDI 20.9-21.7 ms; tick phase is the likely cause, HYPOTHESIS), so the budget keeps a fixed margin under stock instead of a 2 % pin",
+   "pmoney": 21.497
+  },
+  "int43_tour": {
+   "rule": "stock+0.5%",
+   "budget": 675.722,
+   "stock": 672.36,
+   "note": "INT 43 mean per call, screen tour (stock handler: S6 is not built, cave home bound)",
+   "pmoney": 672.118
+  },
+  "int43_wheel": {
+   "rule": "stock+0.5%",
+   "budget": 435.25,
+   "stock": 433.085,
+   "note": "INT 43 mean per call, Play/Record wheel (stock handler: S6 is not built)",
+   "pmoney": 432.709
+  },
+  "screen_change": {
+   "rule": "abs",
+   "budget": 486000,
+   "stock": 458919.64,
+   "note": "busy cycles per screen change above the build's own idle rate; S6 not built. PMONEY +3.7 % over stock by this estimate, but its lower idle rate (S3) inflates it: the tour window's total busy is 9.0 % under stock (24.80 M vs 27.26 M cycles). Pinned at PMONEY + 2 %",
+   "pmoney": 476014.403
+  },
+  "pr_redraw": {
+   "rule": "stock+0.5%",
+   "budget": 305396.825,
+   "stock": 303877.438,
+   "note": "Play/Record field redraw 159C8 mean (S6 not built)",
+   "pmoney": 304115.875
+  },
+  "view_wheel_full": {
+   "rule": "abs",
+   "budget": 380000,
+   "stock": null,
+   "note": "wave view full-mode redraw (refresh + blit), 25 ms target",
+   "pmoney": 361636.667
+  },
+  "view_wheel_fine": {
+   "rule": "abs",
+   "budget": 380000,
+   "stock": null,
+   "note": "wave view fine-mode redraw at zoom 16, 40 ms target",
+   "pmoney": 367034.667
+  },
+  "view_wheel_fine64": {
+   "rule": "abs",
+   "budget": 420000,
+   "stock": null,
+   "note": "wave view fine-mode redraw at zoom 64",
+   "pmoney": 413006.083
+  },
+  "view_zoom": {
+   "rule": "abs",
+   "budget": 600000,
+   "stock": null,
+   "note": "wave view zoom change (fine full rescan)",
+   "pmoney": 569336.75
+  },
+  "view_zones": {
+   "rule": "abs",
+   "budget": 320000,
+   "stock": null,
+   "note": "wave view zone-count redraw",
+   "pmoney": 317270.4
+  },
+  "reverse_per_frame": {
+   "rule": "stock/3",
+   "budget": 72.408,
+   "stock": 217.223,
+   "note": "Edit Sound Do REVERSE ZONE cycles per frame: >= 3x faster than stock (B2)",
+   "pmoney": 70.84
+  },
+  "silence_per_frame": {
+   "rule": "stock+3%",
+   "budget": 29.476,
+   "stock": 28.617,
+   "note": "Edit Sound Do SILENCE ZONE cycles per frame (DMA-paced guard; PMONEY was 29.3, +2.4 % over stock, before the performance pass)",
+   "pmoney": 29.278
+  },
+  "free_cluster_search": {
+   "rule": "stock+5%",
+   "budget": 114158.848,
+   "stock": 108722.712,
+   "note": "FAT12 free-cluster search per call, 431 KB save: D1a not built; PMONEY's larger STARTUP.SYS takes more clusters (+3.4 % before the performance pass)",
+   "pmoney": 112432.106
+  }
+ },
+ "pmoney_payload_sha256": "bdb0be8440bf8fb1271f31abe2087f1e09792e6569d52db55b6ce29801e06028"
+}

@@ -11,8 +11,10 @@
 ;    below the 3.16 image.  With L = 6900 (3.12 and Vailixi EPROMs) the
 ;    pool otherwise overlaps image 0..6FFE, and recording overwrites live
 ;    3.16 code (MAME: Song after recording crashes).  The pool end is the
-;    MOV BX,6FFFh immediate at image POOL_INIT_IMM; set it to L-1 when that
-;    is lower, so the pool ends at L*16-2.  L = 7000 keeps 6FFFh.
+;    MOV BX,6FFFh immediate at image POOL_INIT_IMM; set it to min(L-1, 6FFFh)
+;    - SCSI_STK_PARAS, so the pool ends at min(L, 7000h)*16 - 2 - the stack:
+;    the SCSI_STK_PARAS paragraphs above it, up to the image, hold the
+;    private stack of the SCSI partition reader (scsistack316.inc).
 ; 3. Jump to 3.16's own entry, L:0000, with DS = 0040 as the loader left it.
 ;
 ; The home must end below page 61 (logical F4000h, NVRAM), so L may be at most
@@ -42,9 +44,12 @@ entry316:
         jne .pool_done
         cmp word [es:bx], 0x6FFF
         jne .pool_done
-        cmp dx, 0x6FFF
-        jae .pool_done
-        mov [es:bx], dx
+        mov ax, dx                      ; L - 1
+        cmp ax, 0x6FFF
+        jb .below
+        mov ax, 0x6FFF                  ; L >= 7000h: the stock end
+.below: sub ax, SCSI_STK_PARAS          ; then room for the SCSI reader's stack
+        mov [es:bx], ax                 ; (scsistack316.inc) below the image
 .pool_done:
         mov ax, 0x0040
         mov ds, ax

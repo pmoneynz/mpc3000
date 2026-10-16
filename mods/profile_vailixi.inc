@@ -136,6 +136,7 @@ MUTE_CURRENT_PROGRAM equ 0xE60E ; selected program 0..23
 %define T_D1F7_0126 0xD1F7:0x0126       ; reserve AMX resource 1 (allocation lock)
 %define T_D21F_0008 0xD21F:0x0008       ; one-channel stop (channel)
 %define T_D9F2_003D 0xD9F2:0x003D       ; first pad slot mapped to a note
+MUTE_OWNER     equ 0xE599       ; stock channel owner notes, FF = idle (D21F:006C / CFC6:0B96)
 MUTE_PAD_MODE  equ 0x8375       ; non-zero: pad slot notes come from MUTE_PAD_NOTES (D9F2:000C)
 MUTE_PAD_NOTES equ 0x8376       ; 64 pad slot notes used while MUTE_PAD_MODE is set
 
