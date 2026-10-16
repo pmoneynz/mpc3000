@@ -1,12 +1,13 @@
 ; OS 3.16 boot banner (mods/WAVE316.args replaces image 0x2826..0x283D, the
 ; cursor at row 3 and the centred print of "System 3.16 (02/20/05)", with a
-; far call here).  Two centred lines under 3.16's own "Akai MPC3000" title,
+; far call here).  Two centred lines under 3.16's own "Akai MPC3000" title, on
+; rows 1 and 2 (sysinfo316.inc fills rows 3-5),
 ; printed with the cursor and put-string routines the cave already uses.
 ; Placed after entry316 so no other cave offset moves.
 
 banner316:
         push BANNER_COL1                ; column
-        push 3                          ; row
+        push 1                          ; row
         FCALL T_B1B1_0026
         add sp, 4
         push strict word CAVE_SEG
@@ -15,7 +16,7 @@ banner316:
         FCALL T_B1B1_005B
         add sp, 4
         push BANNER_COL2
-        push 4
+        push 2
         FCALL T_B1B1_0026
         add sp, 4
         push strict word CAVE_SEG

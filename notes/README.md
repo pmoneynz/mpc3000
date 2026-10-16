@@ -14,6 +14,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`mute_groups.md`](mute_groups.md) | BENCH 06 controls, menu hooks, UI execution evidence |
 | [`mute_voice.md`](mute_voice.md) | Shared note-on/voice allocator hooks and group choking |
 | [`mute_storage.md`](mute_storage.md) | Program state lifetime and PGM/APS extensions |
+| [`wav_feasibility.md`](wav_feasibility.md) | WAV load/save/record feasibility; BIOS name matching vs PC-written files; space for the combined build |
 | [`artifact_identity.md`](artifact_identity.md) | What the bytes are |
 | [`address_model.md`](address_model.md) | How those bytes are addressed |
 | [`boot_reset_to_bios_banner.md`](boot_reset_to_bios_banner.md) | First connected slice |
@@ -41,6 +42,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`entry_scan.md`](entry_scan.md) | Consumer-established entries; raw `9A`/`EA` are suspects |
 | [`transfer_scan.md`](transfer_scan.md) | Local exits from the 143 entries; new CALLs are candidates |
 | [`performance.md`](performance.md) | Cycle profiles of stock 3.50 (MAME `nec_prof`, 16 MHz): utilization map, per-event costs, headroom, ROM space, ranked optimization backlog, hardware tests; the fork ran the V53 at 2x |
+| [`sequencer_model.md`](sequencer_model.md) | Sequencer clock, tempo, transport, playback order, timing correct, sync: implementation specification with test vectors |
 | [`named_unknowns.md`](named_unknowns.md) | Ranked open uncertainties |
 
 Do not duplicate the MPC2000XL note corpus here. Cite it when a V53

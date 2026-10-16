@@ -15,12 +15,15 @@ OS 3.16 differences, each asserted as 3.16 behaves:
   CHOP_DO.  The page, fields and soft keys are otherwise the same.
 - CHOP names its results itself (mods/wave_chop.inc CHOP_OWN_NAMES): the next
   ZONEnnn that no Sound has, so the expected names are the same.
-- memory_full uses a 492,000-frame source instead of 540,000 (floppy room
-  beside the 471 KB WAVE316.SYS); see memory_case().
+- memory_full loads its 540,000-frame source from a raw SCSI disk (MAME
+  -scsi:0 harddisk) in the stock MPC layout instead of the floppy, which
+  holds WAVE316.SYS and has no room for it; see memory_case().
 """
 from __future__ import annotations
 
 from pathlib import Path
+import os
+import subprocess
 import unittest
 
 from emu import harness as h
@@ -35,16 +38,24 @@ DIRECTORY_SOURCE = 8192
 # B99A:0B05 (linear 0x3A4A5) `cmp bx,9` bounds the stock Do table to 0..9;
 # 3.16 0B72:0B0A (image 0xC22A) `cmp bx,7` bounds it to 0..7
 # (mods/profile_316.inc: COPY ZONE->TEMP .. REVERSE ZONE).
-CHOP_DO, CHOP_DO_316 = 10, 8
+CHOP_DO, CHOP_DO_316 = 10, 10
 
 
 def do_action(exit_time: float, profile: h.Profile | None = None) -> list:
     """Exit WAVE, traverse the 17 stock fields and select appended CHOP ZONE
-    (Do #10 on Vailixi, the default; Do #8 on 3.16)."""
+    (Do #10 on Vailixi and on PMONEY 3.16)."""
     return (taps((exit_time, "soft4"))
             + taps(*[(exit_time + 2 + i * .2, "right") for i in range(16)])
             + dial(CHOP_DO_316 if profile is not None and profile.is316 else CHOP_DO, exit_time + 6)
             + taps((exit_time + 9, "soft4")))
+
+
+# memory_full on 3.16: the source is on a SCSI disk; the boot scan mounts it
+# (done before 30 s) and makes it the current disk, so the case does not cancel
+# the scan.  Disk / 7 / <Load> from MEMORY_LOAD_316; 1,080,038 bytes load in
+# under 4 s (45 -> 48.0 s on default, MAME).
+MEMORY_LOAD_316 = 41.0
+MEMORY_DISK_SECTORS = 8192              # 4 MiB raw SCSI disk, one MPC volume
 
 
 def memory_case(profile: h.Profile) -> tuple[int, float, float, float]:
@@ -53,15 +64,38 @@ def memory_case(profile: h.Profile) -> tuple[int, float, float, float]:
 
     The source must exceed half of the free sound memory, 980,992 words
     (Free(snd) 1916K with nothing loaded, on every profile in MAME), so its
-    copy cannot fit.  Vailixi: 540,000 frames take ~84 s to load.  3.16:
-    WAVE316.SYS (470,948 bytes) leaves 986,624 bytes on the floppy, too few
-    for 540,000 frames (1,080,038 bytes: mcopy "Disk full"), so 492,000
-    frames (984,038 bytes), loaded 32-34 s after <Load> on default and v308.
+    copy cannot fit.  Vailixi: 540,000 frames take ~84 s to load from the
+    floppy.  3.16: the floppy also holds WAVE316.SYS (over 470 KB), which
+    leaves less than the 1,080,038 bytes of 540,000 frames, and any source
+    that fits there (under ~490,000 frames) is within a few hundred bytes of
+    the 490,497-frame minimum, so every growth of the SYS broke the case.
+    The 3.16 source is therefore the same 540,000 frames, loaded from a SCSI
+    disk (scsi_source()), and the floppy size no longer matters.
     """
-    frames, load = (492_000, 40.0) if profile.is316 else (540_000, 83.5)
     tl = profile.timeline
-    view_at = tl.load_at + tl.load_key + load
-    return frames, view_at, view_at + 6, view_at + 28
+    if profile.is316:
+        view_at = MEMORY_LOAD_316 + tl.load_key + 5.0
+    else:
+        view_at = tl.load_at + tl.load_key + 83.5
+    return 540_000, view_at, view_at + 6, view_at + 28
+
+
+def scsi_source(runs: Path, src: Path, name: str) -> Path:
+    """A raw SCSI disk holding `src` as `name` in the stock MPC layout, as 2AB2:04F7 reads
+    it: one FAT12 volume at LBA 0 (mformat, 16 sectors/track, 16 heads, 512
+    root entries), its volume table at 40h (entry 0 = LBA 0, then zero) and
+    55 AA 55 AA at 1FCh."""
+    env = {**os.environ, "MTOOLS_SKIP_CHECK": "1"}
+    image = runs / "memory_full.hd"
+    image.write_bytes(bytes(MEMORY_DISK_SECTORS * 512))
+    subprocess.run(["mformat", "-i", str(image), "-T", str(MEMORY_DISK_SECTORS), "-h", "16", "-s", "16",
+                    "-c", "16", "-r", "32", "-H", "0", "::"], check=True, env=env, capture_output=True)
+    data = bytearray(image.read_bytes())
+    data[0x40:0x40 + 26 * 4] = bytes(26 * 4)
+    data[0x1FC:0x200] = b"\x55\xaa\x55\xaa"
+    image.write_bytes(data)
+    subprocess.run(["mcopy", "-i", str(image), str(src), "::" + name], check=True, env=env, capture_output=True)
+    return image
 
 
 def records(case: Path | str, time: float) -> dict[int, dict]:
@@ -134,6 +168,17 @@ class WaveChop(h.EmuSuite):
                                  start=min(123, length // 4), end=length - min(321, length // 4)))
             data[2 + 0x12] = (-12) & 255
             src.write_bytes(data)
+            if name == "memory_full" and profile.is316:
+                # The source on a SCSI disk (memory_case()); cold boot: the boot
+                # snapshot has no SCSI device.
+                disk = scsi_source(runs, src, sound_name + ".SND")
+                timeline = (taps((MEMORY_LOAD_316, "disk"), (MEMORY_LOAD_316 + tl.load_seven, "7"),
+                                 (MEMORY_LOAD_316 + tl.load_key, "soft1"))
+                            + h.open_view_events(options["view_at"], profile) + events)
+                cases[name] = h.Case(events=timeline, times=times, files=[],
+                                     kwargs={"extra": ["-scsi:0", "harddisk", "-hard", str(disk)],
+                                             "snapshot": False})
+                continue
             if options.get("no_view"):
                 timeline = h.load_sound_events(profile=profile) + no_help + events
             else:

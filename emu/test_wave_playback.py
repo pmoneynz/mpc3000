@@ -421,8 +421,15 @@ class WavePlayback(h.EmuSuite):
                 elapsed = float(stops[0]["t"]) - float(starts[0]["t"])
                 self.assertGreater(elapsed, 0.70)
                 self.assertLess(elapsed, 0.75)
-                self.assertAlmostEqual(float(stops[0]["t"]) - float(releases[0]["t"]), 0.020,
-                                       delta=0.002)
+                # Release and stop both run on scheduler ticks: the stop
+                # follows 2 ticks after the release, or 3 when the release
+                # falls late in its tick's task order.  Which one depends on
+                # the boot's timing phase, which moves with the payload layout
+                # (seen on 316-v311: 30 ms; removing any one cave hook gives
+                # 20 ms with the release 10 ms later).
+                gap = float(stops[0]["t"]) - float(releases[0]["t"])
+                self.assertIn(round(gap / TICK), (2, 3), gap)
+                self.assertAlmostEqual(gap, round(gap / TICK) * TICK, delta=0.002)
                 self.assert_restored(log, MONO_START, MONO_END, MONO_LEN)
 
 

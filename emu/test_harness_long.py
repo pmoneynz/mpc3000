@@ -45,7 +45,7 @@ NUMERIC = 2 * 44_100
 # the profile's ~170 KB view time; it then scans all 220,500 frames.  VL = 58
 # on Vailixi, 70 on 3.16 (Program/Sounds at 64 s, 25 s after <Load> at 39 s).
 LONG_LOAD = 18.0
-CHOP_INDEX_316 = 8                  # CHOP ZONE after 3.16's eight stock Do options
+CHOP_INDEX_316 = 10                 # CHOP ZONE after the ten Do options (Vailixi order, mods/wave_chop.inc)
 
 
 def long_wave() -> list[list[int]]:

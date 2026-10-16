@@ -14,16 +14,13 @@ profile for every case, the locked/running case also on generic, and the
 suite minus 39 s, shifted on 3.16 by its later wave view (profile.view -
 harness.VIEW = 12 s).
 
-OS 3.16 has neither setting nor an Edit Sound mute (notes/port_316.md): its
-COPY handler goes from the zone check straight to the copy at 0B72:0B34
-(image 0xC254), where Vailixi tests [A7AE] and [862F] at B99A:0B2F..0B3D
-(linear 0x3A4CF), and none of the 32 `cmp byte [A49B],0` in the 3.16 image
-lies in its Edit Sound segment 0B72 (Vailixi has ten in B99A).  What 3.16
-does instead, asserted on its profile (MAME, default and v308): entering
-Edit Sound stops the sequencer that Rec+Play started (transport 3.16 DS:A49B,
-the A7AE pair of mods/profile_316.inc: 8 at Rec+Play on both OSes, then 0 at
-the 6 key on 3.16), so CHOP runs and writes no port 6Ah.  `unlocked_running`
-(the Other > Extra safe-lock toggle) does not exist on 3.16.
+PMONEY on OS 3.16 has both settings as Extra Settings (mods/xparams316.inc,
+Other > Soft Key 4, same row order) and keeps Edit Sound running with the
+sequencer as Vailixi does (WAVE316.args drops the transport stop of the
+Program/Sounds 6 arm, image 0x1A056).  Its bytes are stored inverted (lock
+3.16 DS:831D, 0 = ON; mute 8317), so the inverted choice list runs ON, OFF
+and the unlock key is '+' instead of '-'.  Every case runs there too; the
+unlock waits for 3.16's later boot (shift()).
 """
 from __future__ import annotations
 
@@ -82,9 +79,9 @@ end)
 
 
 def safety_prelude(profile: h.Profile) -> str:
-    # [A7AE] transport, [862F] safe lock (generic); the capture is -2; 3.16
-    # has the transport (A49B) only.
-    lock = "nil" if profile.is316 else profile.dgroup(0x862F)
+    # [A7AE] transport, [862F] safe lock (generic); the capture is -2; 3.16:
+    # A49B and the Extra Settings byte 831D (stored inverted).
+    lock = profile.dgroup(0x862F)
     return (f"local DGSEG, STATE, LOCK = 0x{profile.dgroup_segment:04X}, {profile.dgroup(0xA7AE)}, {lock}\n"
             + SAFETY_LUA)
 
@@ -98,16 +95,16 @@ class ChopSafety(h.EmuSuite):
     RUNS = RUNS
     GENERIC = frozenset({"locked_running"})
     PROFILE_NAMES = h.ALL_PROFILES
-    # 3.16 has no Other > Extra "EDIT SND <Do> SOFT KEY 4 safe lock" option to
-    # clear (notes/port_316.md), so the case has no subject there.
-    SKIP_316 = frozenset({"unlocked_running"})
+    SKIP_316 = frozenset()
 
     @classmethod
     def cases(cls, profile, runs):
         s = shift(profile)
-        # Other > Extra (soft4), five Downs to the safe-lock field, '-' sets OFF.
-        unlock = taps((32, "other"), (33.5, "soft4"), *[(34.5 + i * .5, "down") for i in range(5)],
-                      (37.5, "-"), (38.5, "main_screen"))
+        # Other > Extra (soft4), five Downs to the safe-lock field, then OFF:
+        # '-' on Vailixi, '+' on 3.16's inverted list; after 3.16's sound load.
+        u = s + 0.5 if profile.is316 else 0
+        unlock = taps((32 + u, "other"), (33.5 + u, "soft4"), *[(34.5 + u + i * .5, "down") for i in range(5)],
+                      (37.5 + u, "+" if profile.is316 else "-"), (38.5 + u, "main_screen"))
         # Fresh Edit Sound + wave view (default 16-zone map), CHOP ZONE, then
         # leave and re-enter Edit Sound to read the saved list selection.
         chop = (taps((42 + s, "program_sounds"), (EDIT_SOUND + s, "6"), (45 + s, "help"))
@@ -163,19 +160,24 @@ class ChopSafety(h.EmuSuite):
                 if "port6a" in r and DO_TIME + s - 1 <= r["time"] <= AFTER + s]
 
     def assert_refused(self, case: str, profile: str = "capture"):
+        s = self.shift(profile)
         self.assertNotIn(0, self.transport(case, profile), "sequencer must run across Do")
-        self.assertEqual(self.records(case, BEFORE, profile), ["ZZSOURCE"])
-        self.assertEqual(self.records(case, AFTER, profile), ["ZZSOURCE"])
+        self.assertEqual(self.records(case, BEFORE + s, profile), ["ZZSOURCE"])
+        self.assertEqual(self.records(case, AFTER + s, profile), ["ZZSOURCE"])
         self.assertEqual(self.port6a(case, profile), [], "a refusal must not mute")
-        self.assertEqual(h.zone_rows(self.case_dir(case, profile))[AFTER]["valid"], 1)
+        self.assertEqual(h.zone_rows(self.case_dir(case, profile))[round(AFTER + s, 3)]["valid"], 1)
+
+    def lock_on(self, profile: str) -> int:
+        """The safe-lock byte's value for ON: 1 on Vailixi, 0 on 3.16 (stored inverted)."""
+        return 0 if self.profiles[profile].is316 else 1
 
     def assert_chopped(self, case: str, profile: str = "capture", mute: list[int] = (0x00, 0x0E)):
         s = self.shift(profile)
         self.assertEqual(self.records(case, BEFORE + s, profile), ["ZZSOURCE"])
         self.assertEqual(sorted(self.records(case, AFTER + s, profile)),
                          sorted(["ZZSOURCE"] + [f"ZONE{i:03d}" for i in range(ZONES)]))
-        # Vailixi: the mute setting defaults ON, so one mute before the work
-        # and one unmute after.  3.16 has no Edit Sound mute: no write at all.
+        # The mute setting defaults ON (Vailixi and PMONEY 3.16), so one mute
+        # before the work and one unmute after.
         self.assertEqual(self.port6a(case, profile), list(mute))
         # The page's saved list selection follows the source: a fresh Edit
         # Sound entry selects ZZSOURCE, not the ZONE name now at its old slot.
@@ -200,27 +202,28 @@ class ChopSafety(h.EmuSuite):
         self.assertEqual(set(self.transport("locked_stopped")), {0})
         self.assert_chopped("locked_stopped")
 
-    def test_316_edit_sound_entry_stops_sequencer_and_chop_proceeds(self):
+    def test_316_safe_lock_refuses_while_sequencer_runs(self):
         for prof in self.labels316("locked_running"):
             with self.subTest(profile=prof):
-                s = self.shift(prof)
-                rows = [r for r in self.log_rows("locked_running", prof)
-                        if "state" in r and r["time"] >= REC_PLAY + s]
-                # Rec+Play starts the count-in (transport 8, as on Vailixi,
-                # which goes on to 10 and runs across Do).  3.16 drops it to 0
-                # at the 6 key that enters Edit Sound and never restarts it,
-                # so CHOP runs, without muting.
-                self.assertEqual([r["state"] for r in rows], [8, 0], rows)
-                self.assertTrue(EDIT_SOUND + s <= rows[1]["time"] <= EDIT_SOUND + s + 0.5, rows)
-                self.assertEqual(set(self.transport("locked_running", prof)), {0})
-                self.assert_chopped("locked_running", prof, mute=[])
+                # Edit Sound no longer stops the sequencer (Vailixi F4): the
+                # count-in runs on (8, then 10) and the default lock refuses.
+                self.assert_refused("locked_running", prof)
+                self.assertEqual({r["lock"] for r in self.log_rows("locked_running", prof)
+                                  if "lock" in r and r["time"] > 40}, {self.lock_on(prof)})
 
-    def test_316_stopped_sequencer_chop_writes_no_port_6a(self):
+    def test_316_safe_lock_off_allows_chop_while_running(self):
+        for prof in self.labels316("unlocked_running"):
+            with self.subTest(profile=prof):
+                self.assertNotIn(0, self.transport("unlocked_running", prof))
+                locks = [r["lock"] for r in self.log_rows("unlocked_running", prof) if "lock" in r]
+                self.assertEqual(locks[-1], 1 - self.lock_on(prof))
+                self.assert_chopped("unlocked_running", prof)
+
+    def test_316_stopped_sequencer_allows_chop_and_mutes(self):
         for prof in self.labels316("locked_stopped"):
             with self.subTest(profile=prof):
                 self.assertEqual(set(self.transport("locked_stopped", prof)), {0})
-                self.assert_chopped("locked_stopped", prof, mute=[])
-
+                self.assert_chopped("locked_stopped", prof)
 
 if __name__ == "__main__":
     unittest.main()
