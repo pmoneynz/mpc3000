@@ -84,32 +84,25 @@ scsi_scan_reset:
 ; Adds the two choice fields on rows 2 and 3 before the stock unit (row 4) and
 ; timeout (row 5) fields.  Keeps SI, DI, BP, DS.
 scsi_page_rows:
-        push byte 0
-        push byte 2
-        FCALL T_B1B1_0026
-        add sp, 4
+        mov al, 2
+        call du_at
         push byte 3
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push xp_on_off                  ; inverted list: 0 shows ON
         push ds
         push SCSI_MULTI_OFF
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push scsi_s_multi
         FCALL T_B354_01C6
         add sp, 14
-        push byte 0
-        push byte 3
-        FCALL T_B1B1_0026
-        add sp, 4
+        mov al, 3
+        call du_at
         push byte 3
         push ds
         push XP_OFF_ON                  ; DS:0030 "OFF", "ON "
         push ds
         push SCSI_AUTO_RESET
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push scsi_s_reset
         FCALL T_B354_01C6
         add sp, 14

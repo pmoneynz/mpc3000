@@ -23,7 +23,7 @@ entry316:
         cld
         mov dx, 0xFFFF                  ; L - 1
         RELOC_PREV
-        cmp dx, 0xF400 - CAVE_HOME - (cave_end - $$ + 15) / 16 - 1
+        cmp dx, 0xF400 - CAVE_HOME - (cave_copy_end - $$ + 15) / 16 - 1
         ja .halt
         push cs
         pop ds
@@ -32,7 +32,7 @@ entry316:
         mov es, ax
         xor si, si
         xor di, di
-        mov cx, (cave_end - $$ + 1) / 2
+        mov cx, (cave_copy_end - $$ + 1) / 2
         rep movsw
         mov ax, POOL_INIT_IMM >> 4      ; L + paragraph of the immediate
         RELOC_PREV

@@ -226,10 +226,10 @@ XP_POST_STOP   equ 0xA44F       ; A762: post-stop work done
 %define T_C303_03B4 0x148A:0x03AC       ; Main: Seq field reverts
 %define T_B99A_175E 0x0B72:0x13A8       ; copy wrapper: add sp,4 after the TEMP lookup
 %define T_B99A_17A7 0x0B72:0x1409       ; copy wrapper: allocation succeeded
-%define T_B99A_1A02 0x0B72:0x15AD       ; insert: add sp,4 after cursor (7,0)
-%define T_B99A_1E59 0x0B72:0x19E2       ; reverse: same
-%define T_B99A_215B 0x0B72:0x1CA2       ; silence: same
-%define T_B99A_22FE 0x0B72:0x1E1A       ; delete: same
+%define T_B99A_1A05 0x0B72:0x15B0       ; insert: after cursor (7,0) and add sp,4
+%define T_B99A_1E5C 0x0B72:0x19E5       ; reverse: same
+%define T_B99A_215E 0x0B72:0x1CA5       ; silence: same
+%define T_B99A_2301 0x0B72:0x1E1D       ; delete: same
 %define T_B99A_2081 0x0B72:0x1BD9       ; reverse epilogue
 %define T_B99A_22C0 0x0B72:0x1DED       ; silence epilogue
 %define T_B99A_2615 0x0B72:0x2120       ; delete epilogue
@@ -317,3 +317,9 @@ PART_COUNT      equ 0x79AA         ; 7CBC: volumes found, 0..26 (byte; 2AB2:070E
 PART_TABLE      equ 0x79AF         ; 7CC1: 26 volume start LBAs (dwords, end 7A17 = 7D29)
 S_FMT_TITLE     equ 0x289F         ; 28FA: Format page title "Format Hard Disk"
 S_MENU_ITEM4    equ 0x2786         ; 27E9: "4.SCSI status, make SCSI device active\n"
+
+; Code in the cave runs only at its home (every hook is {label} = label:CAVE_HOME,
+; the builder rejects cave-to-cave far transfers), so CS = the relocated CAVE_SEG.
+%macro PUSH_CAVE_SEG 0
+        push cs
+%endmacro

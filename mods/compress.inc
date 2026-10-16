@@ -44,15 +44,10 @@ compress_page:
         jmp .leave_test
 
 .redraw:
-        FCALL T_B1B1_0002                ; clear the text screen
-        push cs
-        push cmp_s_title
-        FCALL T_B509_2289                ; field list reset, "== Compression =="
-        add sp, 4
-        push byte 0
-        push byte 1
-        FCALL T_B1B1_0026                ; cursor row 1, column 0
-        add sp, 4
+        mov bx, cmp_s_title
+        call du_title                    ; field list reset, clear, "== Compress Sound =="
+        mov al, 1
+        call du_at                       ; cursor row 1, column 0
         push byte 0
         push ss
         lea ax, [bp-0x288]
@@ -80,10 +75,8 @@ compress_page:
         push cmp_s_sound
         FCALL T_B354_01C6                ; field 0: Sound (choice)
         add sp, 14
-        push byte 31
-        push byte 1
-        FCALL T_B1B1_0026
-        add sp, 4
+        mov ax, (31 << 8) | 1
+        call du_rc                       ; row 1, column 31
         mov word [bp-4], 0
         cmp si, -1
         je .tune
@@ -102,14 +95,9 @@ compress_page:
         push cmp_s_tune
         FCALL T_B354_03B1                ; field 1: Tune (word)
         add sp, 16
-        push byte 0
-        push byte 3
-        FCALL T_B1B1_0026
-        add sp, 4
-        push cs
-        push cmp_s_prompt
-        FCALL T_B1B1_005B
-        add sp, 4
+        mov al, 3
+        mov bx, cmp_s_prompt
+        call du_row_put
         cmp si, -1
         je .rule
         call .stereo_mark
@@ -169,17 +157,10 @@ compress_page:
         jb .again
 .long_enough:
         FCALL T_CFC6_0D93                ; stop all voices
-        push byte 0
-        push byte 7
-        FCALL T_B1B1_0026
-        add sp, 4
-        push cs
-        push cmp_s_busy
-        FCALL T_B1B1_005B
-        add sp, 4
-        push byte 40
-        FCALL T_B1FF_000C                ; blank the rest of the row
-        add sp, 2
+        mov al, 7
+        mov bx, cmp_s_busy
+        call du_row_put
+        call du_eol                      ; blank the rest of the row
         call .index
         mov [bp-2], al
         call compress_sound
@@ -249,14 +230,7 @@ compress_page:
 ; ES:BX = the selected sound's record.  Clobbers AX, DX.
 .record:
         call .index
-        mov dx, 0x24
-        imul dx
-        add ax, SND_DIR
-        mov bx, ax
-        mov ax, SND_SEG
-        RELOC_PREV
-        mov es, ax
-        ret
+        jmp snd_record                   ; index 0..127: MUL = IMUL
 
 ; "(ST)" or blanks after the Sound field (row 1, column 23).
 .stereo_mark:
@@ -269,15 +243,9 @@ compress_page:
         ret
 
 .soft_keys:
-        push byte 0
-        push byte 7
-        FCALL T_B1B1_0026
-        add sp, 4
-        push cs
-        push cmp_s_keys
-        FCALL T_B1B1_005B
-        add sp, 4
-        ret
+        mov al, 7
+        mov bx, cmp_s_keys
+        jmp du_row_put
 
 ; NEAR.  AX = record index of a non-empty sound; DS = DGROUP.  Replaces each
 ; plane by its even samples in place: plane p's N words at base + p*N become
@@ -287,13 +255,7 @@ compress_page:
 compress_sound:
         push si
         push di
-        mov dx, 0x24
-        imul dx
-        add ax, SND_DIR
-        mov bx, ax
-        mov ax, SND_SEG
-        RELOC_PREV
-        mov es, ax
+        call snd_record                  ; index 0..127: MUL = IMUL
         mov ax, [es:bx+0x1C]
         mov dx, [es:bx+0x1E]
         mov [cs:cmp_n], ax
@@ -404,10 +366,10 @@ cmp_s_tune:   db "Tune:", 0
 cmp_s_prompt: db "Do it: half the samples, same pitch.", 10, "Tune must be 0 or more (drops by 120).", 0
 cmp_s_keys:   db "<Do it>   <Ply/Stp>", 0
 cmp_s_busy:   db "Compressing...", 0
-cmp_planes:   db 0
-align 2
-cmp_c:        dw 0
-cmp_n:        dd 0
-cmp_src:      dd 0
-cmp_dst:      dd 0
-cmp_pos:      dd 0
+; compress_sound's working state, in the session pool (mute_storage.inc).
+cmp_planes    equ cave_pool
+cmp_c         equ cave_pool + 2
+cmp_n         equ cave_pool + 4
+cmp_src       equ cave_pool + 8
+cmp_dst       equ cave_pool + 12
+cmp_pos       equ cave_pool + 16

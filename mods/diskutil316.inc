@@ -75,97 +75,6 @@ du_write:
         or ax, ax
         ret
 
-; BX = cave string: print at the cursor.  Keeps BX.
-du_put: push bx
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push bx
-        FCALL T_B1B1_005B
-        add sp, 4
-        pop bx
-        ret
-
-; AL = row: cursor (row, 0).  Keeps BX, CX.
-du_at:  push bx
-        push cx
-        push byte 0
-        cbw
-        push ax
-        FCALL T_B1B1_0026
-        add sp, 4
-        pop cx
-        pop bx
-        ret
-
-; BX = cave title: new page (field list reset, clear, "== title ==").  Keeps BX.
-du_title:
-        push bx
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push bx
-        FCALL T_B509_2289
-        add sp, 4
-        pop bx
-        ret
-
-; BX = soft-key text: '=' rule on row 6, the text on row 7, blanks to column 40.
-du_keys:
-        push bx
-        FCALL T_B77C_20C5
-        pop bx
-        call du_put
-        ; fall through
-; Blanks from the cursor to column 40.
-du_eol: push byte 40
-        FCALL T_B1FF_000C
-        add sp, 2
-        ret
-
-; AX = soft keys accepted.  Out: AX = the key (never 0), ZF = 1 for Soft Key 1.
-du_key: push si
-        mov si, ax
-.k:     push si
-        FCALL T_B060_035D
-        add sp, 2
-        or ax, ax
-        jz .k
-        pop si
-        cmp ax, 0x78
-        ret
-
-; Confirmation: BX = soft-key text.  Queued soft keys are dropped first; only Soft
-; Key 1 confirms.  Out: AX = 0 and ZF = 1 confirmed, else AX = the key (ZF = 0).
-du_ask: push bx
-        FCALL T_D6E0_008B
-        pop bx
-        call du_keys
-        mov ax, 1
-        call du_key
-        jne .r
-        xor ax, ax
-.r:     ret
-
-; AX = SCSI code: the stock error box for it.
-du_box: push ax
-        FCALL T_D510_008D
-        push ax
-        FCALL T_B3C7_0007
-        add sp, 4
-        ret
-
-; AX = OS error number: the stock box.
-du_err: push ax
-        FCALL T_B3C7_0007
-        add sp, 2
-        ret
-
-; INT 41 AX=0, as before the stock destructive operations (and at the start of a scan).
-du_reset:
-        push byte 0
-        FCALL T_CF0C_0006
-        add sp, 2
-        ret
-
 ; The active unit's sectors changed under the OS: mark the media changed and scan
 ; again (as 077D:13DE after the stock partition writer).  AX = scan result.
 du_rescan:
@@ -248,8 +157,7 @@ xfer:   push bp
         push byte 5
         FCALL T_B1B1_0026
         push word [bp-14]
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push xf_s_pct
         FCALL T_B1BC_01EE
         add sp, 10
@@ -366,16 +274,14 @@ sdc_copy:
         call du_at
         push word [bp-4]
         push word [bp-2]
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push sdc_s_ask
         FCALL T_B1BC_01EE
         add sp, 8
         mov al, 3
         call du_at
         push word [bp-4]
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push sdc_s_lost
         FCALL T_B1BC_01EE
         add sp, 6
@@ -450,8 +356,7 @@ sdc_copy:
         push byte 1                 ; width
         push ss
         push ax
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push bx
         FCALL T_B354_03B1
         add sp, 16
@@ -593,8 +498,7 @@ sw_zero:
         mov al, 2
         call du_at
         push word [SCSI_ACTIVE]
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push zr_s_ask
         FCALL T_B1BC_01EE
         add sp, 6
@@ -709,8 +613,7 @@ hyb_ui: push bp
         push word [cs:bx+hy_mb-2]
         push ax
         push si
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push hy_s_row
         FCALL T_B1BC_01EE
         add sp, 10
@@ -746,8 +649,7 @@ hyb_ui: push bp
         push word [cs:bx+hy_mb-2]
         push word [bp-6]
         push word [SCSI_ACTIVE]
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push hy_s_ask
         FCALL T_B1BC_01EE
         add sp, 10
@@ -1083,12 +985,11 @@ hy_bpb:     db 0xEB, 0x3C, 0x90, "PMONEY  "     ; 00h jump, OEM name
             db "FAT12   "                       ; 36h
 hy_bpb_end:
 hy_mb:      dw 8, 16, 24, 31, 32                ; MB per volume shown, options 1..5
-hy_n:       db 0
-hy_cnt:     db 0
-hy_letter:  db 0
-align 2
-hy_stride:  dd 0
-hy_ext:     dd 0
+hy_n        equ cave_pool               ; hyb_ui .. hyb_write, in the session pool
+hy_cnt      equ cave_pool + 1
+hy_letter   equ cave_pool + 2
+hy_stride   equ cave_pool + 4
+hy_ext      equ cave_pool + 8
 
 pm_s_text:  db "Choose the partition layout:", 10, 10
             db "MPC only: stock MPC partitions.", 10

@@ -525,6 +525,18 @@ mute_aps_header:
         dw MUTE_STORAGE_STATE_BYTES
         dw 0                               ; patched to the stock APS count
 
+%ifdef PROFILE_316
+mute_states:      times MUTE_STORAGE_ALL_BYTES db 0
+; Session scratch shared by three users that never overlap: the wave view's
+; column arrays and text buffers (wave.asm, one view() call), the mute page's
+; context (mute_ui.inc, one mute_ui() call) and the load-close staging below
+; (one mute_load_close_common call).  None reads a byte it has not written in
+; the same call.  mute_staging stays at mute_state_bx(24) (test_mute_range).
+mute_staging:
+cave_pool:        times 4 * COLS + 28 db 0
+mute_read_header  equ cave_pool + MUTE_STORAGE_ALL_BYTES
+%else
 mute_read_header: times MUTE_STORAGE_HEADER_BYTES db 0
 mute_states:      times MUTE_STORAGE_ALL_BYTES db 0
 mute_staging:     times MUTE_STORAGE_ALL_BYTES db 0
+%endif

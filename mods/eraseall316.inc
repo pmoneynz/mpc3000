@@ -20,11 +20,8 @@ ERA_STOP_KEY equ 0x78                   ; Soft Key 1 <Stop> during the loop (Vai
 
 ; FAR, from 077D:0C17 in place of the stock soft-key row.  Keeps BP, SI, DI.
 era_keys:
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push era_s_keys
-        FCALL T_B1B1_005B
-        add sp, 4
+        mov bx, era_s_keys
+        call du_put
         retf
 
 ; JMP from 077D:0C33.  DX = key (non-zero) from the field editor; frame of
@@ -51,16 +48,10 @@ era_all:
         sub sp, 0x32
         push si
         push di
-        FCALL T_B1B1_0002               ; clear the text screen
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push era_s_title
-        FCALL T_B509_2289               ; field list reset, title
-        add sp, 4
-        push byte 0
-        push byte 2
-        FCALL T_B1B1_0026               ; row 2
-        add sp, 4
+        mov bx, era_s_title
+        call du_title                   ; field list reset, clear, title
+        mov al, 2
+        call du_at                      ; row 2
         mov bl, [DISK_INDEX]            ; "Disk:%s" with the stock label
         xor bh, bh
         shl bx, 2
@@ -70,64 +61,35 @@ era_all:
         push S_DISK_FMT
         FCALL T_B1BC_01EE
         add sp, 8
-        push byte 0
-        push byte 3
-        FCALL T_B1B1_0026
-        add sp, 4
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push era_s_ask
-        FCALL T_B1B1_005B
-        add sp, 4
-        push byte 0
-        push byte 4
-        FCALL T_B1B1_0026
-        add sp, 4
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push era_s_ask2
-        FCALL T_B1B1_005B
-        add sp, 4
+        mov al, 3
+        mov bx, era_s_ask
+        call du_row_put
+        mov al, 4
+        mov bx, era_s_ask2
+        call du_row_put
         FCALL T_B77C_20C5               ; rule, cursor (7,0)
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push era_s_confirm
-        FCALL T_B1B1_005B
-        add sp, 4
-.ask:   push byte 1                     ; Soft Key 1 only
-        FCALL T_B060_035D
-        add sp, 2
+        mov bx, era_s_confirm
+        call du_put
+        mov ax, 1                       ; Soft Key 1 only
+        call du_key
         mov dx, ax
-        or ax, ax
-        jz .ask
-        cmp dx, 0x78
         jne .done                       ; a mode key: leave with it
-        push byte 0
-        push byte 7
-        FCALL T_B1B1_0026
-        add sp, 4
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push era_s_stop
-        FCALL T_B1B1_005B
-        add sp, 4
+        mov al, 7
+        mov bx, era_s_stop
+        call du_row_put
         FCALL T_D6E0_008B               ; drop queued soft keys (a repeated confirm)
-        push byte 0
-        FCALL T_CF0C_0006               ; INT 41 AX=0, as before the stock erase
-        add sp, 2
+        call du_reset                   ; INT 41 AX=0, as before the stock erase
         push ss
         lea ax, [bp-0x1C]
         push ax
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push era_s_all
         FCALL T_CEE6_0175               ; find first
         jmp .found
 .next:  push ss
         lea ax, [bp-0x1C]
         push ax
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push era_s_all
         FCALL T_CEE6_01E1               ; find next
 .found: add sp, 8
@@ -152,30 +114,23 @@ era_all:
         push si
         FCALL T_B509_21A1               ; NAME.EXT for display
         add sp, 8
-        push byte 0
-        push byte 5
-        FCALL T_B1B1_0026               ; row 5
-        add sp, 4
+        mov al, 5
+        call du_at                      ; row 5
         push ss
         lea ax, [bp-0x32]
         push ax
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push era_s_busy
         FCALL T_B1BC_01EE               ; "Erasing NAME.EXT"
         add sp, 8
-        push byte 40
-        FCALL T_B1FF_000C               ; blank the rest of the row
-        add sp, 2
+        call du_eol                     ; blank the rest of the row
         push ss
         push si
         FCALL T_CEE6_00C2               ; delete
         add sp, 4
         or ax, ax
         jz .poll
-        push ax                         ; first error: stock box, stop
-        FCALL T_B3C7_0007
-        add sp, 2
+        call du_err                     ; first error: stock box, stop
         jmp .end
 .poll:  FCALL T_D6F3_000E               ; keys queued?
         or ax, ax
@@ -194,7 +149,7 @@ era_s_keys:    db "<Erase it> <Erase all>", 0
 era_s_title:   db "Erase All Files", 0
 era_s_ask:     db "Erase every file on this disk?", 0
 era_s_ask2:    db "(.SYS files are kept. No undo.)", 0
-era_s_confirm: db "<Erase all>", 0
+era_s_confirm  equ era_s_keys + 11                 ; "<Erase all>", the tail of era_s_keys
 era_s_stop:    db "<Stop>     ", 0
 era_s_busy:    db "Erasing %s", 0
 era_s_all:     db "???????????????????", 0      ; 19: the stock load-list pattern

@@ -6,25 +6,15 @@
 ; Placed after entry316 so no other cave offset moves.
 
 banner316:
-        push BANNER_COL1                ; column
-        push 1                          ; row
-        FCALL T_B1B1_0026
-        add sp, 4
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push banner_title
-        FCALL T_B1B1_005B
-        add sp, 4
-        push BANNER_COL2
-        push 2
-        FCALL T_B1B1_0026
-        add sp, 4
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push banner_version
-        FCALL T_B1B1_005B
-        add sp, 4
+        mov ax, (BANNER_COL1 << 8) | 1  ; row 1
+        mov bx, banner_title
+        call .line
+        mov ax, (BANNER_COL2 << 8) | 2  ; row 2
+        mov bx, banner_version
+        call .line
         retf
+.line:  call du_rc
+        jmp du_put
 
 banner_title:   db "WAVEFORM/ZONES/MUTE GROUP", 0
 banner_version: db "PMONEY BETA 1.0", 0

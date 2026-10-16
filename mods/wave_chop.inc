@@ -28,8 +28,7 @@ chop_do_field:
         mov byte [CHOP_DO], 0
 .index_ok:
         push 16
-        push strict word CAVE_SEG
-        RELOC_PREV
+        PUSH_CAVE_SEG
         push chop_do_options
         push ds
         push CHOP_DO
@@ -274,21 +273,15 @@ editdo_copy:
         push ax
         push word [cs:chop_count+2]
         push word [cs:chop_count]
-        push strict word CAVE_SEG
-        RELOC_PREV
+        PUSH_CAVE_SEG
         push chop_name
         FCALL T_D0C0_0611
         add sp, 10
         mov [cs:chop_dest_index], ax
-        push 0                          ; Vailixi B99A:1801..1816
-        push 7
-        FCALL T_B1B1_0026
-        add sp, 4
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push editdo_copying_text
-        FCALL T_B1B1_005B
-        add sp, 4
+        mov al, 7                       ; Vailixi B99A:1801..1816
+        mov bx, editdo_copying_text
+        call du_row_put
+        call du_eol
         mov ax, [cs:chop_dest_index]
         or ax, ax
         jns .allocated
@@ -296,13 +289,7 @@ editdo_copy:
         mov ax, [cs:chop_dest_index]
         jmp .return
 .allocated:
-        mov dx, 0x24
-        mul dx
-        add ax, SND_DIR
-        mov bx, ax
-        mov ax, SND_SEG
-        RELOC_PREV
-        mov es, ax
+        call snd_record
         mov ax, [es:bx+0x20]
         mov dx, [es:bx+0x22]
         mov [cs:chop_dest], ax
@@ -350,26 +337,14 @@ editdo_copy:
 editdo_source_record:
         xor ax, ax
         mov al, [cs:chop_selected_record]
-        mov dx, 0x24
-        mul dx
-        add ax, SND_DIR
-        mov bx, ax
-        mov ax, SND_SEG
-        RELOC_PREV
-        mov es, ax
-        ret
+        jmp snd_record
 
 ; Bottom row back to the stock soft keys.
 editdo_softkeys:
-        push 0
-        push 7
-        FCALL T_B1B1_0026
-        add sp, 4
-        push ds
-        push EDITDO_SOFTKEYS
-        FCALL T_B1B1_005B
-        add sp, 4
-        ret
+        mov al, 7
+        call du_at
+        mov bx, EDITDO_SOFTKEYS
+        jmp du_put_ds
 %endif
 
 ; Lifecycle hook for D0C0:[0B19,0B1F).  It recreates the replaced
@@ -572,8 +547,7 @@ chop_create_all:
         call chop_make_name
 %else
         push 1
-        push strict word CAVE_SEG
-        RELOC_PREV
+        PUSH_CAVE_SEG
         push chop_name
         FCALL T_C6C2_173D
         add sp, 6
@@ -584,8 +558,7 @@ chop_create_all:
         push ax
         push word [cs:chop_count+2]
         push word [cs:chop_count]
-        push strict word CAVE_SEG
-        RELOC_PREV
+        PUSH_CAVE_SEG
         push chop_name
         FCALL T_D0C0_0611
         add sp, 10
@@ -595,6 +568,9 @@ chop_create_all:
 
         ; Fetch both bases after allocation.  D0C0:0611 may compact wave RAM
         ; and move the source before returning.
+%ifdef PROFILE_316
+        call snd_record
+%else
         mov dx, 0x24
         mul dx
         add ax, SND_DIR
@@ -602,6 +578,7 @@ chop_create_all:
         mov ax, SND_SEG
         RELOC_PREV
         mov es, ax
+%endif
         mov ax, [es:bx+0x20]
         mov dx, [es:bx+0x22]
         mov [cs:chop_dest], ax
@@ -705,6 +682,9 @@ chop_create_all:
 ; ES:BX = source sound record.  Clobbers AX, DX.
 chop_source_record:
         mov ax, [cs:zones_source]
+%ifdef PROFILE_316
+        jmp snd_record
+%else
         mov dx, 0x24
         mul dx
         add ax, SND_DIR
@@ -713,6 +693,7 @@ chop_source_record:
         RELOC_PREV
         mov es, ax
         ret
+%endif
 
 ; Keep the map identity and waveform cache coherent if allocation compacted
 ; the source.  Name, stereo and length are already unchanged and validated.
@@ -802,8 +783,7 @@ chop_show_status:
         FCALL T_B1B1_0026
         add sp, 4
         pop si
-        push strict word CAVE_SEG
-        RELOC_PREV
+        PUSH_CAVE_SEG
         push si
         FCALL T_B1B1_005B
         add sp, 4
@@ -836,13 +816,30 @@ chop_do_text: db "CHOP ZONE", 0
 ; PMONEY's own wording for the two ported options (16-character list width).
 editdo_copy_text: db "ZONE->NEW SOUND ", 0              ; Vailixi's COPY ZONE-> SND
 editdo_trunc_text: db "CROP SOFT ST-END", 0             ; Vailixi's TRUNC SFT ST+END
-editdo_copying_text: db "Copying zone to a new sound...          ", 0   ; 40 columns
+editdo_copying_text: db "Copying zone to a new sound...", 0   ; du_eol blanks to column 40
 editdo_map: db 0, 0x80, 1, 2, 3, 4, 5, 0x81, 6, 7    ; list index -> 3.16 handler
 %endif
 chop_empty_text: db "EMPTY ZONE - ADJUST BOUNDARIES", 0
 chop_stale_text: db "REOPEN WAVE VIEW FOR THIS SOUND", 0
 chop_short_text: db "ZONE MUST BE AT LEAST 10ms", 0
 
+%ifdef PROFILE_316                     ; one Do dispatch: the session pool (mute_storage.inc)
+chop_result          equ cave_pool
+chop_dest_index      equ cave_pool + 2
+chop_source_len      equ cave_pool + 4
+chop_required        equ cave_pool + 8
+chop_start           equ cave_pool + 12
+chop_count           equ cave_pool + 16
+chop_src             equ cave_pool + 20
+chop_dest            equ cave_pool + 24
+chop_source_stereo   equ cave_pool + 28
+chop_source_volume   equ cave_pool + 29
+chop_source_tune     equ cave_pool + 30
+chop_zone            equ cave_pool + 31
+chop_created_count   equ cave_pool + 32
+chop_selected_record equ cave_pool + 33
+chop_created         equ cave_pool + 34
+%else
 align 2
 chop_result: dw 0
 chop_dest_index: dw 0
@@ -859,6 +856,7 @@ chop_zone: db 0
 chop_created_count: db 0
 chop_selected_record: db 0
 chop_created: times ZONE_MAX db 0
+%endif
 %ifdef CHOP_OWN_NAMES
 chop_name: db "ZONE000         ", 0      ; 16 characters, digits at +4
 align 2

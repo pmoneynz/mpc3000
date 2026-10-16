@@ -76,7 +76,9 @@ NOT_OPERANDS = (("cmp", "2e3b06", 1),   # CMP AX,[CS:disp16]: opcode 3B and ModR
                 ("call", "9a", 1),      # CALL FAR's offset word; its segment word (position 3) is the relocated one
                 ("mov", "bb0900", 1),   # MOV BX,9 in draw: the sound name's text column, equal to segment 0009
                 ("mov", "2e8a14", 1),   # MOV DL,[CS:SI]: opcode 8A and ModRM 14, equal to segment 148A
-                ("mov", "368a14", 1))   # MOV DL,[SS:SI]: the same bytes after an SS prefix
+                ("mov", "368a14", 1),   # MOV DL,[SS:SI]: the same bytes after an SS prefix
+                ("call", "e8", 1),      # near CALL rel16: a displacement, never a segment
+                ("mov", "bf47", 0))     # MOV DI,2C47h (mu_grid+8): opcode BF and the immediate's low byte
 
 
 def _profile_values() -> tuple[dict[str, tuple[int, int]], dict[str, int]]:
@@ -191,7 +193,12 @@ def _imm(buf: bytes | bytearray, base: int, op: tuple[int, int]) -> int:
 
 def _names_label(line: kit.ListingLine, value: int, labels: dict[str, int]) -> bool:
     """The source operand is a cave label whose offset is `value`: an offset in the cave, not a segment."""
-    return any(labels.get(word) == value for word in re.findall(r"[A-Za-z_.][\w.]*", line.source))
+    words = re.findall(r"[A-Za-z_.][\w.]*", line.source)
+    if any(labels.get(word) == value for word in words):
+        return True
+    m = re.search(r",\s*([A-Za-z_][\w.]*)\s*([+-])\s*(\d+|0x[0-9A-Fa-f]+)\s*(?:;|$)", line.source)
+    return bool(m and m[1] in labels
+                and (labels[m[1]] + (1 if m[2] == "+" else -1) * int(m[3], 0)) & 0xFFFF == value)
 
 
 def _not_operand(line: kit.ListingLine, at: int) -> bool:
@@ -218,9 +225,12 @@ def verify(result: rc.Result, cave: bytes, labels: dict[str, int], listing: list
     entry = {name: _imm(cave, 0, op) for name, op in ops.items()}
     if entry["home"] != CAVE_HOME:
         raise ValueError(f"entry316 copies to paragraph {entry['home']:04X}, not CAVE_HOME {CAVE_HOME:04X}")
-    if 2 * entry["count"] - len(cave) not in (0, 1):
-        raise ValueError(f"entry316 copies {entry['count']:#x} words; the cave is {len(cave):#x} bytes")
-    bound = (rc.PAGE61 - len(cave)) // 16 - CAVE_HOME - 1     # highest L-1 whose home ends below page 61
+    copied = labels["cave_copy_end"]                          # entry316 itself stays at the stage
+    if labels["entry316"] < copied:
+        raise ValueError("entry316 lies inside the copied part of the cave")
+    if 2 * entry["count"] - copied not in (0, 1):
+        raise ValueError(f"entry316 copies {entry['count']:#x} words; the copied cave is {copied:#x} bytes")
+    bound = (rc.PAGE61 - copied) // 16 - CAVE_HOME - 1        # highest L-1 whose home ends below page 61
     if entry["halt_bound"] != bound:
         raise ValueError(f"entry316 halts above L-1 = {entry['halt_bound']:04X}, expected {bound:04X}")
     special = {ops["dx"][0]: 0xFFFF, ops["pool_seg"][0]: POOL_IMM >> 4, ops["start_seg"][0]: 0x0000}
@@ -274,7 +284,7 @@ def verify(result: rc.Result, cave: bytes, labels: dict[str, int], listing: list
         relocated = bytearray(cave)
         for o, w in reloc_words.items():
             struct.pack_into("<H", relocated, o, (w + load) & 0xFFFF)
-        if mem[home:home + len(cave)] != relocated:
+        if mem[home:home + copied] != relocated[:copied]:
             raise ValueError(f"L={load:04X}: the cave home is not the relocated cave")
         pool = live["pool_seg"] * 16 + live["pool_off"]
         if pool != load * 16 + POOL_IMM:
@@ -292,8 +302,10 @@ def verify(result: rc.Result, cave: bytes, labels: dict[str, int], listing: list
                 if (off, seg) != (labels[name], (load + CAVE_HOME) & 0xFFFF):
                     raise ValueError(f"L={load:04X}: hook at 0x{at:05X} -> {seg:04X}:{off:04X}, "
                                      f"expected {(load + CAVE_HOME) & 0xFFFF:04X}:{labels[name]:04X}")
+        stage = (load + result.stage) * 16
         for t in transfers:                     # cave far transfers land in 3.16 code
-            off, seg = struct.unpack_from("<HH", mem, home + t.cave_offset + 1)
+            base = home if t.cave_offset < copied else stage     # entry316 runs at the stage
+            off, seg = struct.unpack_from("<HH", mem, base + t.cave_offset + 1)
             rel = (seg - load) & 0xFFFF
             if rel == CAVE_HOME:
                 continue

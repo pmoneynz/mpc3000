@@ -24,9 +24,15 @@ from mods import buildkit as kit  # noqa: E402
 from mods import route_c as rc  # noqa: E402
 
 HAVE_TOOLS = shutil.which("nasm") is not None and shutil.which("ndisasm") is not None
-SYS_SHA256 = "227bad563ee2b9db523c60d384e5f0571c12d60ed10931f64edb0e44fa03af99"
-IMG_SHA256 = "c29e0119327f5dc546a80def41b213076a67cb437c8a0c9a748643a7da5d4732"
-CAVE_SHA256 = "03885338784553a6dfea7a5fe586c351c72e0a1356fc55150c1b3d611d8777a7"
+SYS_SHA256 = "23602133059f0f9880618c4e5faf665d198b9b0f36ecd4a1da2db46b95ad7855"
+IMG_SHA256 = "db13a7a0959d3960c66d0a5c6ea27b1044afea5a77cb1380c315ae2baab10a3c"
+CAVE_SHA256 = "56846b9538876294e453a27b3a12f1215fc8cb5df00019e6701deb640dc419fb"
+# Size budget (notes/performance.md, cave size): the 3.08/3.11 EPROMs load at
+# L = 7000, so the cave home 7E00 must end below F400h: 24,576 bytes.  Lower
+# HOME_BUDGET after each size step; raise it only with a note.
+HOME_LIMIT_L7000 = 0xF4000 - 0x70000 - 0x7E00 * 16
+HOME_BUDGET = 19_200            # bytes entry316 copies to the home
+HOME_HEADROOM = 4_096           # kept free under the 3.08/3.11 limit for future features
 HOOK = 0x2298F                  # chop_sound_delete hook, on T_D0C0_0B19 = 21E7:0B1F
 
 
@@ -42,11 +48,15 @@ class PinnedBuild(unittest.TestCase):
             self.assertEqual(kit.sha256((out / "wave316.cave.bin").read_bytes()), CAVE_SHA256)
         sim = m["simulation"]
         self.assertEqual((sim["6900"]["pool_end"], sim["7000"]["pool_end"]), ("68FF", "6FFF"))
-        self.assertEqual((sim["copy_words"], sim["halt_above"]), ("292E", "70D9"))
+        self.assertEqual((sim["copy_words"], sim["halt_above"]), ("257C", "714F"))
+        copied = 2 * int(sim["copy_words"], 16)
+        self.assertLessEqual(copied, HOME_BUDGET, f"cave home {copied} B over budget")
+        self.assertGreaterEqual(HOME_LIMIT_L7000 - copied, HOME_HEADROOM)
         # +6 banner316; S1a, compress, sysinfo316, editdo, xparams316, tc316,
         # eraseall316, syncout316 and scsi316 (Vailixi ports,
-        # notes/vailixi_features.md) bring 280 and 46; diskutil316 +60 and +2
-        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (340, 48))
+        # notes/vailixi_features.md) bring 280 and 46; diskutil316 +60 and +2;
+        # the size pass (push cs, shared ui316 helpers) 251 and 36
+        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (251, 36))
 
 
 @unittest.skipUnless(HAVE_TOOLS, "needs nasm and ndisasm")
@@ -128,7 +138,9 @@ class Checks(unittest.TestCase):
                 self.verify(**self.poke_op("halt_bound", value))
 
     def test_every_load_segment_passes_the_halt_bound(self) -> None:
-        last = (rc.PAGE61 - len(self.cave)) // 16 - b.CAVE_HOME
+        # entry316 copies only up to cave_copy_end; it stays at the stage itself.
+        copied = self.labels.get("cave_copy_end", len(self.cave))
+        last = (rc.PAGE61 - copied) // 16 - b.CAVE_HOME
         with mock.patch.object(rc, "LOADS", (last,)):
             self.assertIn(f"{last:04X}", self.verify())
         with mock.patch.object(rc, "LOADS", (0x6900, last + 1)), \

@@ -156,3 +156,8 @@ MUTE_NOTE_MIDI equ 0xD6AC       ; note of the last MIDI event (D6AE)
 %define T_C887_00F1 0xC887:0x00F1       ; menu return continuation (DL)
 %define T_CA45_0008 0xCA45:0x0008       ; select program (index)
 %define T_D9F2_000C 0xD9F2:0x000C       ; effective pad slot -> note
+
+%macro PUSH_CAVE_SEG 0
+        push strict word CAVE_SEG
+        RELOC_PREV
+%endmacro

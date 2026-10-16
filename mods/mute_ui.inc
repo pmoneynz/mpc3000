@@ -404,49 +404,18 @@ mute_ui_draw:
         xor ax, ax
         mov cx, ROW*64/2
         rep stosw
-        xor bx, bx
-        mov si, mu_title
+        mov di, mu_texts                ; glyph row, cell column, string
+.text:  mov ax, [cs:di]
+        mov bl, ah
+        xor bh, bh
+        xor ah, ah
+        mov si, [cs:di+2]
+        push di
         call text
-        xor ax, ax
-        mov bx, 13
-        mov si, mu_name
-        call text
-        mov ax, 8
-        xor bx, bx
-        mov si, mu_line1
-        call text
-        mov ax, 8
-        mov bx, 30
-        mov si, mu_note
-        call text
-        mov ax, 16
-        xor bx, bx
-        mov si, mu_line2
-        call text
-        mov ax, 24
-        xor bx, bx
-        mov si, mu_grid
-        call text
-        mov ax, 32
-        xor bx, bx
-        mov si, mu_grid+28
-        call text
-        mov ax, 40
-        xor bx, bx
-        mov si, mu_grid+56
-        call text
-        mov ax, 48
-        xor bx, bx
-        mov si, mu_grid+84
-        call text
-        mov ax, 57
-        xor bx, bx
-        mov si, mu_apply
-        call text
-        mov ax, 57
-        mov bx, 34
-        mov si, s_exit
-        call text
+        pop di
+        add di, 4
+        cmp di, mu_texts_end
+        jb .text
         ; The selected pad is also highlighted in the membership overview.
         xor ax, ax
         mov al, [cs:mu_pad]
@@ -472,8 +441,35 @@ mute_ui_draw:
         mov dx, 7
         jmp invert
 
+mu_texts: db 0, 0
+        dw mu_title
+        db 0, 13
+        dw mu_name
+        db 8, 0
+        dw mu_line1
+        db 8, 30
+        dw mu_note
+        db 16, 0
+        dw mu_line2
+        db 24, 0
+        dw mu_grid
+        db 32, 0
+        dw mu_grid+28
+        db 40, 0
+        dw mu_grid+56
+        db 48, 0
+        dw mu_grid+84
+        db 57, 0
+        dw mu_apply
+        db 57, 34
+        dw s_exit
+mu_texts_end:
 mu_title: db 'Mute Groups:',0
+%ifdef PROFILE_316
+mu_name  equ cave_pool                  ; session pool (mute_storage.inc)
+%else
 mu_name: times 17 db 0
+%endif
 mu_line1: db 'Program:'
 mu_program_digits: db '01    Enabled:'
 mu_enable_text: db 'OFF',0
@@ -506,5 +502,10 @@ mu_key: db 0
 align 2
 mu_repeat: dw 1
 mu_confirm: dw 0                        ; nonzero only for the key after Apply All
+%ifdef PROFILE_316
+mu_notes equ cave_pool + 17
+mu_alias equ cave_pool + 81
+%else
 mu_notes: times 64 db 0
 mu_alias: times 64 db 0
+%endif

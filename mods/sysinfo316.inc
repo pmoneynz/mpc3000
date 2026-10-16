@@ -17,10 +17,8 @@
 ; as the replaced call left it.  Preserves SI, DI, BP, DS.
 
 sysinfo316:
-        push byte 0
-        push byte 3
-        FCALL T_B1B1_0026               ; cursor row 3, column 0
-        add sp, 4
+        mov al, 3
+        call du_at                      ; cursor row 3, column 0
         FCALL T_D0C0_0236               ; free sound words, DX:AX
         shl ax, 1
         rcl dx, 1

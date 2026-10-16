@@ -707,29 +707,24 @@ text:
         mov si, dx
         shl si, 1
         shl si, 1
-        shl si, 1
-        sub si, dx                      ; 7 bytes per glyph
+        add si, dx                      ; 5 column bytes per glyph
         add si, font
         call pixel                      ; DI, CL = the glyph's top-left pixel
-        mov dh, 7
-.r:     mov dl, [cs:si]
+        mov dh, 5
+.c:     mov dl, [cs:si]                 ; bit 0 = top row
         inc si
         push di
-        push cx
-        mov ch, 5
-.b:     test dl, 0x10
-        jz .nb
+.r:     shr dl, 1
+        jnc .nr
         or [di], cl
-.nb:    shl dl, 1
+.nr:    add di, ROW
+        or dl, dl
+        jnz .r
+        pop di
         ror cl, 1                       ; past bit 0: next byte, bit 7
         adc di, 0
-        dec ch
-        jnz .b
-        pop cx
-        pop di
-        add di, ROW
         dec dh
-        jnz .r
+        jnz .c
         add bx, 6
         pop si
         jmp .ch
@@ -1013,6 +1008,7 @@ draw:
  %define S1A_IDIV_RUNTIME T_F800_20FA
  %define S1A_UDIV_RUNTIME T_F800_2101
  %include "s1a_divide.inc"             ; the 17 divides of the note-on layer (WAVE316.args)
+ %include "ui316.inc"                 ; text-page helpers of the PROFILE_316 modules
  %include "compress.inc"               ; Program/Sounds 9: compression (Vailixi port)
  %include "xparams316.inc"             ; Other -> Extra Settings, real-time sample editing
  %include "tc316.inc"                  ; timing correct: Vailixi's 13 note values, swing
@@ -1038,7 +1034,11 @@ s_r:     db "R", 0
 s_zoom:  db "Zoom:00", 0
 s_trim:  db "<Trim>", 0
 s_zone:  db "<Zone>", 0
+%ifdef PROFILE_316
+s_play   equ cmp_s_keys + 10        ; "<Ply/Stp>", the tail of compress.inc's soft keys
+%else
 s_play:  db "<Ply/Stp>", 0
+%endif
 s_short: db "Too short", 0
 s_fine:  db "<Full>", 0             ; in fine mode the key goes back to full
 s_full:  db "<Fine>", 0
@@ -1078,16 +1078,26 @@ bstart: dd 0
 bend:   dd 0
 vmax:   dw 0
 vmin:   dw 0
+%ifdef PROFILE_316                     ; in the session pool (mute_storage.inc)
+tops    equ cave_pool
+bots    equ tops + COLS
+ftops   equ tops + 2 * COLS
+fbots   equ tops + 3 * COLS
+name    equ tops + 4 * COLS
+num     equ name + 17
+%else
 tops:   times COLS db 0             ; full view; bots = tops + COLS
 bots:   times COLS db 0
 ftops:  times COLS db 0             ; fine view; fbots = ftops + COLS
 fbots:  times COLS db 0
 name:   times 17 db 0
 num:    times 11 db 0
+%endif
 
 %ifdef PROFILE_316
-%include "entry316.inc"
 %include "banner316.inc"
 %include "sysinfo316.inc"
+cave_copy_end:                          ; end of everything the 3.16 entry copies
+%include "entry316.inc"                 ; runs only from the staging copy
 %endif
-cave_end:                               ; end of everything the 3.16 entry copies
+cave_end:

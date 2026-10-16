@@ -57,11 +57,8 @@ xp_mute_common:
 
 ; FAR from 19D0:0126 (image 0x19E26): the soft-key row, with <Extra> added.
 xp_other_keys:
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push xp_s_keys
-        FCALL T_B1B1_005B
-        add sp, 4
+        mov bx, xp_s_keys
+        call du_put
         retf
 
 ; JMP from 19D0:0160 (image 0x19E60), DX = normalized key (non-zero).
@@ -80,20 +77,13 @@ xp_other_dispatch:
 ; leaves the field editor is returned.  AX = key or mode.
 xp_extra_screen:
         push si
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push xp_s_title
-        FCALL T_B509_2289
-        add sp, 4
+        mov bx, xp_s_title
+        call du_title
         mov si, xp_rows
 .row:   mov al, [cs:si]                 ; row number, 0 ends
         or al, al
         jz .rows_done
-        push byte 0
-        cbw
-        push ax
-        FCALL T_B1B1_0026
-        add sp, 4
+        call du_at
         push byte 3
         cmp byte [cs:si+1], 0           ; polarity: 0 direct, 1 inverted
         jne .inverted
@@ -101,28 +91,20 @@ xp_extra_screen:
         push XP_OFF_ON
         jmp .table
 .inverted:
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push xp_on_off
 .table: push ds
         push word [cs:si+2]             ; the setting's DS offset
-        push strict word CAVE_SEG
-        RELOC_PREV
+        push cs
         push word [cs:si+4]             ; label
         FCALL T_B354_01C6
         add sp, 14
         add si, 6
         jmp .row
 .rows_done:
-        push byte 0
-        push byte 7
-        FCALL T_B1B1_0026
-        add sp, 4
-        push strict word CAVE_SEG
-        RELOC_PREV
-        push xp_s_doit
-        FCALL T_B1B1_005B
-        add sp, 4
+        mov al, 7
+        mov bx, xp_s_doit
+        call du_row_put
 .key:   push byte 1
         FCALL T_B060_035D
         add sp, 2
@@ -212,11 +194,8 @@ xp_copy_done:
 ; Insert (Do 2, 3), reverse (9), silence (8), delete (4-7): mute after the
 ; routine's own early exits, unmute before its epilogue.
 xp_ins_mute:
-        call xp_mute_if
-        push byte 0                     ; the replaced cursor (7,0)
-        push byte 7
-        FCALL T_B1B1_0026
-        FJMP T_B99A_1A02
+        call xp_mute_row7
+        FJMP T_B99A_1A05                ; after the replaced cursor (7,0) and its add sp,4
 xp_ins_done:
         call xp_unmute_if
         xor ax, ax
@@ -225,41 +204,33 @@ xp_ins_done:
         leave
         retf
 xp_rev_mute:
-        call xp_mute_if
-        push byte 0
-        push byte 7
-        FCALL T_B1B1_0026
-        FJMP T_B99A_1E59
+        call xp_mute_row7
+        FJMP T_B99A_1E5C
 xp_sil_mute:
-        call xp_mute_if
-        push byte 0
-        push byte 7
-        FCALL T_B1B1_0026
-        FJMP T_B99A_215B
+        call xp_mute_row7
+        FJMP T_B99A_215E
 xp_del_mute:
+        call xp_mute_row7
+        FJMP T_B99A_2301
+; Mute if set, then the replaced cursor (7,0).  Changes AX and flags.
+xp_mute_row7:
         call xp_mute_if
-        push byte 0
-        push byte 7
-        FCALL T_B1B1_0026
-        FJMP T_B99A_22FE
-xp_rev_done:
-        call xp_soft_keys
-        FJMP T_B99A_2081
-xp_sil_done:
-        call xp_soft_keys
-        FJMP T_B99A_22C0
-xp_del_done:
-        call xp_soft_keys
-        FJMP T_B99A_2615
+        mov al, 7
+        jmp du_at
 
-; The replaced redraw of the Edit Sound soft-key row, then unmute.
-xp_soft_keys:
-        push ds
-        push EDITDO_SOFTKEYS
-        FCALL T_B1B1_005B
-        add sp, 4
+; The replaced redraw of the Edit Sound soft-key row, unmute, then the three
+; routines' common epilogue (0B72:1BD9 = 1DED = 2120: pop di / pop si / leave /
+; retf).  AX at the RETF is the put's, as in stock.
+xp_rev_done:
+xp_sil_done:
+xp_del_done:
+        mov bx, EDITDO_SOFTKEYS
+        call du_put_ds
         call xp_unmute_if
-        ret
+        pop di
+        pop si
+        leave
+        retf
 
 ; ---------------------------------------------------------------- playback lock
 

@@ -295,7 +295,11 @@ numeric_commit:
         ret
 
 numeric_field_bases: db 1, 7, 4, 10
+%ifdef PROFILE_316
+numeric_mode_keys    equ modes                 ; the same mode-key list (wave.asm)
+%else
 numeric_mode_keys:   db "LMFJGUSlsOK", 0
+%endif
 numeric_first:       db 0
 numeric_sel:         db 0
 numeric_base:        db 0

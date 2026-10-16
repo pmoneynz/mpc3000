@@ -221,7 +221,7 @@ class Profile:
         """The cave as the entry routine leaves it at its home (loader simulation)."""
         self._need316("cave_home_image")
         from mods import route_c as rc
-        size = cave_end(self.map)
+        size = cave_copy_end(self.map)
         mem, _ = rc.simulate(self.sys.read_bytes(), self.load_segment, home=CAVE_HOME_316, cave_len=size)
         home = (self.load_segment + CAVE_HOME_316) * 16
         return bytes(mem[home:home + size])
@@ -247,6 +247,12 @@ def symbols(map_path: Path) -> dict[str, int]:
 
 def cave_end(map_path: Path) -> int:
     return symbols(map_path)["cave_end"]
+
+
+def cave_copy_end(map_path: Path) -> int:
+    """End of the bytes the 3.16 entry copies to the cave home (entry316 itself stays at the stage)."""
+    sym = symbols(map_path)
+    return sym.get("cave_copy_end", sym["cave_end"])
 
 
 # Equates of profile_316.inc that carry a generic address but are not DGROUP
@@ -614,7 +620,7 @@ def observer(profile: Profile, path: Path, parts: list[str], prelude: str = "") 
                   f"DG_SEG = 0x{profile.dgroup_segment:04X}",
                   f"DG_PHYS = 0x{PHYS_316 + profile.dgroup_segment * 16:06X}",
                   f"SND_SEG = 0x{profile.sound_segment:04X}",
-                  f"IMAGE_PHYS = 0x{profile.image_phys(0):06X}", f"CAVE_LEN = {cave_end(profile.map)}"]
+                  f"IMAGE_PHYS = 0x{profile.image_phys(0):06X}", f"CAVE_LEN = {cave_copy_end(profile.map)}"]
     if prelude:
         lines += ["do -- suite prelude", *prelude.splitlines(), "end"]
     for part in parts:
