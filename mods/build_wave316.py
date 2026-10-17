@@ -65,7 +65,7 @@ CODE_END = DGROUP_316 * 16      # 3.16 code and far data lie below DGROUP
 POOL_IMM = 0x48535              # MOV BX,6FFFh immediate the entry adjusts
 POOL_END = 0x6FFF               # its stock value
 SHAPE_INSNS = 6                 # instructions compared per stock target
-HOOK_TARGETS = frozenset({"T_D0C0_0B19", "T_D0C0_0D17"})   # targets that are a hook site: the cave calls through the hook
+HOOK_TARGETS = frozenset({"T_D0C0_0B19", "T_D0C0_0D17", "T_B1B1_005B"})   # targets that are a hook site: the cave calls through the hook
 OUT = mod.OUT
 
 # entry316 as assembled, one NASM listing line per instruction.  {name} is the
@@ -335,7 +335,7 @@ def verify(result: rc.Result, cave: bytes, labels: dict[str, int], listing: list
     """Loader and entry316 simulation at every load segment; returns a summary for the manifest.
 
     The known segments are the profile's: its T_ target segments, DGROUP_SEG,
-    SND_SEG, PLAYER_SEG and CAVE_HOME.  `memories`, if given, receives each
+    SND_SEG, RING_SEG, BIOS_DS_SEG, PLAYER_SEG and CAVE_HOME.  `memories`, if given, receives each
     load segment's final simulated memory.
     """
     if labels.get("cave_end") != len(cave):
@@ -380,7 +380,7 @@ def verify(result: rc.Result, cave: bytes, labels: dict[str, int], listing: list
             head["paragraphs"] != rc.para(len(mz.image)) or result.table + head["bytes"] != len(mz.image):
         raise ValueError("the relocation table is not the image's last bytes at reloc_table")
     special = {ops["dx"][0]: 0xFFFF, ops["pool_seg"][0]: POOL_IMM >> 4, ops["start_seg"][0]: 0x0000}
-    data_segs = {consts["DGROUP_SEG"], consts["SND_SEG"], consts["RING_SEG"]}
+    data_segs = {consts["DGROUP_SEG"], consts["SND_SEG"], consts["RING_SEG"], consts["BIOS_DS_SEG"]}
     allowed = {seg for seg, _ in targets.values()} | data_segs | {consts["PLAYER_SEG"], CAVE_HOME}
     reloc_words = {v: struct.unpack_from("<H", cave, v)[0]
                    for k, v in labels.items() if k.startswith("__reloc_")}
@@ -483,7 +483,8 @@ def verify(result: rc.Result, cave: bytes, labels: dict[str, int], listing: list
     return summary
 
 
-def build(sounds: tuple[Path, ...] = (), out: Path | None = None) -> dict:
+def build(sounds: tuple[Path, ...] = (), out: Path | None = None, defines: tuple[str, ...] = ()) -> dict:
+    """defines: extra NASM symbols, e.g. ("DISPLAY_COMPACT",) for display316.inc's compact put-char."""
     out = OUT if out is None else out
     base = M3K316.read_bytes()
     if kit.sha256(base) != M3K316_SHA256:
@@ -492,7 +493,7 @@ def build(sounds: tuple[Path, ...] = (), out: Path | None = None) -> dict:
     if consts.get("CAVE_HOME") != CAVE_HOME:
         raise ValueError("CAVE_HOME in profile_316.inc and build_wave316.py differ")
     args = mod.read_args(ARGS)
-    asm = kit.assemble(args.cave, defines={DEFINE: None}, include=[args.cave.parent],
+    asm = kit.assemble(args.cave, defines={DEFINE: None, **dict.fromkeys(defines)}, include=[args.cave.parent],
                        map_column="real", listing=True,
                        publish_bin=out / "wave316.cave.bin", publish_map=out / "wave316.cave.map")
     cave = asm.code
@@ -543,6 +544,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--sound", type=Path, action="append", default=[], help="add an SND file to the image")
     ap.add_argument("--out", type=Path, default=None, help="output directory (default build/mods)")
+    ap.add_argument("--define", action="append", default=[], help="extra NASM symbol (DISPLAY_COMPACT)")
     a = ap.parse_args()
-    m = build(tuple(a.sound), a.out)
+    m = build(tuple(a.sound), a.out, tuple(a.define))
     print(json.dumps({k: m[k] for k in ("marker", "sys", "image", "cave", "relocations", "simulation")}, indent=2))

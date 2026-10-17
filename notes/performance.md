@@ -680,6 +680,63 @@ of the new builds is **UNDETERMINED**.
 
 ---
 
+## 13. Display: put-char and string writer without INT 43 round trips (display316, 2026-10-17)
+
+Owner-approved after the hostile review of the display proposal (the review's
+findings override the proposal); the string writer was approved afterwards.
+Source `mods/display316.inc`, hooks in `mods/WAVE316.args`, targets
+`T_B1B1_003C` / `T_B1B1_0041` / `T_B1B1_0060` and `BIOS_DS_SEG` in
+`mods/profile_316.inc` (`T_B1B1_005B` is now a hook site, `HOOK_TARGETS`).
+3.16 relative addresses; image offset = `seg*16+off`; physical = `0x300000 +
+L*16 +` image offset (third PGR, no `BRKXA`).
+
+| Item | What | Bytes |
+|------|------|-------|
+| Step 1 | INT 43 AX=4 class walk `0009:174E-1768` (img `0x17DE`) rewritten in place as five compare-and-jumps to the same handlers (0Dh, 0Ah, 08h, 7Fh, 0Ch; otherwise `17C8`) | 0 cave |
+| Step 2 | put-char `0427:0040` (img `0x42B0`, Vailixi `B1B1:0036`) `JMPF fast_putc`: `17C8` (`dsp_glyph`), then the AX=7/AX=3 tail (`dsp_tail`) with its `183F` sent only when `[68AF]` = 0; 00h-1Fh and 7Fh re-enter the stock body at `0427:0046` | P |
+| Step 3 | string writer `0427:0065` (img `0x42D5`, Vailixi `B1B1:005B`; 447 far callers) `JMPF fast_puts`: per byte to the 00h terminator, 00h-1Fh and 7Fh by INT 43 AX=4 (the stock call), others `dsp_glyph`; then `dsp_tail` once (stock: AX=7/AX=3 once after the loop); the string is read through ES (kept), DS/DI kept as stock | P |
+| P (default) | Steps 1-3, shared `dsp_glyph` / `dsp_tail` / `dsp_address` (183F) / `dsp_lcd` (1856) | 232 cave |
+| MX (`%define DISPLAY_COMPACT`) | put-char: unchanged character inline + stock tail `0427:004B`, otherwise one INT 43 AX=4 and no tail; string writer: stock body (prologue replayed, `0427:006A`) | 101 cave |
+
+Both entries return what stock returns: AX = `0B00h` or the high byte of
+`[68AB]`, BX = row << 8 | column, CX DX SI DI BP DS ES kept, the entry flags
+(PUSHF on entry; the review's MX leaked CMP/DIV flags), IF = 1 in the body (P).
+Exactness of skipping the re-sync rests on invariant **I**: on entry, `[68AF]`
+= FFh implies LC7981 address = `[68AB]`; every BIOS INT 43 operation keeps I.
+
+| Claim | Evidence | Tag |
+|-------|----------|-----|
+| Step 1 equals stock for every BL, I held or broken (24,576 cases: memory, LC7981 state, exact port log with IF, registers, flags) | `tests/test_display316_diff.py` | PROVEN (model) |
+| put-char, P and MX, equals stock under I: 16,384 cases each (256 BL x 8 cursors x cell equal/unequal x `[68AF]` 0/FF x IF x busy 0/2, random entry flags, DIV flags scrambled) and ~10,000 characters of random sequences each | same | PROVEN (model) |
+| String writer, P and MX, equals stock under I: 8,192 cases each (empty string and every one-byte string x 8 cursors x equal/unequal x `[68AF]` x IF, random busy and flags); P also 700 random call sequences (2,000+ calls, 30,000+ characters: embedded 0Dh 0Ah 08h 7Fh 0Ch and other controls, 80h-FFh, strings crossing 13Fh, empty strings, strings at offset FFF8h wrapping DI, interleaved put-char) | same | PROVEN (model) |
+| In every case the port log differs from stock only by omitted (0Ah,0Bh) pairs that set the address already held, IF = 1 at each OUT | same | PROVEN (model) |
+| With I broken P differs from stock (the precondition is real) | same, `test_broken_invariant_is_visible` | PROVEN (model) |
+| The only immediate-port LC7981 writers are `0009:1856`, `03B0:00FD` (its caller `03B0:000A` is far-called only from segment 1650, 11 sites), `1650:0F8D` (near-called only inside 1650: `03CD`, `03FD`, `0F01`, `0F53`) and the cave's `fast_blit`; no `MOV DL`/push/`MOV AX` of port E0h/E2h exists | same, static | PROVEN (bytes); a computed-`DX` port write is excluded only dynamically |
+| Graphics protocol: `[95C9]` is set only by `1650:0F53`, cleared only by `1650:03FD` after `CALLF 0427:000C` (INT 43 AX=1, which ends in `183F`: I holds); the boot clear `03CD` (img `0xF8A6`) is followed by `0427:000C`; every other `[95C9]` reader prints only when it is 0 or leaves graphics through `03FD` first | same, static | PROVEN (bytes) |
+| I held at every put-char and string-writer entry; both run only on the UI task (SS 73E1); INT 43 only on the UI task and the 3.16 start-up stack (SS 7066, img `0x0002`, before AMX); LC7981 writes only from the listed PCs | `emu/test_display316.py` (`emu/lua/display_watch316.lua`), 2,662 put-char and 447 string-writer entries per set, `default` and `v308` (P and MX); 0 put-char violations also on the build without display316 | PROVEN (trace, this tour) |
+| LCD pixels and display RAM identical to the build without display316 at all 36 captures of the tour (P with Step 3; MX) | `emu/test_display316.py` against `emu/fixtures/display_tour316.json` | PROVEN (trace, this tour) |
+
+Measured (nec_prof, `NEC_CPU_DIV=2`, vailixi set; busy cycles at 16 MHz;
+before = commit `0ae678e`):
+
+| Workload | before | P, Steps 1-2 | P, Steps 1-3 | MX |
+|----------|-------:|--:|--:|---:|
+| screen change (cycle_budget ui tour, per change) | 476,441 (29.8 ms) | 366,394 (22.9 ms) | 329,759 (20.6 ms) | 396,016 (24.8 ms) |
+| Play/Record wheel redraw `159C8` | 303,996 | 211,252 | 199,497 (-104.5 k) | 249,857 |
+| Edit Sound wheel step (Soft st, 10 steps) | 202,522 (12.7 ms) | 159,000 (9.9 ms) | 148,711 (9.3 ms) | 177,952 |
+| INT 43 calls, tour + wheel windows | 14,927 | 7,136 | 2,692 | 11,906 |
+
+**UNDETERMINED:** LC7981 busy timing on hardware (H5; MAME never sets the busy
+flag), so the wall-time gain on glass is unmeasured.  Whether LC7981 instruction
+00h (mode, INT 43 AX=2 `1730`, from the cursor-shape setter `0427:0012`) and the
+E2h status reads leave the cursor address unchanged (MAME: yes; on hardware I
+would otherwise break after AX=2 and P would write later characters at the stale
+address until the next re-address, where stock repairs it after one character):
+`U-LC7981`, physical test deferred.  Computed-port LC7981 writers on paths the
+tour does not reach.
+
+---
+
 ## What this note does *not* prove
 
 - Any physical duration. Every number is MAME's cycle model at 16 MHz with

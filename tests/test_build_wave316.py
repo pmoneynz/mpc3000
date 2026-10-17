@@ -24,22 +24,24 @@ from mods import buildkit as kit  # noqa: E402
 from mods import route_c as rc  # noqa: E402
 
 HAVE_TOOLS = shutil.which("nasm") is not None and shutil.which("ndisasm") is not None
-SYS_SHA256 = "af2c32f49047ad921eac3612e895fc3553dc408d7caabf98f37443b27850a82d"
-IMG_SHA256 = "f0b1710409020dd30d8bb098b2e823daaff25fa7679a29145ba1d2b4b0506bb1"
-CAVE_SHA256 = "f6c688fbe2e5c6a6cd725231ada2aeb2dacd230819b7cd81f60d049b586b83e5"
+SYS_SHA256 = "1638489e813b98b439e102a5763b6aac8f995a1f64f7389ed337c0564b1be7b2"
+IMG_SHA256 = "e5ef60379748312e8e3cb37336ba84d70cb4939f32726de8a945ef6872d85b49"
+CAVE_SHA256 = "7551e909db371801a53a21f65c0cdd5ade7f24e318ea6904caa638596ec368ac"
 # Size budget (notes/port_316.md "Cave space"): entry316 runs 3.16 at L = 6900
 # on every EPROM set (3.08/3.11 load at 7000 and are moved down), so the cave
 # home 7E00 must end below F400h: 53,248 bytes on every machine.  Lower
 # HOME_BUDGET after each size step; raise it only with a note.
 HOME_LIMIT = 0xF4000 - 0x69000 - 0x7E00 * 16
 CAVE_HOME_IMAGE = 0x7E00 * 16      # image offset of the cave home (relative paragraph 7E00)
-HOME_BUDGET = 21_154            # bytes entry316 copies to the home (19,200 after the size
+HOME_BUDGET = 21_386            # bytes (+232 display316 put-char and string writer, 2026-10-17;
+                                # earlier: entry316 copies to the home (19,200 after the size
                                 # pass; +350 for the audit and stock-bug fixes, 2026-10-16;
                                 # 20,690 with the performance pass, perf316.inc and the view's
                                 # fast paths without S6 and D1a, 2026-10-16; 21,140 with the
                                 # crash fixes C1-C3 and scsistack316, 2026-10-17; 21,154 with
                                 # scsistack316's no-wrap fallback, 2026-10-17)
-HOME_HEADROOM = 32_000          # kept free under the universal page-61 limit (32,094 free,
+HOME_HEADROOM = 31_000          # kept free under the universal page-61 limit (31,862 free with
+                                # display316; 32,094 before it,
                                 # 2026-10-17; before the universal layout the 3.08/3.11
                                 # limit left 3,436 and this was 3,400).  This is the binding
                                 # limit: the old SCSI stack-wrap backstop (home end <= image
@@ -69,8 +71,8 @@ class PinnedBuild(unittest.TestCase):
         self.assertEqual((sim["6900"]["pool_end"], sim["7000"]["pool_end"]), ("67DF", "67DF"))
         self.assertEqual((sim["6900"]["runtime_segment"], sim["7000"]["runtime_segment"]), ("6900", "6900"))
         self.assertEqual((sim["6900"]["moved"], sim["7000"]["moved"]), (False, True))
-        self.assertEqual((sim["copy_words"], sim["min_move"]), ("2951", "01F1"))
-        self.assertEqual((sim["table"]["bytes"], sim["table"]["records"]), (7634, 7312))
+        self.assertEqual((sim["copy_words"], sim["min_move"]), ("29C5", "01F2"))
+        self.assertEqual((sim["table"]["bytes"], sim["table"]["records"]), (7639, 7317))
         copied = 2 * int(sim["copy_words"], 16)
         self.assertLessEqual(copied, HOME_BUDGET, f"cave home {copied} B over budget")
         self.assertGreaterEqual(HOME_LIMIT - copied, HOME_HEADROOM)
@@ -79,8 +81,9 @@ class PinnedBuild(unittest.TestCase):
         # notes/vailixi_features.md) bring 280 and 46; diskutil316 +60 and +2;
         # the size pass (push cs, shared ui316 helpers) 251 and 36; the audit
         # and stock-bug fixes (bugfix316.inc) 259 and 35; the performance pass
-        # (perf316.inc, R5 so_mtc_send, the view's fast paths) 267 and 40
-        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (276, 41))
+        # (perf316.inc, R5 so_mtc_send, the view's fast paths) 267 and 40;
+        # display316 (BIOS DS 59FA twice and the stock fallback 0427:0046) +3
+        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (279, 41))
 
 
 @unittest.skipUnless(HAVE_TOOLS, "needs nasm and ndisasm")
@@ -283,7 +286,7 @@ class Checks(unittest.TestCase):
 
     def test_hook_site_target_needs_the_allow_list(self) -> None:
         with self.assertRaisesRegex(ValueError, f"T_D0C0_0B19 .* reach the patch at 0x{HOOK:05X}"):
-            self.check_targets(on_hook=frozenset())
+            self.check_targets(on_hook=b.HOOK_TARGETS - {"T_D0C0_0B19"})
 
     def test_allow_listed_target_must_start_a_patch(self) -> None:
         targets = dict(self.targets, T_D0C0_0B19=(0x21E7, 0x0B20))

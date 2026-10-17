@@ -1249,6 +1249,7 @@ draw:
  %include "scsistack316.inc"             ; private stack for the SCSI partition reader (stock 3.16 overrun)
  %include "bugfix316.inc"               ; stock 3.16 bug fixes (load/save, errors, mixer)
  %include "perf316.inc"                 ; performance items (notes/performance.md)
+ %include "display316.inc"              ; put-char without INT 43 round trips (notes/performance.md)
 %endif
 
 ; Per pair: label strings, label columns, value columns.

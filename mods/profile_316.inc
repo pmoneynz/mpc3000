@@ -357,3 +357,9 @@ RING_SEG       equ 0x77CA       ; 77CA: serial/event ring segment (relocated; MZ
 %define T_D7FA_013E 0x2E26:0x0130       ; SND loader after the close call  [C2]
 %define T_C20F_0003 0x1396:0x0009       ; stock "Load a Program" (PGM) loader  [C3]
 %define T_C20F_04F6 0x1396:0x04FC       ; stock "Load All Programs & Sounds" (APS) loader  [C3]
+
+; ---------------------------------------------------------------- display (display316.inc)
+BIOS_DS_SEG    equ 0x59FA       ; F800 BIOS data (Vailixi DS 0040): 3.16 BIOS copy's DS, 0009:16B1 MOV AX,59FAh (relocated)
+%define T_B1B1_003C 0x0427:0x0046       ; put-char after its frame and MOV BL,[BP+6]: MOV AX,4 / INT 43 / AX=7 / AX=3
+%define T_B1B1_0060 0x0427:0x006A       ; string writer after PUSH BP / MOV BP,SP / PUSH DS / PUSH DI: LDS DI,[BP+6] / the INT 43 loop
+%define T_B1B1_0041 0x0427:0x004B       ; put-char tail: MOV AX,7 / INT 43 / MOV BX,AX / MOV AX,3 / INT 43 / POP BP

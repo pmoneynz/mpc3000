@@ -131,3 +131,6 @@
 --patch=29d7:9afc049613:9a{bf_aps_load_wrap}
 --patch=79b2:9afc049613:9a{bf_aps_load_wrap}
 --patch=2b017:558bec81ec0e10:ea{scsi_stack}9090
+--patch=17de:be6a172e8a040ac0740e3ac3740583c603ebf0462eff14c3e85f00:80fb0d742780fb0a742f80fb08743d80fb7f744480fb0c745deb5f
+--patch=42b0:558bec8a5e06:ea{fast_putc}90
+--patch=42d5:558bec1e57:ea{fast_puts}

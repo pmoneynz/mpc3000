@@ -147,10 +147,10 @@
   },
   "tick_done_max_ms_play120": {
    "rule": "abs",
-   "budget": 2.96,
+   "budget": 3.02,
    "stock": 4.315,
-   "note": "worst tick completion (ISR-09 entry to task-2 return, FIFO), 120 BPM; pinned at PMONEY + 2 % (stock is the ceiling)",
-   "pmoney": 2.9
+   "note": "worst tick completion (ISR-09 entry to task-2 return, FIFO), 120 BPM; pinned at PMONEY + 2 % (stock is the ceiling) Re-pinned 2.96 -> 3.02 (2026-10-17, universal layout + display316: measured 2.962 ms; the 0.2 s longer floppy load shifts event phase, see isr09_own_max_play300).",
+   "pmoney": 2.962
   },
   "tick_done_max_ms_play300": {
    "rule": "abs",
@@ -265,32 +265,32 @@
    "pmoney": 21.497
   },
   "int43_tour": {
-   "rule": "stock+0.5%",
-   "budget": 675.722,
+   "rule": "abs",
+   "budget": 1534.0,
    "stock": 672.36,
-   "note": "INT 43 mean per call, screen tour (stock handler: S6 is not built, cave home bound)",
-   "pmoney": 672.118
+   "note": "INT 43 mean per call, screen tour. display316 (2026-10-17, payload 6646158f) does put-char's and the string writer 0427:0065's printable characters without INT 43, so the remaining calls are the expensive ones (clears, AX=5/6, control characters): the mean rises 672 -> 1,503 while the calls fall ~6x (17,096 -> 2,976 on emu/display_tour316's tour) and the screen change drops 31 %; pinned at PMONEY + 2 %; was stock+0.5% (S6 not built)",
+   "pmoney": 1503.444
   },
   "int43_wheel": {
    "rule": "stock+0.5%",
    "budget": 435.25,
    "stock": 433.085,
-   "note": "INT 43 mean per call, Play/Record wheel (stock handler: S6 is not built)",
-   "pmoney": 432.709
+   "note": "INT 43 mean per call, Play/Record wheel (stock handler: S6 is not built); display316: 432.8 -> 425.9",
+   "pmoney": 425.938
   },
   "screen_change": {
    "rule": "abs",
-   "budget": 486000,
+   "budget": 336355,
    "stock": 458919.64,
-   "note": "busy cycles per screen change above the build's own idle rate; S6 not built. PMONEY +3.7 % over stock by this estimate, but its lower idle rate (S3) inflates it: the tour window's total busy is 9.0 % under stock (24.80 M vs 27.26 M cycles). Pinned at PMONEY + 2 %",
-   "pmoney": 476014.403
+   "note": "busy cycles per screen change above the build's own idle rate. display316 (2026-10-17, payload 6646158f, put-char and string writer): 476,441 -> 329,759 (-31 %, 20.6 ms); pinned at PMONEY + 2 %",
+   "pmoney": 329759.184
   },
   "pr_redraw": {
-   "rule": "stock+0.5%",
-   "budget": 305396.825,
+   "rule": "abs",
+   "budget": 203487,
    "stock": 303877.438,
-   "note": "Play/Record field redraw 159C8 mean (S6 not built)",
-   "pmoney": 304115.875
+   "note": "Play/Record field redraw 159C8 mean; display316 (2026-10-17, payload 6646158f): 303,996 -> 199,497 (-104.5 k); pinned at PMONEY + 2 % (was stock+0.5%)",
+   "pmoney": 199496.5
   },
   "view_wheel_full": {
    "rule": "abs",
