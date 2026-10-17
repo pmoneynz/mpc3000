@@ -149,6 +149,16 @@ STACK_WATCH_TAPS = {{
   prog:install_read_tap(entry & ~1, (entry | 1) + 2, "sw_entry", function(off, data, mask)
     if armed then log:write(string.format("ENTRY %.6f pc=%s ss:sp=%04X:%04X\\n", now(), pc(), st("SS"), st("SP"))); log:flush() end
   end),
+  -- every entry to the wrapper: its XCHG reads scsi_stk_busy (the only read of
+  -- that byte), so the read data is the flag before the entry takes it
+  prog:install_read_tap((CAVE_PHYS + CAVE["scsi_stk_busy"]) & ~1, (CAVE_PHYS + CAVE["scsi_stk_busy"]) | 1, "sw_busy", function(off, data, mask)
+    if now() < 25.0 then return end
+    local at = CAVE_PHYS + CAVE["scsi_stk_busy"]
+    local byte = (at & 1) == 1 and (data >> 8) & 0xff or data & 0xff
+    local want = (at & 1) == 1 and 0xff00 or 0x00ff
+    if (mask & want) == 0 then return end
+    log:write(string.format("BUSY %.6f old=%02X pc=%s ss:sp=%04X:%04X\\n", now(), byte, pc(), st("SS"), st("SP"))); log:flush()
+  end),
   prog:install_write_tap(IMAGE_PHYS - {paras} * 16, IMAGE_PHYS - 1, "sw_stack", function(off, data, mask)
     if armed and st("SS") == stk_seg then
       n_stack = n_stack + 1
@@ -197,7 +207,7 @@ class Scsi316(unittest.TestCase):
             screens = h.run_case(p, runs, name, times=times, events=events, parts=["dg_words"] if dg else [],
                                  env=dg_env(dg) if dg else None, snapshot=False,
                                  extra=scsi(disk, slot), trace=[int(t, 16) for t in trace or []],
-                                 prelude=watch if name == "disk7" else "")
+                                 prelude=watch)
             return screens, runs / name / "io_trace.log", disk.read_bytes()
 
         cls.results = h.run_parallel(jobs, execute)
@@ -280,6 +290,26 @@ class Scsi316(unittest.TestCase):
                 self.assertEqual(dg_word(moved, FIELD_PTR), FIELD_FIRST + 3 * FIELD_SIZE)
                 self.assertEqual(moved[MULTI_SECTOR], 0)
 
+
+    def test_only_the_ui_task_enters_the_reader_and_never_while_held(self) -> None:
+        """Every entry to scsistack316's wrapper in every case (boot scans, Disk 7,
+        saves, rescans, Make active) comes from the UI task's stack and finds the
+        private stack free: the busy fallback never runs (notes/port_316.md, "SCSI
+        reader stack"; tools/scsi_reader_reach.py is the static side)."""
+        for label in self.labels():
+            with self.subTest(set=label):
+                seen = 0
+                for name in ("page", "multi_on", "multi_off", "reset_off", "reset_on", "make_active", "disk7"):
+                    log = RUNS / label / name / "stack_watch.log"
+                    for line in log.read_text().splitlines():
+                        if not line.startswith("BUSY"):
+                            continue
+                        f = line.split()
+                        seen += 1
+                        ss = int(f[4][6:10], 16)
+                        self.assertEqual(f[2], "old=00", (name, line))
+                        self.assertEqual((ss - self.loads[label]) & 0xFFFF, UI_SS, (name, line))
+                self.assertGreater(seen, 0)
 
     def test_disk7_reader_runs_on_its_own_stack(self) -> None:
         for label in self.labels():

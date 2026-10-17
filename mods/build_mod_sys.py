@@ -150,11 +150,12 @@ _PREFIXES = {0x26, 0x2E, 0x36, 0x3E}
 _TRANSFER = re.compile(r"^(?:[.\w$@?]+:\s*)?(call|jmp)\b", re.I)
 
 
-def far_transfers(cave: Cave) -> list[FarTransfer]:
+def far_transfers(cave: Cave, indirect: frozenset[int] = frozenset()) -> list[FarTransfer]:
     """Direct far transfers at NASM-listed instruction boundaries.
 
     The listing must account for every cave byte exactly once; an indirect
-    far CALL/JMP (FF /3, FF /5) has no static target and is rejected.
+    far CALL/JMP (FF /3, FF /5) has no static target and is rejected unless
+    its cave offset is in `indirect` (the caller checks those itself).
     """
     covered = bytearray(len(cave.code))
     found: list[FarTransfer] = []
@@ -171,7 +172,8 @@ def far_transfers(cave: Cave) -> list[FarTransfer]:
         if len(data) == 5 and data[0] in (0x9A, 0xEA):
             off, seg = struct.unpack_from("<HH", data, 1)
             found.append(FarTransfer(line.offset, data[0], seg, off, line.source.strip()))
-        elif len(data) >= 2 and data[0] == 0xFF and (data[1] >> 3) & 7 in (3, 5):
+        elif len(data) >= 2 and data[0] == 0xFF and (data[1] >> 3) & 7 in (3, 5) \
+                and line.offset not in indirect:
             raise ValueError(f"cave+0x{line.offset:X} ({cave.label_at(line.offset)}): indirect far "
                              f"transfer {line.source.strip()!r} has no checkable target")
     if any(c != 1 for c in covered):

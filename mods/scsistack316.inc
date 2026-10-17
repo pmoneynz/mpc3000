@@ -24,10 +24,19 @@
 ; result, SI/DI/BP/DS kept; AX, BX, CX, DX, ES free on entry), so only its
 ; return address stays on the caller's stack.  AMX saves and restores a task's
 ; SS:SP verbatim (47BF:0170, 019B, 01DE, 021F), so a task switch or interrupt
-; while the reader runs keeps this stack.  One user at a time: scsi_stk_busy
-; is taken with XCHG (one instruction: no task switch between test and set); a
-; second entry while it is held (another task) runs the stock prologue on its
-; own stack, as stock.
+; while the reader runs keeps this stack.  scsi_stk_busy is taken with XCHG
+; (one instruction: no task switch between test and set).
+;
+; Fallback (busy, or no room above the pool).  Neither happens in PMONEY:
+; only the UI task (AMX task 7) can reach the reader, it cannot re-enter it,
+; and entry316 lowers the pool on every EPROM set (notes/port_316.md "SCSI
+; reader stack": static reachability from every task, ISR and software
+; interrupt, and MAME).  If it ever did, the stock frame runs on the caller's
+; stack only when that stack holds the reader's whole depth below SP
+; (SP >= SCSI_STK_BYTES, the private stack's own size), so it cannot wrap to
+; SS:FFxx.  Otherwise the reader is not run: AX = 4, its read-error result
+; (2AB2:0533), with [79A4] = 0 as its own error exits leave it.  No path runs
+; the 100Eh-byte frame on a shallower stack.
 ;
 ; Out: AX = the reader's result; flags (IF included) as on entry; ES = the
 ; caller's SS where the reader left it on the private stack's segment (stock:
@@ -36,12 +45,13 @@
 
 SCSI_STK_BYTES equ SCSI_STK_PARAS * 16  ; 109Ah measured (frame 1010h + SI/DI + callees + one IRQ entry)
 SCSI_IMM_PARA  equ 0x4800               ; a paragraph below POOL_INIT_IMM that is no segment value
+SCSI_READER_OK equ 0x79A4               ; DGROUP byte the reader clears first (2AB2:0500)
 
 scsi_stack:                             ; JMPF from 2AB2:04F7 (7 bytes replaced, 2 NOPs follow)
         mov al, 1
         xchg al, [cs:scsi_stk_busy]
         test al, al
-        jnz .stock                      ; held: stock prologue on the caller's stack
+        jnz .fallback                   ; held (never in PMONEY): see Fallback above
         mov ax, cs
         add ax, 0x10000 - CAVE_HOME     ; L (no segment-valued immediate: builder scan)
         mov dx, ax
@@ -51,7 +61,7 @@ scsi_stack:                             ; JMPF from 2AB2:04F7 (7 bytes replaced,
         inc ax                          ; first paragraph above the pool
         sub dx, SCSI_STK_PARAS          ; the stack must end at or below L
         cmp ax, dx
-        ja .unheld                      ; pool not lowered: stock
+        ja .unheld                      ; pool not lowered (never in PMONEY): fallback
         mov bx, ax
         mov [cs:scsi_stk_seg], bx
         pushf
@@ -80,11 +90,18 @@ scsi_stack:                             ; JMPF from 2AB2:04F7 (7 bytes replaced,
         retf                            ; to the reader's caller
 .unheld:
         mov byte [cs:scsi_stk_busy], 0
+.fallback:                              ; busy or no private stack (unreachable, see above)
+        cmp sp, SCSI_STK_BYTES
+        jb .refuse                      ; the stock frame could wrap: do not read
 .stock:                                 ; the replaced prologue, then the reader body
         push bp
         mov bp, sp
         sub sp, 0x100E
         FJMP T_D470_05BD
+.refuse:
+        mov byte [SCSI_READER_OK], 0    ; DS = DGROUP (the reader's own MOV [79A4],0)
+        mov ax, 4                       ; the reader's read-error result
+        retf                            ; to the reader's caller
 
 scsi_stk_busy:  db 0
 align 2

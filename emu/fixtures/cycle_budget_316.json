@@ -125,11 +125,11 @@
    "pmoney": 42.055
   },
   "isr09_own_max_play300": {
-   "rule": "stock+1%",
-   "budget": 2959.316,
+   "rule": "abs",
+   "budget": 3186.0,
    "stock": 2930.016,
-   "note": "worst tick ISR own cycles (entry to CLI 2C45:085C, nested ISRs removed), 300 BPM",
-   "pmoney": 2934.992
+   "note": "worst tick ISR own cycles (entry to CLI 2C45:085C, nested ISRs removed), 300 BPM; re-pinned 2026-10-17 (universal layout): the 0ae678e build measured 2934.992; the same 0ae678e code with 7,870 zero bytes appended to STARTUP.SYS measures 3150, as the universal build does (3150-3154): the 0.2 s longer floppy load shifts the phase of every later event against the tick, not a code change (notes/port_316.md 'Cave space'); budget = 3154 + 1 %",
+   "pmoney": 3150.0
   },
   "ifoff_max_us_play": {
    "rule": "stock+1%",
@@ -154,10 +154,10 @@
   },
   "tick_done_max_ms_play300": {
    "rule": "abs",
-   "budget": 3.12,
+   "budget": 3.29,
    "stock": 4.619,
-   "note": "worst tick completion, 300 BPM; pinned at PMONEY + 2 % (stock is the ceiling)",
-   "pmoney": 3.055
+   "note": "worst tick completion, 300 BPM; pinned at PMONEY + 2 % (stock is the ceiling); re-pinned 2026-10-17 (universal layout): the 0ae678e build measured 3.055 ms; the same 0ae678e code with 7,870 zero bytes appended to STARTUP.SYS measures 3.225 ms, as the universal build does (3.225-3.226 ms): the 0.2 s longer floppy load shifts the phase of every later event against the tick, not a code change (notes/port_316.md 'Cave space')",
+   "pmoney": 3.226
   },
   "tick_done_max_ms_allon300": {
    "rule": "abs",

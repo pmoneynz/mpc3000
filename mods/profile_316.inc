@@ -1,7 +1,9 @@
 ; OS 3.16 profile (M3K316.SYS).  Selected by mods/profile.inc with -DPROFILE_316.
 ; Addresses are relative to the 3.16 load image: seg:off as stored in the
 ; file, image offset = seg*16+off; the EPROM loader adds the load segment L
-; (6900h on 3.12/3.50, 7000h on 3.08/3.11) to every relocated segment word.
+; (6900h on 3.12/3.50, 7000h on 3.08/3.11) to every relocated segment word,
+; and entry316 moves a 7000h load to 6900h, so the cave and 3.16 run with
+; L = 6900h on every set (entry316.inc, notes/port_316.md "Cave space").
 ; DS offsets are 3.16 DGROUP (relative segment 609Ch).  Each comment gives the
 ; generic Vailixi 3.50 address the symbol is named after, then what it is.
 ; Evidence: notes/port_316.md (orchestrator cross-checks of seven mapping

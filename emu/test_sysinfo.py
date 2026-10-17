@@ -36,7 +36,7 @@ class SystemInformation(unittest.TestCase):
         for label, (p, screens) in self.results.items():
             with self.subTest(set=label):
                 rows = [r.replace(".", " ") for r in screens[0]["rows"]]
-                seq = 407 if p.load_segment == 0x6900 else 435     # pool end min(L-1, 6FFF) - 120h (scsistack316)
+                seq = 407           # pool end 6900-1 - 120h on every set (entry316's move, scsistack316)
                 self.assertIn("PMONEY.BETA.1.0", screens[0]["rows"][2])
                 self.assertEqual(rows[3], f"Sound memory free (SND/PGM/SET):  {1916:5d}K")
                 self.assertEqual(rows[4], f"Seq memory free (SEQ/ALL/MID):    {seq:5d}K")

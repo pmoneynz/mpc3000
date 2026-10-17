@@ -72,11 +72,14 @@ segment (the cave) and an extended relocation table.
    only a staging area. The header entry `e_cs:e_ip` points at a routine in
    the cave that copies the cave to its home at relative paragraph
    `C0 = 0x7E00` (logical `L*16 + 0x7E000`), then far-jumps to 3.16's own
-   entry `L:0000`. Offsets are identical in both places because the cave is
+   entry `L:0000`. Since the universal layout (2026-10-17, "Cave space") the
+   routine first moves a `L = 0x7000` load down to `L = 0x6900`, so `L` is
+   `0x6900` at run time on every EPROM set. Offsets are identical in both places because the cave is
    `org 0`. 3.16's start-up then overwrites the staging area.
-2. **Home bounds.** `0x7E000 + cave size` must stay below `0xF4000 − L*16`:
-   `0x6000` bytes (24,576) with `L = 0x7000`, `0xD000` with `L = 0x6900`. Page 61
-   (`0xF4000`) is NVRAM. Whether 3.16 ever touches `[L*16 + 0x7DFB0,
+2. **Home bounds.** `0x7E000 + cave size` must stay below `0xF4000 − L*16`
+   = `0xD000` bytes (53,248) with the runtime `L = 0x6900` of every set (before
+   the universal layout: `0x6000` = 24,576 with `L = 0x7000`). Page 61
+   (`0xF4000`) is NVRAM. See "Cave space" below for the other limits. Whether 3.16 ever touches `[L*16 + 0x7DFB0,
    0xF3FFF]` is being measured in MAME under heavy use; static evidence so
    far: no relocated segment above `0x7DFA`, fixed pool below the image.
 3. **Relocations.** Every segment word becomes an MZ relocation, applied by
@@ -269,9 +272,9 @@ SUB SP,100Eh`: a 4 KB sector buffer at `[bp-100Eh]` plus locals
 **Fix (`mods/scsistack316.inc`, hook `--patch=2b017:558bec81ec0e10:ea{scsi_stack}9090`).**
 The reader runs on a private stack of `SCSI_STK_PARAS` = `120h` paragraphs
 (4,608 bytes) between 3.16's sequence pool and its image: `entry316` now sets
-the pool-end immediate (image `0x48535`) to `min(L-1, 6FFFh) - 120h`
-(`67DF` with `L = 6900`, `6EDF` with `L = 7000`), so the stack is logical
-`0x67E00..0x68FFF` / `0x6EE00..0x6FFFF`. The wrapper takes it only when the
+the pool-end immediate (image `0x48535`) to `L-1 - 120h` = `67DF` (runtime
+`L = 6900` on every set since the universal layout; before it `6EDF` with
+`L = 7000`), so the stack is logical `0x67E00..0x68FFF`. The wrapper takes it only when the
 live immediate leaves that room, and only for one user at a time (an `XCHG`
 flag; a second entry runs the stock prologue). It then runs the replaced
 prologue and the body (`T_D470_05BD` = `2AB2:04FE`) with `SS` = that segment,
@@ -283,23 +286,46 @@ segment is set to the caller's `SS`, which is what the stock body leaves.
 | The pool never reaches the stack: every reader of the pool variables `[8B13]..[8B19]` uses the variables set from the immediate (pool fix above), and the pool's last word is `imm:000E` | code (pool-fix review) | PROVEN |
 | A task switch or interrupt during the reader keeps the private stack: AMX's ISR entry and exit (`47BF:0151..01C8`) and dispatcher (`01C9..0225`) save and reload `SS:SP` verbatim | code | PROVEN |
 | Nothing unwinds past the wrapper: the only `SS`/`SP` loads in 3.16 code are start-up (`0x0005`), the AMX kernel (`0x47C3E..0x47E39`) and the OS reload (`0x485AB`) | linear scan of image `0..0x485EA` (data in `0x23xxx..0x29xxx` decodes as noise) | HYPOTHESIS (no `setjmp`/`longjmp` found) |
+| The reader body `2AB2:04FE` and its whole call tree (857 instructions, static walk above) load neither `SS` nor `SP` (no `MOV SS`, `MOV SP`): nothing inside the reader can unwind past the wrapper, so `scsi_stk_busy` is always released | static, `tools/scsi_reader_reach.py` | PROVEN (code) |
 | Size: deepest use 109Ah (frame 1010h, `SI`/`DI`, READ `2AB2:0202` -> `00FF` -> `2B36` -> `2A66`, and one AMX IRQ entry of 1Ah); 120h paragraphs leave 166h | MAME write taps on the stack, boot scan + Disk 7 + Erase all, `default` and `v308` | PROVEN (these paths); other IRQ nesting UNDETERMINED |
 | After the fix no write lands in `[cave end, image 0x84000)` during Disk 7 or Erase all on SCSI; the reader's entries on the UI stack still come with `SP = 07D2`; Disk 7 lists the files and Erase all erases them | MAME, `default` and `v308`; `emu.test_scsi316` `test_disk7_reader_runs_on_its_own_stack` | PROVEN (these paths) |
 
-Cost: the sequence pool is 4,608 bytes smaller on every EPROM (Seq memory free
-407K with L = 6900, 435K with L = 7000, was 411K and 439K); the cave home grows by 140 bytes (wrapper and its variables).
-The stack lives outside the cave home, so the 3.08/3.11 home budget is
-unchanged apart from those bytes.
+**Who enters the reader (2026-10-17).** The private stack is held only while
+the reader runs; the fallback (stock frame on the caller's stack) ran when it
+was held or missing. Evidence that it is never held at an entry:
 
-Separate finding (not fixed here): at boot `0281:0094` calls the FDC check
-`3E16:043C`, whose result reader `3E16:01F6` stores the status byte with
-`STOSB` at `ES:7319` and later reads `DS:[7319]` (`3E16:0224`). In PMONEY the
-cave's boot pages leave `ES` = the cave segment, so the byte goes to
-`CAVE_SEG:7319`: image `0x85319` with `L = 6900` (free RAM above the home) and
-logical `0xF5319` with `L = 7000`, i.e. page 61, NVRAM. MAME: `default` write
-tap `image=85318 mask=FF00 es=E700`; `v308` `ES:DI = EE00:7319` at
-`3E16:021C`. PROVEN (one execution per set). Stock's `ES` there is not traced
-(UNDETERMINED); the routine as written needs `ES = DS`.
+| Claim | Evidence | Tag |
+|-------|----------|-----|
+| Tasks: the static AMX create table (image `0x4834C`, 18-byte records, `FFFFh` end at `0x483DC`) has 8 tasks: 0 `47BF:05AC` (kernel), 1 `04CD:000A`, 2 `422F:000F`, 3 `40FF:0005`, 4 `3416:000A`, 5 `03C1:000C`, 6 `2FE8:0007`, 7 `0281:0034` (UI, `SS:SP 73E1:3E80`); stacks of tasks 0-6 are `320h`..`708h` bytes, so any of them entering the 100Eh-byte frame would have wrapped in stock 3.16 too | table bytes | PROVEN |
+| The AMX kernel `47BF:0000..075B` has no far call, far jump, indirect call or jump, or `INT`: it leaves only by `RETF`/`IRET` to saved contexts (no timer procedures or callbacks into OS code) | linear decode, `tools/scsi_reader_reach.py` `kernel_transfers` | PROVEN (code) |
+| Interrupt handlers: AMX installs (`MOV AX,seg / MOV ES,AX / MOV BX,off / MOV DL,vec / CALLF 47BF:0341`) 08 `2B50:000C`, 09 `2C45:000C`, 0C `2C08:000E`, 0D `2B6D:006B`, 0E `2C1F:0000` (plus the dead OS-reload one); direct IVT stores 40 `2A53:0024` (image `0x2A645`), 09 `2CCC:0000` (`0x2CE57`), 0B `3E16:0309` (`0x3E48C`); 3.16's BIOS segment `0009` vectors 08, 0F, 41, 42, 43, 45, 46. The cave installs none | image scan (`vector_installs`), cave source | PROVEN (these patterns; another install form would be missed: HYPOTHESIS that there is none) |
+| Static reachability (`tools/scsi_reader_reach.py`, `tests/test_scsi_reader_reach.py`): recursive descent over the PMONEY image with the cave at its home (hooks followed), near/far calls, 15 hand-bounded dispatch tables, `INT n` through the vector map. From tasks 0-6, every handler above and the pre-kernel initialisers `0009:0006`, `0009:1AD0`, none of `2033:000C` (INT 41 service, 51 call sites), `2AB2:0767`, `2AB2:03A5`, `2AB2:04F7`/`04FE` is reachable; the only unresolved transfer there is `CALL FAR [79A0]` in INT 40 (`2A53:003C`), the EPROM's own INT 40 (ROM code with no 3.16 address). The UI task reaches the chain (45 `2033:000C` sites, the scan twice, `0767` once) | static analysis | PROVEN (static, the decoder is the project's 8086 length decoder; 3.16 holds no `0F E0`/`0F F0`) |
+| No re-entry on the UI task: the reader body `2AB2:04FE` and everything it calls (857 instructions, the cave's `mnt_hybrid` included) reach none of the chain entries and contain no unresolved transfer or `INT`; no interrupt handler reaches it (above); a task switch cannot resume the UI task inside itself | static analysis | PROVEN |
+| Every entry seen finds the stack free and comes from the UI stack: the wrapper's `XCHG` read of `scsi_stk_busy` (its only reader) logged in all seven `emu.test_scsi316` cases (boot scans, Disk 7, saves, rescans, Make active) on all four sets: old value 0, `SS` = `L+73E1` | MAME, `test_only_the_ui_task_enters_the_reader_and_never_while_held` | PROVEN (these runs) |
+
+So the busy branch is unreachable, and "missing" cannot happen (entry316
+lowers the pool on every set). The fallback is kept as a backstop that cannot
+wrap: it runs the stock frame on the caller's stack only when `SP >=
+SCSI_STK_BYTES` (1200h, the private stack's own size, above the measured
+depth 109Ah), and otherwise returns the reader's read-error result `AX = 4`
+with `[79A4] = 0` without reading (`tests/test_build_wave316.py`
+`test_scsi_wrapper_fallback_cannot_wrap`, x86sub: `SP = 07D2` returns 4 and
+writes only the flag and `[79A4]`; `SP = 1200h` runs the stock frame below
+`SP`). The old image `0x83300` backstop on the cave home is gone.
+
+Cost: the sequence pool is 4,608 bytes smaller on every EPROM (Seq memory free
+407K, was 411K; 3.08/3.11 showed 435K / 439K before the universal layout); the
+cave home grows by 154 bytes (wrapper, its variables and the refusal path).
+
+FDC status byte: at boot `0281:0094` calls the FDC check `3E16:043C`, whose
+result reader `3E16:01F6` stores the status byte with `STOSB` at `ES:7319`
+(`3E16:021C`) and reads `DS:[7319]` back (`3E16:0224`). Before `0ae678e` the
+cave's boot pages left `ES` = the cave segment (image `0x85319`, or NVRAM on
+3.08/3.11). `sysinfo316` now leaves `ES = DS`; re-traced under the universal
+layout: the write is `off=3D0CD8 mask=FF00 pc=A716:021C ES:DI=C99C:7319
+DS=C99C` on `default` and `v308` (DGROUP `609C:7319`, image `0x67CD9`, its own
+variable), and no write reaches the cave segment's `7319`. PROVEN (MAME, one
+boot each). The cave-offset `0x7319` limit no longer applies.
 
 ## Status
 
@@ -313,3 +339,110 @@ tap `image=85318 mask=FF00 es=E700`; `v308` `ES:DI = EE00:7319` at
 | Emulator suites on 3.16, all four sets | done (MAME): 150 tests, 0 skipped |
 | Bench run of `WAVE BENCH 08` | all gates pass on hardware (Vailixi EPROM, 2026-10-06; bench316_checklist.md) |
 | Public beta `PMONEY BETA 1.0` | next: boot banner, rebuild, release run, beta package |
+
+## Cave space (universal build, 2026-10-17)
+
+**Rule.** PMONEY is one STARTUP.SYS that must boot and offer every feature on
+any MPC3000, whatever stock EPROM set is fitted. Features are budgeted
+against the worst case over all four sets; nothing is gated on EPROM version.
+
+**Same RAM on every machine. PROVEN (bytes).** The third PGR page tables
+(`analysis/floppy_loader.json`, `third_pgr_file`) are word-identical in
+3.08, 3.11, 3.12 and 3.50: pages 0-60 RAM (`0xC0+n`, `0xEC+`), 61 NVRAM
+(`0x140`), 62-63 BIOS ROM. `INT 45` is byte-identical; every set is the same
+2 x 256 KB chip pair. The only difference is the hand-off's load segment:
+`L = 7000` (3.08, 3.11) or `6900` (3.12, 3.50). Physical equality of every
+board revision is not provable from software (hardware RAM test deferred:
+UNDETERMINED).
+
+**Universal layout (built 2026-10-17).** `mods/entry316.inc` runs 3.16 at
+`L = 6900` on every set. With `L = 7000` its `.move` path (entered after the
+`MOV DX,L-1` check, at the stage `CS = L + 6834`) does, with `D = L − 6900 = 700h`:
+
+1. **Re-relocate.** The builder (`mods/route_c.py` `build`) appends the image's
+   own copy of the MZ relocation list right after the cave (`reloc_table`,
+   image `0x6D70C`, 7,634 bytes: header N/R/Dmin, then 7,312 delta records
+   for 7,311 relocated words (one skip record); `01..FF` = advance that many bytes, `00 w` =
+   advance `w`, `00 0000` = advance `FFF0h` with no word). Every listed word
+   gets `−D`, so the image holds exactly what the loader writes with
+   `L = 6900`. The table is never copied home and is read only before
+   3.16's start-up zeroes BSS (`DGROUP:7980..FC9E` = image
+   `0x68340..0x7065E`, which holds it).
+2. **Copy down.** All `N = 6F4E` paragraphs (image, cave, table) go from `L:0`
+   to `6900:0` low to high in 800h-paragraph chunks (destination below
+   source: forward copy is safe). The copy ends at `6900 + N`, at or below the
+   paragraph of `entry316` in the old copy (builder: `D ≥ Dmin = 1F1h`; a
+   smaller `D` halts), so the running code and its pointer are never
+   overwritten.
+3. **Rebase the loader's records of `L`.** BIOS data `0040:640A` (INT 45's
+   load segment, `F800:0157`) and `0040:68C2` (the hand-off's
+   `JMP FAR [68C0]` segment, floppy_loader.md §5) get `−D` when they hold
+   `L` / `CS`; `SS` gets `−D` (`SP` kept), giving `D966:0100` as the loader
+   leaves it with `L = 6900`.
+4. **Continue in the moved copy.** `JMP FAR [CS:.moved_ptr]` (the one
+   indirect far transfer the builder allows, modelled in `ENTRY316`) goes to
+   `.moved` at `6900+6834`, which zeroes the `D` paragraphs the image left
+   (`6900+N .. 7000+N`, logical `0xD84E0..0xDF4E0`, the old `.move` code
+   among them) and jumps to `entry316` again: it now reads `L−1 = 68FF` and
+   copies the cave home, sets the pool end and enters `6900:0000` exactly as
+   on 3.12/3.50. No stack is used by the move; `BP` and `IF = 0` are kept.
+
+With `L = 6900` the move is skipped (one compare). With any `L < 6900` the
+routine runs in place as before.
+
+| Claim | Evidence | Tag |
+|---|---|---|
+| Final memory (1 MB logical, BIOS data included) and registers at 3.16's entry are identical for `L = 6900` and `L = 7000` | builder model `run_entry` (`verify`, every build); the assembled bytes run by `tests/x86sub.py` from the hand-off state at both `L` (`tests/test_build_wave316.py` `test_entry316_bytes_run_in_x86sub`): identical memory, registers and flags; the model agrees byte for byte except the `PUSH CS` slot under `SP` | PROVEN (simulation of the loader as documented in floppy_loader.md §5, §7) |
+| The image's table is the MZ relocation list | builder decodes it and compares with the header list | PROVEN |
+| No 3.16 relocated word has meaning outside "L + stored": stored values are `0x0009..0x7DFA`; the one non-image value (`59FA` = `0040` under the original link base, image `0x485AC`) is in the OS-reload routine image `0x48580`, which returns at once: `MOV AX,7DFA / SUB AX,7DF9 / CMP AX,1 / JZ` with both words relocated | bytes, relocation list | PROVEN |
+| Nothing else outside the image records `L`: the hand-off writes IVT[8] (`FB93:0059`, L-independent), `0040:68C0/68C2`; INT 45 writes `0040:6408..6410` (`640A` = `L`), the header copy `63EC..` and the relocation buffer `642B..` (file data); 3.16's start-up installs its own `INT 41/42/43/45/46` (segment `0009`) | INT 45 and hand-off bytes (3.08 dump, byte-identical INT 45 in all four), 3.16 image `0x96..0x17C` | PROVEN (code); stale stack bytes below `0040:69C4` (INT 45's pushes, may include `L`) are not rebased: below `SP`, not read (HYPOTHESIS: no reader of dead stack) |
+| Boots on all four sets with cave home physical `0x3E7000`, pool end `67DF`, `Seq memory free 407K` on each | MAME, `emu.test_port316_boot`, `emu.test_sysinfo`, release gate (below) | PROVEN (one execution per set) |
+| Real hardware | not run | UNDETERMINED (deferred physical test: boot on a 3.08 or 3.11 EPROM machine, read System Information = 407K) |
+
+**Cost.** STARTUP.SYS 479,264 → 487,134 bytes (+7,870: table 7,634, entry316
++236). The home is unchanged (21,140 bytes copied). The later no-wrap SCSI
+fallback adds 14 bytes (home 21,154, STARTUP.SYS 487,148). Boot time, MAME
+(emulated seconds, read taps on the first fetch of `entry316` at the hand-off
+`CS` and of 3.16's entry, one execution each; same disk layout, `STARTUP.SYS`
+alone):
+
+| Build, set | hand-off | 3.16 entry | hand-off → entry |
+|---|---:|---:|---:|
+| before (`0ae678e`), `default` | 25.073240 | 25.077779 | 4.5 ms |
+| before, `v308` | 25.071059 | 25.075599 (`7000:0000`) | 4.5 ms |
+| universal, `default` | 25.273240 | 25.277778 | 4.5 ms |
+| universal, `v308` | 25.271060 | 25.388901 (`6900:0000`) | 117.8 ms |
+
+The move costs 113 ms on 3.08/3.11 and nothing on 3.12/3.50; the larger file
+adds 0.20 s of floppy load on every set. PROVEN (MAME timing); real drive
+and CPU timing UNDETERMINED.
+
+**Emulator results (2026-10-17, MAME, release mode, all four BIOS sets, one
+execution each).** `emu.test_port316_boot` 7/7, `emu.test_sysinfo` 1/1,
+`emu.test_scsi316` 5/5, `emu.test_diskutil316` 19/19 (its stock-3.16 control
+now reads DGROUP at the loader's segment), `emu.test_wave_chop` 12/12,
+`emu.test_harness_lifecycle` 9/9; `python3 -m emu.harness_release`: 242
+tests, 2 failures, 0 skipped. The two failures are `emu.test_cycle_budget`
+worst-case maxima on the Vailixi set (no move there): `isr09_own_max_play300`
+3,154 cycles (budget 2,959.3, pinned PMONEY 2,935.0) and
+`tick_done_max_ms_play300` 3.225 ms (budget 3.12). The `0ae678e` build
+passes; the same `0ae678e` code with 7,870 zero bytes appended to the file
+(so only the floppy load, and with it the phase of every later event, moves by
+0.2 s) fails with 3,150 cycles and 3.225 ms. PROVEN (one execution each): the
+change in these maxima comes from the boot-time shift, not from the
+universal-layout code. Re-pinned in `emu/fixtures/cycle_budget_316.json`
+(`isr09_own_max_play300` abs 3,186 = 3,154 + 1 %, PMONEY 3,150; `tick_done_max_ms_play300`
+3.29 = PMONEY 3.226 + 2 %), each note citing this experiment.
+
+**Current figures.** Cave home 21,154 bytes at image `0x7E000` on every set.
+
+| Limit | Free |
+|---|---:|
+| Page 61, universal (`L = 6900` on every set, `0xD000` = 53,248 B home) | 32,094 B |
+
+This is the only cave-room limit. The SCSI stack-wrap backstop (home end at
+image `0x83300`, 108 B free before) is gone: only the UI task can enter the
+reader, it cannot re-enter it, and the fallback can no longer run the frame
+on a shallow stack ("SCSI reader stack" above). The FDC byte limit (cave
+offset `0x7319`) is gone too (same section).
+`tests/test_build_wave316.py` encodes these limits.

@@ -270,7 +270,9 @@ class DiskUtil316(unittest.TestCase):
                 screens = h.run_case(p, runs, name, times=times, events=events, parts=kwargs.pop("parts", []),
                                      snapshot=False, extra=scsi(*paths), words=WORDS, **kwargs)
             return {"screens": screens, "before": before, "after": [path.read_bytes() for path in paths],
-                    "words": words(runs / name, p.dgroup_segment)}
+                    # stock M3K316.SYS runs where the EPROM loaded it; PMONEY at 6900 on every set
+                    "words": words(runs / name, (p.loader_segment + h.DGROUP_316) & 0xFFFF if stock
+                                   else p.dgroup_segment)}
 
         cls.res.update(h.run_parallel(stage1, execute))
 

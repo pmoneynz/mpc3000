@@ -19,9 +19,11 @@ Profiles:
 - ``316``: ``mods/build_wave316.py`` (``WAVE316.SYS``, OS 3.16 Route C),
   booted from the stock romset on any of the BIOS sets ``default`` (3.12),
   ``vailixi``, ``v311`` and ``v308``: ``payload("316", bios=...)``.  The
-  EPROM loader puts it at load segment ``L`` (0x6900 or 0x7000); the
-  profile exposes ``L``, the cave home, DGROUP translation and relocated
-  3.16 addresses (notes/port_316.md).
+  EPROM loader puts it at load segment 0x6900 (3.12, 3.50) or 0x7000 (3.08,
+  3.11, ``loader_segment``); entry316 moves a 0x7000 load down, so 3.16 and
+  the cave run at ``load_segment`` = 0x6900 on every set (one memory map,
+  notes/port_316.md "Cave space").  The profile exposes that segment, the
+  cave home, DGROUP translation and relocated 3.16 addresses.
 
 Release mode (``MPC3K_RELEASE=1``) turns every :func:`unavailable` call into
 an error, so a missing tool or capture cannot be reported as a skip.  Run
@@ -55,13 +57,16 @@ WAVE_ARGS = REPO / "mods" / "WAVE.args"
 PROFILES = ("capture", "generic")          # what EmuSuite runs unless a suite opts in to 316
 ALL_PROFILES = PROFILES + ("316",)
 
-# OS 3.16 (Route C).  Load segment L per MAME BIOS set (notes/port_316.md,
+# OS 3.16 (Route C).  EPROM loader segment per MAME BIOS set (notes/port_316.md,
 # notes/floppy_loader.md): 3.12 and 3.50 load at 6900h, 3.08 and 3.11 at 7000h.
+# PMONEY's entry316 moves a 7000h load to RUNTIME_316, so the payload runs
+# there on every set; stock M3K316.SYS runs where it was loaded.
 M3K316 = REPO / "07-rom" / "v3.16 maintenance upgrade" / "M3K316.SYS"
 WAVE316_ARGS = REPO / "mods" / "WAVE316.args"
 PROFILE_316 = REPO / "mods" / "profile_316.inc"
 LOAD_SEGMENTS = {"default": 0x6900, "vailixi": 0x6900, "v311": 0x7000, "v308": 0x7000}
 BIOS_316 = tuple(LOAD_SEGMENTS)
+RUNTIME_316 = 0x6900            # PMONEY's runtime load segment on every set (route_c.UNIV)
 PHYS_316 = 0x300000             # 3.16 keeps the loader's third PGR: physical = 0x300000 + logical
 CAVE_HOME_316 = 0x7E00          # relative paragraph of the cave home (mods/profile_316.inc)
 DGROUP_316 = 0x609C             # relative DGROUP segment
@@ -148,8 +153,17 @@ class Profile:
 
     @property
     def load_segment(self) -> int:
-        """L: the EPROM loader's load segment for this BIOS set."""
+        """L: the segment the payload's 3.16 runs at, RUNTIME_316 on every BIOS set.
+
+        Every runtime address below derives from it.  The EPROM loader's own
+        segment is loader_segment."""
         self._need316("load_segment")
+        return RUNTIME_316
+
+    @property
+    def loader_segment(self) -> int:
+        """The EPROM loader's load segment for this BIOS set (before entry316's move)."""
+        self._need316("loader_segment")
         return LOAD_SEGMENTS[self.bios]
 
     @property
@@ -159,7 +173,7 @@ class Profile:
 
     @property
     def cave_phys(self) -> int:
-        """Physical address of cave offset 0 (316: 0x300000 + L*16 + 0x7E000)."""
+        """Physical address of cave offset 0 (316: 0x300000 + 0x69000 + 0x7E000 = 0x3E7000)."""
         return PHYS_316 + self.cave_segment * 16 if self.is316 else 0x3F07D0
 
     @property
@@ -218,11 +232,17 @@ class Profile:
         return bytes(image)
 
     def cave_home_image(self) -> bytes:
-        """The cave as the entry routine leaves it at its home (loader simulation)."""
+        """The cave as the entry routine leaves it at its home (loader simulation
+        at this set's loader segment, entry316's move included)."""
         self._need316("cave_home_image")
         from mods import route_c as rc
         size = cave_copy_end(self.map)
-        mem, _ = rc.simulate(self.sys.read_bytes(), self.load_segment, home=CAVE_HOME_316, cave_len=size)
+        raw = self.sys.read_bytes()
+        table = rc.MZ.parse(raw).h["cs"] * 16 + symbols(self.map)["reloc_table"]
+        mem, regs = rc.simulate(raw, self.loader_segment, home=CAVE_HOME_316, cave_len=size,
+                                univ=RUNTIME_316, table=table)
+        if regs["seg"] != self.load_segment:
+            raise ValueError(f"{self.label}: simulated 3.16 runs at {regs['seg']:04X}")
         home = (self.load_segment + CAVE_HOME_316) * 16
         return bytes(mem[home:home + size])
 
@@ -234,7 +254,8 @@ class Profile:
         info = {"profile": self.name, "sys": str(self.sys), "sha256": self.sha256,
                 "source_digest": self.source_digest, "rompath": str(self.rompath)}
         if self.is316:
-            info.update(bios=self.bios, load_segment=f"{self.load_segment:04X}")
+            info.update(bios=self.bios, load_segment=f"{self.load_segment:04X}",
+                        loader_segment=f"{self.loader_segment:04X}")
         (runs / f"payload-{self.label}.json").write_text(json.dumps(info, indent=2) + "\n")
         print(f"[harness] {runs.name}: {self.label} STARTUP.SYS sha256={self.sha256} "
               f"sources={self.source_digest[:16]}", file=sys.stderr)

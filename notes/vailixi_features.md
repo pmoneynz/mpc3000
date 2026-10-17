@@ -51,10 +51,10 @@ own low-level format type selection.
 - **Size:** the UI routines alone are about 9 KB. The engines behind them
   (copier, formatter, partitioner, compression, the parameters' effects on
   transport, mixer and editor) and the string-less fixes are in callees and
-  core subsystems that this project has not mapped (D17 gaps). The cave has
-  11.4 KB free on 3.08/3.11 EPROMs (home limit 24,576 bytes) and 40 KB on
-  3.12/3.50. Porting everything would not fit on 3.08/3.11 machines without
-  a new memory layout.
+  core subsystems that this project has not mapped (D17 gaps). Cave space
+  at the time of this inventory: 11.4 KB free on 3.08/3.11 EPROMs and 40 KB
+  on 3.12/3.50; current figures and the universal-build rule are in
+  `notes/port_316.md` ("Cave space").
 - **Base mismatch:** Vailixi changes 3.12 code; PMONEY is 3.16, a different
   Akai build with its own DGROUP, kernel copy and code layout. Each feature
   has to be re-mapped onto 3.16, as `notes/port_316.md` did for the WAVE
@@ -69,8 +69,9 @@ own low-level format type selection.
 
 Owner decisions (2026-10-13): Vailixi code is ported under the rights
 holder's permission; PMONEY uses its own UI wording, not Vailixi's strings;
-two builds if the full set does not fit the 3.08/3.11 cave home (24,576
-bytes); small self-contained features first, SCSI/disk last.
+small self-contained features first, SCSI/disk last.  **Superseded
+2026-10-17:** there is one universal PMONEY build for every EPROM set (no
+two-build split); see "Cave space" in `notes/port_316.md`.
 
 | # | Status | PMONEY form | Evidence |
 |---|--------|-------------|----------|

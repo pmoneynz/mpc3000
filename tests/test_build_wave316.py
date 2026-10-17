@@ -24,29 +24,34 @@ from mods import buildkit as kit  # noqa: E402
 from mods import route_c as rc  # noqa: E402
 
 HAVE_TOOLS = shutil.which("nasm") is not None and shutil.which("ndisasm") is not None
-SYS_SHA256 = "90ccc730d6cd7b64bbff7a6b3d780243964a334410bf68f0f660df35d3e757c0"
-IMG_SHA256 = "fbb438b0650d09e8f874dc85e88f72f76e90b06ae66b1ce4fdd5b4a997fb6f00"
-CAVE_SHA256 = "0d4f13fa52369e27b78fcf80df4827b58598e074fe891813800dc7c969ed64e2"
-# Size budget (notes/performance.md, cave size): the 3.08/3.11 EPROMs load at
-# L = 7000, so the cave home 7E00 must end below F400h: 24,576 bytes.  Lower
+SYS_SHA256 = "af2c32f49047ad921eac3612e895fc3553dc408d7caabf98f37443b27850a82d"
+IMG_SHA256 = "f0b1710409020dd30d8bb098b2e823daaff25fa7679a29145ba1d2b4b0506bb1"
+CAVE_SHA256 = "f6c688fbe2e5c6a6cd725231ada2aeb2dacd230819b7cd81f60d049b586b83e5"
+# Size budget (notes/port_316.md "Cave space"): entry316 runs 3.16 at L = 6900
+# on every EPROM set (3.08/3.11 load at 7000 and are moved down), so the cave
+# home 7E00 must end below F400h: 53,248 bytes on every machine.  Lower
 # HOME_BUDGET after each size step; raise it only with a note.
-HOME_LIMIT_L7000 = 0xF4000 - 0x70000 - 0x7E00 * 16
+HOME_LIMIT = 0xF4000 - 0x69000 - 0x7E00 * 16
 CAVE_HOME_IMAGE = 0x7E00 * 16      # image offset of the cave home (relative paragraph 7E00)
-HOME_BUDGET = 21_140            # bytes entry316 copies to the home (19,200 after the size
+HOME_BUDGET = 21_154            # bytes entry316 copies to the home (19,200 after the size
                                 # pass; +350 for the audit and stock-bug fixes, 2026-10-16;
                                 # 20,690 with the performance pass, perf316.inc and the view's
                                 # fast paths without S6 and D1a, 2026-10-16; 21,140 with the
-                                # crash fixes C1-C3 and scsistack316, 2026-10-17)
-HOME_HEADROOM = 3_400           # kept free under the 3.08/3.11 limit for future features
-                                # (4,096 before the performance pass)
-# Stock 3.16's SCSI file-list reader 2AB2:04F7 does SUB SP,100Eh on the UI stack (SS rel
-# 73E1) entered with SP ~ 07D2: SP wraps to ~F7C4 (image ~0x835D4) and the calls below the
-# frame write lower still, into the bytes above the cave home.  Deepest write seen image
-# 0x8350A (Erase all on SCSI), typically 0x83564, stock and PMONEY on every BIOS set (monkey
-# soak 2026-10-16, failure 2).  scsistack316 now runs that reader on a private stack, but it
-# falls back to the stock frame when the private stack is busy or missing, so the home
-# (image 0x7E000 + copied) must still end at or below 0x83300.
-STACK_WRAP_LIMIT = 0x83300
+                                # crash fixes C1-C3 and scsistack316, 2026-10-17; 21,154 with
+                                # scsistack316's no-wrap fallback, 2026-10-17)
+HOME_HEADROOM = 32_000          # kept free under the universal page-61 limit (32,094 free,
+                                # 2026-10-17; before the universal layout the 3.08/3.11
+                                # limit left 3,436 and this was 3,400).  This is the binding
+                                # limit: the old SCSI stack-wrap backstop (home end <= image
+                                # 0x83300) is gone, see SCSI_DEPTH below.
+# Stock 3.16's SCSI partition reader 2AB2:04F7 opens SUB SP,100Eh; entered on the UI
+# stack (SS rel 73E1) with SP ~ 07D2 it wrapped to SS:F7xx, image ~0x835xx, inside the
+# cave home's range.  scsistack316 runs it on its private stack; its fallback (busy or no
+# private stack, both unreachable: tools/scsi_reader_reach.py, emu.test_scsi316) runs the
+# stock frame only with SP >= SCSI_STK_BYTES and otherwise returns the reader's error 4, so
+# no path can wrap (test_scsi_wrapper_* below).  SCSI_DEPTH: the reader's deepest measured
+# use, which SCSI_STK_BYTES must cover.
+SCSI_DEPTH = 0x109A
 HOOK = 0x2298F                  # chop_sound_delete hook, on T_D0C0_0B19 = 21E7:0B1F
 
 
@@ -61,13 +66,14 @@ class PinnedBuild(unittest.TestCase):
             self.assertEqual(kit.sha256((out / "WAVE316.img").read_bytes()), IMG_SHA256)
             self.assertEqual(kit.sha256((out / "wave316.cave.bin").read_bytes()), CAVE_SHA256)
         sim = m["simulation"]
-        self.assertEqual((sim["6900"]["pool_end"], sim["7000"]["pool_end"]), ("67DF", "6EDF"))
-        self.assertEqual((sim["copy_words"], sim["halt_above"]), ("294A", "70D5"))
+        self.assertEqual((sim["6900"]["pool_end"], sim["7000"]["pool_end"]), ("67DF", "67DF"))
+        self.assertEqual((sim["6900"]["runtime_segment"], sim["7000"]["runtime_segment"]), ("6900", "6900"))
+        self.assertEqual((sim["6900"]["moved"], sim["7000"]["moved"]), (False, True))
+        self.assertEqual((sim["copy_words"], sim["min_move"]), ("2951", "01F1"))
+        self.assertEqual((sim["table"]["bytes"], sim["table"]["records"]), (7634, 7312))
         copied = 2 * int(sim["copy_words"], 16)
         self.assertLessEqual(copied, HOME_BUDGET, f"cave home {copied} B over budget")
-        self.assertGreaterEqual(HOME_LIMIT_L7000 - copied, HOME_HEADROOM)
-        self.assertLessEqual(CAVE_HOME_IMAGE + copied, STACK_WRAP_LIMIT,
-                             "cave home reaches the SCSI file-list stack wrap (2AB2:04F7)")
+        self.assertGreaterEqual(HOME_LIMIT - copied, HOME_HEADROOM)
         # +6 banner316; S1a, compress, sysinfo316, editdo, xparams316, tc316,
         # eraseall316, syncout316 and scsi316 (Vailixi ports,
         # notes/vailixi_features.md) bring 280 and 46; diskutil316 +60 and +2;
@@ -90,18 +96,18 @@ class Checks(unittest.TestCase):
         cls.patches = [rc.expand(off, old, new, asm.labels, b.CAVE_HOME) for off, old, new in args.patch]
         cls.result = rc.build(cls.base, cls.cave, cls.labels, cls.patches, home=b.CAVE_HOME)
         cls.ops = b.entry_operands(cls.labels, cls.listing)
-        cls.transfers = mod.far_transfers(mod.Cave((0, "", cls.cave.hex()), cls.labels, cls.cave, cls.listing))
+        cls.transfers = b.cave_transfers(cls.cave, cls.labels, cls.listing)
         cls.used = b.used_targets(cls.transfers, cls.targets)
         cls.stock = bytes(rc.MZ.parse(cls.base).image)
         cls.patched = bytes(rc.MZ.parse(cls.result.sys).image)
 
     def verify(self, cave: bytes | None = None, labels: dict | None = None, listing: list | None = None,
-               result: rc.Result | None = None) -> dict:
+               result: rc.Result | None = None, memories: dict | None = None) -> dict:
         cave = self.cave if cave is None else cave
         labels = self.labels if labels is None else labels
         listing = self.listing if listing is None else listing
         result = rc.build(self.base, cave, labels, self.patches, home=b.CAVE_HOME) if result is None else result
-        return b.verify(result, cave, labels, listing, self.patches, self.consts, self.targets)
+        return b.verify(result, cave, labels, listing, self.patches, self.consts, self.targets, memories)
 
     def poke(self, at: int, data: bytes) -> dict:
         """verify() inputs with data written at cave offset `at`, in the binary and its listing."""
@@ -123,7 +129,7 @@ class Checks(unittest.TestCase):
                                self.used if used is None else used, **kw)
 
     def test_unmutated_inputs_pass(self) -> None:
-        self.assertEqual(self.verify()["7000"]["pool_end"], "6EDF")
+        self.assertEqual(self.verify()["7000"]["pool_end"], "67DF")
         self.assertEqual(len(self.check_targets()), len(self.used))
 
     # A. entry316 is run, not assumed.
@@ -138,9 +144,15 @@ class Checks(unittest.TestCase):
             self.verify(labels=dict(self.labels, cave_end=self.labels["cave_end"] - 2))
 
     def test_entry316_must_assemble_to_the_modelled_routine(self) -> None:
-        at = self.ops["pool_limit"][0] + 2              # JB .below -> JAE
-        with self.assertRaisesRegex(ValueError, "entry316 assembles 7303 here, expected 7203"):
-            self.verify(**self.poke(at, b"\x73"))
+        at = self.ops["pool_word"][0] + 2               # JNE .pool_done -> JE
+        with self.assertRaisesRegex(ValueError, "entry316 assembles 7408 here, expected 7508"):
+            self.verify(**self.poke(at, b"\x74"))
+
+    def test_entry316_constants_are_the_model(self) -> None:
+        for name, value in (("univ_mv", 0x6800), ("chunk", 0x1000), ("bios_jmp", 0x68C0), ("t_dmin", 0),
+                            ("moved", 0)):
+            with self.subTest(name), self.assertRaisesRegex(ValueError, f"immediates differ.*'{name}'"):
+                self.verify(**self.poke_op(name, value))
 
     def test_copy_count_covers_the_cave(self) -> None:
         count = (len(self.cave) + 1) // 2
@@ -154,25 +166,116 @@ class Checks(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "the cave home is not the relocated cave"):
             self.verify(result=dataclasses.replace(self.result, sys=bytes(sys_bytes)))
 
-    def test_halt_bound_is_the_last_load_segment_below_page_61(self) -> None:
-        bound = self.verify()["halt_above"]
-        for value in (int(bound, 16) - 1, int(bound, 16) + 1):
-            with self.subTest(bound=hex(value)), self.assertRaisesRegex(ValueError, "entry316 halts above"):
-                self.verify(**self.poke_op("halt_bound", value))
+    def run_wrapper(self, busy: int, sp: int) -> tuple:
+        """scsistack316's wrapper from the reader's patched prologue, on the final L=6900
+        memory: the UI task's stack SS = 6900+73E1 with the caller's far return address
+        (2AB2:0772) at SP.  Stops at the reader body 2AB2:04FE or back at the caller."""
+        from tests.x86sub import Cpu
+        mems: dict[int, bytearray] = {}
+        self.verify(memories=mems)
+        mem = mems[0x6900]
+        home = (0x6900 + b.CAVE_HOME) * 16
+        mem[home + self.labels["scsi_stk_busy"]] = busy
+        cpu = Cpu(mem)
+        reader_cs, ret = (0x6900 + 0x2AB2) & 0xFFFF, 0x0772
+        cpu.s.update(cs=(0x6900 + b.CAVE_HOME) & 0xFFFF, ss=0x6900 + 0x73E1, ds=0x6900 + 0x609C, es=0)
+        cpu.ip, cpu.r["sp"], cpu.r["bp"] = self.labels["scsi_stack"], sp, 0x3E38
+        cpu.ww("ss", sp, ret)
+        cpu.ww("ss", sp + 2, reader_cs)
+        cpu.writes.clear()
+        while not (cpu.s["cs"] == reader_cs and cpu.ip in (0x04FE, ret)):
+            cpu.step()
+        return cpu, mem
 
-    def test_every_load_segment_passes_the_halt_bound(self) -> None:
-        # entry316 copies only up to cave_copy_end; it stays at the stage itself.
-        copied = self.labels.get("cave_copy_end", len(self.cave))
-        last = (rc.PAGE61 - copied) // 16 - b.CAVE_HOME
-        with mock.patch.object(rc, "LOADS", (last,)):
-            self.assertIn(f"{last:04X}", self.verify())
-        with mock.patch.object(rc, "LOADS", (0x6900, last + 1)), \
-                self.assertRaisesRegex(ValueError, f"L={last + 1:04X}: entry316 halts"):
+    def test_scsi_wrapper_takes_the_private_stack(self) -> None:
+        cpu, _ = self.run_wrapper(busy=0, sp=0x07D2)
+        stk = self.consts["SCSI_STK_PARAS"]
+        self.assertEqual(cpu.ip, 0x04FE)
+        self.assertEqual(cpu.s["ss"], 0x6900 - stk)                    # just below the image
+        self.assertEqual(cpu.r["sp"], stk * 16 - 4 - 2 - 0x100E)      # far frame, BP, the 100Eh frame
+
+    def test_scsi_wrapper_fallback_cannot_wrap(self) -> None:
+        self.assertGreaterEqual(self.consts["SCSI_STK_PARAS"] * 16, SCSI_DEPTH)
+        # Held, shallow caller stack: no read, error 4, nothing written on the caller's stack.
+        cpu, mem = self.run_wrapper(busy=1, sp=0x07D2)
+        self.assertEqual((cpu.ip, cpu.r["ax"], cpu.r["sp"]), (0x0772, 4, 0x07D6))
+        self.assertEqual(mem[(0x6900 + 0x609C) * 16 + 0x79A4], 0)
+        busy = (0x6900 + b.CAVE_HOME) * 16 + self.labels["scsi_stk_busy"]
+        self.assertLessEqual(cpu.writes, {busy, (0x6900 + 0x609C) * 16 + 0x79A4})   # XCHG and [79A4] only
+        # Held, deep enough: the stock frame on the caller's stack, entirely below SP.
+        sp = self.consts["SCSI_STK_PARAS"] * 16
+        cpu, _ = self.run_wrapper(busy=1, sp=sp)
+        self.assertEqual((cpu.ip, cpu.r["sp"], cpu.r["bp"]), (0x04FE, sp - 2 - 0x100E, sp - 2))
+        self.assertGreaterEqual(sp - SCSI_DEPTH, 0)                    # the deepest use stays above SS:0000
+
+    def test_move_halts_below_the_least_move(self) -> None:
+        # .move halts when the copy would reach entry316 (L - 6900 < the table's least D).
+        least = int(self.verify()["min_move"], 16)
+        with mock.patch.object(rc, "LOADS", (0x6900, 0x6900 + least)):
+            self.assertTrue(self.verify()[f"{0x6900 + least:04X}"]["moved"])
+        with mock.patch.object(rc, "LOADS", (0x6900, 0x6900 + least - 1)), \
+                self.assertRaisesRegex(ValueError, f"L={0x6900 + least - 1:04X}: entry316 halts"):
             self.verify()
 
+    def test_other_load_segments(self) -> None:
+        # Below 6900 entry316 runs in place (no move); above it, any L moves to 6900.
+        with mock.patch.object(rc, "LOADS", (0x6800, 0x6900, 0x7000, 0x7400)):
+            sim = self.verify()
+        self.assertEqual([sim[k]["runtime_segment"] for k in ("6800", "6900", "7000", "7400")],
+                         ["6800", "6900", "6900", "6900"])
+        self.assertEqual(sim["6800"]["pool_end"], "66DF")
+
+    def test_relocation_table_is_the_mz_list(self) -> None:
+        sys_bytes = bytearray(self.result.sys)
+        hdr = rc.MZ.parse(self.result.sys).h["cparhdr"] * 16
+        sys_bytes[hdr + self.result.table + rc.TABLE_HEAD] += 1     # first record one byte further
+        with self.assertRaisesRegex(ValueError, "not the MZ relocation list"):
+            self.verify(result=dataclasses.replace(self.result, sys=bytes(sys_bytes)))
+
+    def test_table_records_round_trip(self) -> None:
+        positions = [3, 5, 0x105, 0x105 + rc.SKIP + 1, 0x105 + 3 * rc.SKIP + 7, 0x50000]
+        records, count = rc.encode_relocs(positions)
+        head, out = rc.decode_relocs(struct.pack("<3H", 0, count, 0) + records)
+        self.assertEqual(out, positions)
+        with self.assertRaisesRegex(ValueError, "not after"):
+            rc.encode_relocs([0])
+
+    def test_final_memory_is_identical_for_6900_and_7000(self) -> None:
+        mems: dict[int, bytearray] = {}
+        self.verify(memories=mems)
+        self.assertEqual(sorted(mems), [0x6900, 0x7000])
+        self.assertTrue(mems[0x6900] == mems[0x7000])
+
+    def test_entry316_bytes_run_in_x86sub(self) -> None:
+        # The assembled entry316 run by the interpreter from the loader's hand-off
+        # state at both load segments: the same memory and registers at 3.16's
+        # entry 6900:0000, and the builder's model agrees with every byte except
+        # the 2-byte PUSH CS / POP DS slot under SP (the model has no stack).
+        from tests.x86sub import Cpu
+        mems: dict[int, bytearray] = {}
+        self.verify(memories=mems)
+        runs = {}
+        for load in (0x6900, 0x7000):
+            mem, regs = rc.load(self.result.sys, load)
+            cpu = Cpu(mem)
+            cpu.s.update(cs=regs["cs"], ss=regs["ss"], ds=0x0040, es=regs["cs"])
+            cpu.ip, cpu.r["sp"], cpu.r["bp"] = regs["ip"], regs["sp"], 0x69B6
+            cpu.f["df"] = True
+            while not (cpu.s["cs"] == 0x6900 and cpu.ip == 0):
+                cpu.step()
+            state = (dict(cpu.r), dict(cpu.s), cpu.flags)
+            stack = {(cpu.s["ss"] * 16 + cpu.r["sp"] - 2 + i) for i in range(2)}
+            model = mems[load]
+            diff = set() if mem == model else {i for i in range(len(mem)) if mem[i] != model[i]}
+            self.assertLessEqual(diff, stack, f"L={load:04X}: model differs at {sorted(diff)[:8]}")
+            runs[load] = (mem, state, cpu.steps)
+        self.assertEqual(runs[0x6900][1], runs[0x7000][1])
+        self.assertTrue(runs[0x6900][0] == runs[0x7000][0])
+        self.assertEqual(runs[0x7000][1][0]["bp"], 0x69B6)
+        self.assertEqual(runs[0x7000][1][1]["ss"], 0x6900 + rc.MZ.parse(self.result.sys).h["ss"])
+
     def test_pool_rule_is_run_as_assembled(self) -> None:
-        for name, value in (("pool_opcode", 0xBA), ("pool_word", 0x6FFE), ("pool_limit", 0x6000),
-                            ("pool_off", 0x0006)):
+        for name, value in (("pool_opcode", 0xBA), ("pool_word", 0x6FFE), ("pool_off", 0x0006)):
             with self.subTest(name), self.assertRaisesRegex(ValueError, "pool"):
                 self.verify(**self.poke_op(name, value))
 

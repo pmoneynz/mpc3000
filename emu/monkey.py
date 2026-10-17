@@ -148,7 +148,9 @@ class Target:
 
     @property
     def load_segment(self) -> int:
-        return h.LOAD_SEGMENTS[self.bios]
+        """Where 3.16 runs: PMONEY at h.RUNTIME_316 on every set (entry316's move),
+        stock M3K316.SYS at the EPROM loader's segment."""
+        return h.RUNTIME_316 if self.pmoney else h.LOAD_SEGMENTS[self.bios]
 
     @property
     def image_phys(self) -> int:

@@ -4,8 +4,9 @@ Run: python3 -m unittest emu.test_port316_boot -v
 
 The payload is built from the current sources by emu.harness (316 profile)
 and booted from the stock romset on all four MAME BIOS sets: `default`
-(3.12) and `vailixi` load it at L = 6900h, `v311` and `v308` at L = 7000h
-(notes/port_316.md).  Two runs per set, real panel input only; the observers
+(3.12) and `vailixi` load it at 6900h, `v311` and `v308` at 7000h, and
+entry316 moves the 7000h load down, so 3.16 runs at L = 6900h on every set
+with one memory map (notes/port_316.md "Cave space").  Two runs per set, real panel input only; the observers
 (emu/lua/wave_zones316.lua, image316.lua) only read RAM.
 
 - `view`: boot banner, the harness 3.16 timeline (cancel SCSI, Disk / 7 /
@@ -16,7 +17,7 @@ and booted from the stock romset on all four MAME BIOS sets: `default`
   Main Screen and Disk; image bytes 0x0000..0x6FFF in RAM must still be the
   relocated WAVE316.SYS image.  With L = 6900h stock 3.16's sequence pool
   (logical 2000..6FFFE) overlaps exactly those image bytes; WAVE316's entry
-  routine lowers the pool end to min(L-1, 6FFF) - 120h (notes/port_316.md, mods/entry316.inc).
+  routine lowers the pool end to L-1 - 120h = 67DF (notes/port_316.md, mods/entry316.inc).
 """
 from __future__ import annotations
 
@@ -135,9 +136,9 @@ class Port316Boot(unittest.TestCase):
                 self.assertEqual(raw[1], "." * 7 + "WAVEFORM/ZONES/MUTE.GROUP" + "." * 8)   # cave banner316
                 self.assertEqual(raw[2], "." * 12 + "PMONEY.BETA.1.0" + "." * 13)
                 # cave sysinfo316: stock Free(snd)/Free(seq) formulas; MAME's 2 MB board gives
-                # 1916K; the pool ends at min(L-1, 6FFF) - 120h (entry316: the SCSI reader stack above it), so
-                # 407K with L=6900 and 435K with L=7000
-                seq = 407 if self.profiles[bios].load_segment == 0x6900 else 435
+                # 1916K; the pool ends at L-1 - 120h = 67DF (entry316: the SCSI reader stack above it)
+                # with L = 6900 on every set (entry316 moves a 7000 load), so 407K everywhere
+                seq = 407
                 self.assertEqual(raw[3].replace(".", " "), f"Sound memory free (SND/PGM/SET):  {1916:5d}K")
                 self.assertEqual(raw[4].replace(".", " "), f"Seq memory free (SEQ/ALL/MID):    {seq:5d}K")
                 self.assertEqual(raw[5].strip("."), "")                  # no I-0055 (MAME echoes port 50h)
@@ -184,15 +185,15 @@ class Port316Boot(unittest.TestCase):
     def test_cave_home_and_pool_end_in_physical_memory(self):
         for bios, profile, d, _ in self.each("view"):
             with self.subTest(bios=bios):
-                L = profile.load_segment
-                self.assertEqual(profile.cave_phys, 0x300000 + L * 16 + 0x7E000)
+                self.assertEqual(profile.load_segment, 0x6900)
+                self.assertEqual(profile.cave_phys, 0x3E7000)                  # one home on every set
                 rows = image_rows(d)
                 self.assertEqual(sorted(rows), VIEW_DUMPS)
                 for t, row in rows.items():
                     self.assertEqual(row["xa"], 1, t)
                     self.assertEqual(row["cave_pgr"], profile.cave_phys, t)     # live PGR agrees
                     self.assertEqual(row["pool_opcode"], 0xBB, t)               # MOV BX,imm16
-                    self.assertEqual(row["pool_imm"], 0x67DF if L == 0x6900 else 0x6EDF, t)
+                    self.assertEqual(row["pool_imm"], 0x67DF, t)
                 # At Play/Record, before any key reached the cave, its home is
                 # the loader simulation (relocated words, entry
                 # copy).  Later its variables change, so only this dump is exact.
@@ -230,7 +231,7 @@ class Port316Boot(unittest.TestCase):
             with self.subTest(bios=bios):
                 image = profile.relocated_image()[:HEAD]
                 for t, row in image_rows(d).items():
-                    self.assertEqual(row["pool_imm"], min(profile.load_segment - 1, 0x6FFF) - 0x120, t)
+                    self.assertEqual(row["pool_imm"], 0x67DF, t)
                     ram = (d / f"head_{h.label(t)}.bin").read_bytes()
                     self.assertEqual(len(ram), HEAD)
                     outside = [i for i in range(HEAD) if not HOOK[0] <= i < HOOK[1] and ram[i] != image[i]]

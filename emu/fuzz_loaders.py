@@ -34,9 +34,10 @@ fills.  Every case is reproducible from (type, seed); `minimize` delta-debugs
 the operation list of a failing case and writes the minimal file.
 
 Address forms: 3.16 relative seg:off as stored in M3K316.SYS; runtime
-CS = L + seg.  Use a BIOS set with L = 7000h (v311, v308) for stock 3.16: with
-L = 6900h stock 3.16's sequence pool overlaps its own image (notes/port_316.md)
-and every sequence load would trip the code-image oracle.
+CS = L + seg (PMONEY: L = 6900h on every set, entry316 moves a 7000h load).
+Use a BIOS set with L = 7000h (v311, v308) for stock 3.16: with L = 6900h
+stock 3.16's sequence pool overlaps its own image (notes/port_316.md) and
+every sequence load would trip the code-image oracle.
 """
 from __future__ import annotations
 
@@ -63,6 +64,7 @@ M3K316 = REPO / "07-rom" / "v3.16 maintenance upgrade" / "M3K316.SYS"
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 OUT = BUILD / "emu" / "fuzz-loaders"
 LOAD_SEGMENTS = {"default": 0x6900, "vailixi": 0x6900, "v311": 0x7000, "v308": 0x7000}
+RUNTIME_PMONEY = 0x6900    # PMONEY (Route C, MZ entry in the cave) runs here on every set: entry316's move
 DGROUP = 0x609C            # 3.16 relative DGROUP segment
 SND_SEG = 0x539D           # 3.16 relative sound segment (records at +4800h)
 IMAGE_CODE_END = 0x609C0   # 3.16 load-image bytes below DGROUP (code and far data)
@@ -474,7 +476,12 @@ class Runner:
 
     @property
     def load_segment(self) -> int:
-        return LOAD_SEGMENTS[self.bios]
+        """Where 3.16 runs: the loader's segment for stock M3K316.SYS (MZ entry
+        0000:0000); RUNTIME_PMONEY for a PMONEY build (entry in the cave), which
+        entry316 moves there on every set."""
+        raw = self.sys_path.read_bytes()
+        entry_cs = int.from_bytes(raw[0x16:0x18], "little")
+        return RUNTIME_PMONEY if entry_cs else LOAD_SEGMENTS[self.bios]
 
     def _disk(self, name: str, files: list[tuple[bytes, str]], startup: bool) -> Path:
         tmp = self.out / "files"

@@ -229,6 +229,9 @@ State at the first instruction of the loaded image (**PROVEN, code**):
 Consequences, derived from the table and the load segment:
 
 - Load region starts at `0x69000` (3.12/3.50) or `0x70000` (3.08/3.11).
+  PMONEY (`mods/entry316.inc`) moves a `0x70000` load down to `0x69000` and
+  rebases the records below, so it runs with one memory map on every set
+  ([port_316.md](port_316.md) "Cave space").
 - Contiguous RAM runs up to `0xF3FFF`. That leaves `0x8B000` = 569,344 bytes
   (3.12/3.50) or `0x84000` = 540,672 bytes (3.08/3.11) for image + BSS +
   stack.
@@ -334,7 +337,10 @@ BIOS mount (`F800:0F38`, file `0x78F38`):
 
 The loaders are 217 insns in all four, with the same pattern and extension
 order. The hand-offs are 48 insns, differing only in load segment, IVT[8] IP
-and the IP of the `FB00` plant-vector routine. `INT 45` is byte-identical. **PROVEN (code)**.
+and the IP of the `FB00` plant-vector routine. The load segment is recorded outside the image
+only in BIOS data `0040:640A` (INT 45, `[6408]` far buffer pointer) and
+`0040:68C2` (the hand-off's `JMP FAR [68C0]`), plus stale pushes under
+`0040:69C4`. **PROVEN (code)**. `INT 45` is byte-identical. **PROVEN (code)**.
 MZ relocation absorbs the segment difference: 3.16 boots on all four
 (trace). The 3.16 PDF says "requires ≥ 3.11". Its reason is
 **UNDETERMINED**, because 3.08 reaches Play/Record in MAME.
@@ -353,7 +359,10 @@ The working procedure built on these rules is [`../MODDING_HOWTO.md`](../MODDING
 4. DOS MZ with correct `e_cp`/`e_cblp` for the real file size, `e_cparhdr ≥ 2`,
    and `e_lfarlc` small (≤ `3Eh` is proven by 3.16). Relocations are
    applied, so link for any base. Do not depend on the load segment
-   (`6900` vs `7000`). **PROVEN (code)**.
+   (`6900` vs `7000`). **PROVEN (code)**. A mod may instead move itself to one
+   segment, as PMONEY does: re-apply its relocations with the difference,
+   copy the image down and rebase `0040:640A`, `0040:68C2` and `SS`
+   ([port_316.md](port_316.md) "Cave space").
 5. Image + BSS + stack must end below logical `0xF4000`. Set
    `e_ss:e_sp`, or set up your own stack first thing. `DS=0040` at entry.
    **PROVEN (code)**.
