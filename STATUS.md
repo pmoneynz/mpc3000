@@ -1,5 +1,15 @@
 # Audited project status
 
+**2026-10-18 Input Thru (not built as a release):** Mixer/Effects 6 sets live input
+monitoring (OFF / MONO LFT / MONO RGT / STEREO, ANALOG / DIGITAL, level), stored in the
+parameter-block reserve 831F-8321.  The engine is the stock Sample New Sound monitor with
+its own CPU and wave rings (the pool ends 2000h words lower), channels 0 and 31 (stereo
+also 3 and 16) reserved from the allocator and the stop paths, and the stage paused around
+wave transfers, floppy operations and the MIDI sample dump's voice reset; Sample New Sound
+runs with Thru off.  PROVEN in MAME (`emu/test_thru316.py`, isolated cases): page, stored
+bytes, DMA / 8255 / DSP writes, allocator and stop exclusion, pauses and hand-off.  Audio,
+latency and DMA concurrency on the board are UNDETERMINED (notes/input_thru.md, T1-T9).
+
 **2026-10-13 PMONEY note-on fixes (not built as a release):** S1a ported to OS 3.16
 (17 divide calls to the cave, fallback to 3.16's runtime copy, byte-identical to the BIOS
 one), an inline pad lookup in the mute note-on wrapper, and the allocation lock re-taken

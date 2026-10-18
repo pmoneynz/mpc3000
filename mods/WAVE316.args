@@ -137,3 +137,17 @@
 --patch=2b8fe:bbac068a0e1870:ea{pad_own_press}9090
 --patch=2bb75:bbac068a0e1870:ea{pad_own_release}9090
 --patch=2b99c:88874895bb2101:ea{pad_own_pressure}9090
+--patch=16513:1e68fc4f9a6500270483c404:9a{thru_menu_text}90909090909090
+--patch=16532:6a05:6a06
+--patch=1654d:98488bd883fb04:ea{thru_menu_dispatch}9090
+--patch=15ad2:9a0700d702:9a{thru_mode_hook}
+--patch=1a04d:9a0f004918:9a{thru_sample_wrap}
+--patch=206cc:8b46fe40a384e2:ea{thru_alloc_free}9090
+--patch=234d0:558becba0100:ea{thru_stop_guard}90
+--patch=20ba2:558bec83ec0e:ea{thru_xfer_guard}90
+--patch=231e7:9a00003823:9a{thru_reg1_guard}
+--patch=23228:9a00003823:9a{thru_reg1_guard}
+--patch=1bcc:8becbf9760:9a{thru_fdc_enter}
+--patch=1bf4:8a2607000ae4:9a{thru_fdc_leave}90
+--patch=2209a:f8:d8
+--patch=2d0db:26f74702ffff:9a{thru_idle}90

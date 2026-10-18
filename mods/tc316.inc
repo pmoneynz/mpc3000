@@ -46,7 +46,9 @@ tc_grid_interval:
 ; re-derive the extended value from the loaded one.
 tc_par_apply:
         mov byte [TC_EXT], 0xFF
-        FJMP T_BDF1_012B
+        FCALL T_BDF1_012B
+        call thru_sync                  ; Input Thru follows the loaded settings
+        retf
 
 %ifdef TC_REPEAT_GATE
 ; JMPF from the playback tick 422F:02B9 (Vailixi EC05:02A9), replacing

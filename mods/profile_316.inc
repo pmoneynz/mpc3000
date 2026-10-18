@@ -382,3 +382,28 @@ LC_KICK         equ 0xD398       ; D6AB: the UI kick key (D6E0:001B returns it w
 %define T_D52A_0190 0x2B50:0x0194       ; TCT0 timestamp: DX:AX in 0.5 us units (PUSHF/CLI; BX, CX change)
 %define T_DA04_002B 0x302F:0x0029       ; program record (index word) -> DX:AX far pointer, 0 past the count
 %define T_DE5C_000E 0x3481:0x000E       ; global key filter (raw key word) -> AX = the key, 0 when handled
+
+; ---------------------------------------------------------------- Input Thru (thru316.inc, notes/input_thru.md)
+; Settings in the parameter-block reserve after xparams316 / scsi316 / syncout316 (831F..8322 are zero-filled by
+; 0491:0101 and read by no stock code); Vailixi has no such setting.
+THRU_MODE      equ 0x831F       ; 0 OFF, 1 MONO LFT, 2 MONO RGT, 3 STEREO
+THRU_INPUT     equ 0x8320       ; 0 ANALOG, 1 DIGITAL (stock [8293] encoding)
+THRU_LEVEL     equ 0x8321       ; level 0..100, stored XOR THRU_LEVEL_DEF
+THRU_INPUTS    equ 0x5246       ; 5630: far pointers "ANALOG", "DIGITAL", NULL (Sample New Sound Input)
+S_MONO_LFT     equ 0x5259       ; 5643: "MONO LFT"
+S_MONO_RGT     equ 0x5262       ; 564C: "MONO RGT"
+S_STEREO       equ 0x526B       ; 5655: "STEREO  "
+POOL_BANKS     equ 0xF16A       ; FACC: 2 MB wave banks (21E7:0106 sets, 21E7:0206 reads)
+ALLOC_NEXT     equ 0xE284       ; E597: allocator round-robin start
+ALLOC_VICTIM   equ 0xF166       ; FAC8: allocator's smallest-timer victim (byte, not reset per call)
+FDC_DS_SEG     equ 0x6097       ; floppy BIOS data segment: INT 40 handler 0009:1B3E MOV DI,6097h (relocated)
+%define T_CF37_00ED 0x205E:0x00F3       ; allocator: mov ax,[bp-2] / return the free channel
+%define T_CF37_016E 0x205E:0x0174       ; allocator scan: inc cx / next channel
+%define T_D21F_000E 0x234D:0x0006       ; one-channel stop after push bp / mov bp,sp / mov dx,1
+%define T_CF92_0012 0x20BA:0x0008       ; wave transfer after its prologue
+%define T_D20A_0008 0x2338:0x0000       ; reg 1 (and reg A unless BX = 1) of all 32 channels
+%define T_D1F7_012F 0x2325:0x0127       ; release AMX resource 1
+%define T_C4C8_0060 0x1650:0x0054       ; Mixer menu: ja exit / option table, after cmp bx,4
+%define T_C4C8_0094 0x1650:0x0088       ; Mixer menu: mov al,dl / return
+%define T_B060_000D 0x02D7:0x0007       ; reset the field list (mode loop, before each mode)
+%define T_C6C2_000B 0x1849:0x000F       ; Sample New Sound page

@@ -1,10 +1,16 @@
-# Input Thru: live input monitoring in every mode (design)
+# Input Thru: live input monitoring in every mode
 
 **Target:** PMONEY universal build, OS 3.16 + cave (`port-316`, head
-`48d62ff`). **Date:** 2026-10-18. **Status:** design only; no code.
+`48d62ff`). **Date:** 2026-10-18. **Status:** implemented
+(`mods/thru316.inc`, hooks in `mods/WAVE316.args`); control path PROVEN in
+MAME (`emu/test_thru316.py`); audio UNDETERMINED (bench T1-T9).
 Owner decisions: build on the latest target (3.16); losing voices while Thru
 is on and silence during disk/edit transfers are acceptable; the setting
-lives on the MIXER/EFFECTS page.
+lives on the MIXER/EFFECTS page; Thru-on emulator tests stay isolated (no
+change to the MAME fork).
+
+Sections 1-4 are the design as reviewed; section 5 records what the
+implementation changed and why.
 
 Address forms follow [`port_316.md`](port_316.md): 3.16 relative `seg:off`,
 image = `seg*16+off`, runtime CS = `6900h+seg`, logical = `69000h+image`,
@@ -157,3 +163,79 @@ Bench (physical, deferred):
 | T5 | digital input lock / unlock |
 | T6 | key-on RMW of port 68 (`2325:00DB`) while recording: no glitch |
 | T7 | Sample New Sound still records and monitors as stock; Thru resumes after |
+
+## 5. Implementation (2026-10-18)
+
+Cave home 33,220 bytes (+4,120, of which 2,048 are the DMA ring), 20,028
+free under the page-61 limit (`tests/test_build_wave316.py` budget and
+headroom moved with this note).  The builder's shape check passes for every
+new target (`T_CF37_00ED`, `T_CF37_016E`, `T_D21F_000E`, `T_CF92_0012`,
+`T_D20A_0008`, `T_D1F7_012F`, `T_C4C8_0060`, `T_C4C8_0094`, `T_B060_000D`,
+`T_C6C2_000B`); `T_D21F_0008` and `T_CF92_000C` are hook sites the cave calls
+through (`HOOK_TARGETS`).
+
+### 5.1 Changes from section 3
+
+| Item | Design | Built | Reason |
+|---|---|---|---|
+| A1 allocator | loop head `0x206BA`, every channel | free return `0x206CC` (`205E:00EC`, `8b46fe40a384e2`), `thru_alloc_free` | a reserved channel's stop timer is 0 once Thru stops it (only `20ED:0B33`, the stop and task 1 write timers), so it always reaches the free return; one far jump per allocation instead of two per channel. The skip zeroes its local timer copy and goes to `205E:0174`, past the candidate and histogram updates. **PROVEN (MAME):** 42 key-ons of 40 stereo pad hits use exactly the 28 other channels |
+| E MIDI sample dump | copy of `2338:0000` skipping reserved channels | `thru_reg1_guard`: the stock call with the stage paused | smaller; the dump already pauses for its transfers |
+| Floppy | (none) | INT 40 handler `0009:1B32` (the 3.16 BIOS copy): `thru_fdc_enter` at `0x1BCC` (`8becbf9760`), `thru_fdc_leave` at `0x1BF4` (`8a2607000ae4`) | `0009:1E93` writes the DMA mask absolutely (`C00F` <- `0F`, then `0D` at `0009:1F07`) for every floppy transfer, which stops ch2/ch3 (**PROVEN, MAME DMA trace**). Leaving ch2/ch3 unmasked instead (a first attempt) made the SND load report "internally corrupted" in MAME, so the audio DMA is paused around every floppy operation. IVT 40h = `L+0009:1B32` at run time; the `2A53:0024` handler's chain pointer `[79A0]` is `0000:0000` (**PROVEN, MAME**), so `2A53` is not hooked |
+| Resume | at once | deferred: a guard's last resume sets `thru_pending`; `thru_idle` in the key wait `2D0B:002B` (`0x2D0DB`, `26f74702ffff`) restarts the stage after `THRU_QUIET` = 10 ticks (100 ms) without a pause | a load is dozens of floppy sectors and transfer chunks ~11 ms apart; restarting between them re-keys the monitor each time. **PROVEN (MAME):** one restart, 100 ms after the last sector |
+| DMA restart | ch3 only after a pause | ch2 and ch3 restarted together, ch2 first, interrupts off | the CPU-ring offset between the two then stays a few samples on every restart (otherwise up to one ring) and stereo frames keep their L/R word order |
+| H4 .PAR load | | `tc_par_apply` calls `thru_sync` after `0F78:0136` | as designed |
+
+### 5.2 Hooks as built (3.16 image offsets)
+
+| Site | Bytes | Cave |
+|---|---|---|
+| `0x16513` `1650:0013` | `1e68fc4f9a6500270483c404` | `thru_menu_text` |
+| `0x16532` | `6a05` -> `6a06` | menu accepts 6 |
+| `0x1654D` `1650:004D` | `98488bd883fb04` | `thru_menu_dispatch` |
+| `0x15AD2` `15AC:0012` | `9a0700d702` | `thru_mode_hook` |
+| `0x1A04D` `19F9:00BD` | `9a0f004918` | `thru_sample_wrap` |
+| `0x206CC` `205E:00EC` | `8b46fe40a384e2` | `thru_alloc_free` |
+| `0x234D0` `234D:0000` | `558becba0100` | `thru_stop_guard` |
+| `0x20BA2` `20BA:0002` | `558bec83ec0e` | `thru_xfer_guard` |
+| `0x231E7`, `0x23228` | `9a00003823` | `thru_reg1_guard` |
+| `0x1BCC` `0009:1B3C` | `8becbf9760` | `thru_fdc_enter` |
+| `0x1BF4` `0009:1B64` | `8a2607000ae4` | `thru_fdc_leave` |
+| `0x2D0DB` `2D0B:002B` | `26f74702ffff` | `thru_idle` |
+| `0x2209A` | `f8` -> `d8` | pool ends `2000h` words lower |
+| `0x2D68A` (existing) | `tc_par_apply` | `thru_sync` after a .PAR load |
+
+None of the replaced windows is a branch target (rel8/rel16 scan of each
+segment; the one hit, `0009:1B22`, is the INT 40 handler's function table).
+
+### 5.3 Emulator evidence (`emu/test_thru316.py`, `emu/lua/thru316.lua`)
+
+Every Thru-on case is its own MAME process.  The observer taps DSP ports
+`60h`-`6Fh`, the 8255 ports, and the V53 DMAU in the CPU's internal I/O space
+(`internal_io`, ports `C000h`-`C00Fh` at their low byte; installed after the
+boot snapshot loads, because `interface_post_load` re-maps that space).
+
+| Case | Shown (one MAME execution per EPROM set) |
+|---|---|
+| page | menu row 5 `5.Effects           6.Input thru`; page `Thru:OFF`, `Input:ANALOG` at column 20, `Level: 31`, `Status:OFF`; nothing reserved |
+| mono | ch2 then ch3 programmed on the cave ring (`C001`, `C004`, `C006`, `C002 = 3FFh`, `C00A = 55h / 59h`), ch2/ch3 unmasked; FC bits 6-4 = `101b`; control `40h`; channel 31 keyed by the cave, mixer `4F4Fh`; reserved {0, 31}; pool length = banks<<20 - 107D0h - 2000h; wave ring at the top; leaving the page does not re-key |
+| stereo | reserved {0, 3, 16, 31}; control `58h`; channels 31 and 3 keyed; mixers `4F00h` / `004Fh`; right side 1000h words above the left |
+| level | `Level: 50` stored as 50 XOR 31; mixer `8080h`; no re-key |
+| off | 8255 restored as `2F37:016E`; ch2/ch3 masked; owners FF; nothing reserved |
+| load | SND loads (`Free(snd)` drops 108K); floppy enter/leave balanced; every transfer paused; the stage restarts more than 90 ms after the last pause |
+| sample | Thru off while Sample New Sound runs (the stock monitor keys channel 31 from `2F37`); back on with {0, 31} after it |
+| edit | Edit Sound Ply/Stp stop-all passes `thru_stop_guard` for the reserved channels; the audition never uses 0 or 31 |
+| pads | 40 pad hits, stereo Thru: no stock key-on on 0, 3, 16 or 31; 28 channels used |
+
+**UNDETERMINED (MAME limits):** DMA ch2 has no device (no input samples), the
+model's channel-0 DMA position never wraps (so Thru writes on through
+emulated wave RAM: hence the isolated cases), and SCSI in these runs moves
+data by programmed I/O (no ch0 DMA write was seen), so SCSI DMA beside the
+audio DMA is not exercised.  A SCSI parameter save with Thru on wrote the same
+`PARAMS.PAR` as without it, apart from the Thru byte (one run, `default`).
+
+### 5.4 Bench additions
+
+| Id | Observation |
+|---|---|
+| T8 | SCSI load/save of a large SND with Thru on: no corruption (ch0 DMA beside ch2/ch3) |
+| T9 | floppy load with Thru on: silence during the load, Thru back about 100 ms after it |

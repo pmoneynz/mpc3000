@@ -65,7 +65,7 @@ CODE_END = DGROUP_316 * 16      # 3.16 code and far data lie below DGROUP
 POOL_IMM = 0x48535              # MOV BX,6FFFh immediate the entry adjusts
 POOL_END = 0x6FFF               # its stock value
 SHAPE_INSNS = 6                 # instructions compared per stock target
-HOOK_TARGETS = frozenset({"T_D0C0_0B19", "T_D0C0_0D17", "T_B1B1_005B"})   # targets that are a hook site: the cave calls through the hook
+HOOK_TARGETS = frozenset({"T_D0C0_0B19", "T_D0C0_0D17", "T_B1B1_005B", "T_D21F_0008", "T_CF92_000C"})   # targets that are a hook site: the cave calls through the hook
 OUT = mod.OUT
 
 # entry316 as assembled, one NASM listing line per instruction.  {name} is the
@@ -380,7 +380,8 @@ def verify(result: rc.Result, cave: bytes, labels: dict[str, int], listing: list
             head["paragraphs"] != rc.para(len(mz.image)) or result.table + head["bytes"] != len(mz.image):
         raise ValueError("the relocation table is not the image's last bytes at reloc_table")
     special = {ops["dx"][0]: 0xFFFF, ops["pool_seg"][0]: POOL_IMM >> 4, ops["start_seg"][0]: 0x0000}
-    data_segs = {consts["DGROUP_SEG"], consts["SND_SEG"], consts["RING_SEG"], consts["BIOS_DS_SEG"]}
+    data_segs = {consts["DGROUP_SEG"], consts["SND_SEG"], consts["RING_SEG"], consts["BIOS_DS_SEG"],
+                 consts["FDC_DS_SEG"]}
     allowed = {seg for seg, _ in targets.values()} | data_segs | {consts["PLAYER_SEG"], CAVE_HOME}
     reloc_words = {v: struct.unpack_from("<H", cave, v)[0]
                    for k, v in labels.items() if k.startswith("__reloc_")}

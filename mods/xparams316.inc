@@ -11,7 +11,7 @@
 ;   XP_WARN        ON   seq change while running in record-ready: warn, stop
 ;                       and switch (stock); OFF: refuse (Vailixi C303:0373)
 ;   XP_STAY_EDIT   OFF  PLAY / PLAY START keep Edit Sound open (DE5C:02CF)
-;   XP_STAY_MIXER  OFF  PLAY / PLAY START keep Mixer pages 1-5 open (DE5C:02B3)
+;   XP_STAY_MIXER  OFF  PLAY / PLAY START keep Mixer pages 1-6 open (DE5C:02B3)
 ;   XP_MUTE_EDIT   ON   port 6Ah mute around the Edit Sound processes
 ;   XP_SAFE_LOCK   ON   Edit Sound Do refused while the transport runs
 ;                       (wave_chop.inc chop_do_dispatch, CHOP_HAS_SAFE_LOCK)
@@ -138,7 +138,7 @@ xp_play_stay:
         je .edit
         cmp byte [MODE], 'J'
         jne .edit
-        cmp byte [OPTION], 5
+        cmp byte [OPTION], 6            ; Mixer pages 1-5 and Input Thru
         jg .edit
         jmp .stay
 .edit:  cmp byte [XP_STAY_EDIT], 0

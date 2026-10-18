@@ -15,6 +15,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`mute_voice.md`](mute_voice.md) | Shared note-on/voice allocator hooks and group choking |
 | [`mute_storage.md`](mute_storage.md) | Program state lifetime and PGM/APS extensions |
 | [`lazy_chop.md`](lazy_chop.md) | Lazy Chop on 3.16: pad ownership, the take, CHOPS refine, Convert (spec and as built) |
+| [`input_thru.md`](input_thru.md) | Input Thru on 3.16: the stock sampler monitor kept running in every mode (design and as built) |
 | [`artifact_identity.md`](artifact_identity.md) | What the bytes are |
 | [`address_model.md`](address_model.md) | How those bytes are addressed |
 | [`boot_reset_to_bios_banner.md`](boot_reset_to_bios_banner.md) | First connected slice |

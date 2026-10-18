@@ -1295,6 +1295,7 @@ draw:
  %include "perf316.inc"                 ; performance items (notes/performance.md)
  %include "display316.inc"              ; put-char without INT 43 round trips (notes/performance.md)
  %include "lazychop316.inc"             ; Lazy Chop: pad ownership, the take, CHOPS, Convert
+ %include "thru316.inc"                 ; Input Thru: live input monitoring (Mixer/Effects 6)
 %endif
 
 ; Per pair: label strings, label columns, value columns.
