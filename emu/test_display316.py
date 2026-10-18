@@ -16,7 +16,10 @@ emu/lua/display_watch316.lua, and requires:
   WAVE316.args patches 17de/42b0/42d5 deleted and T_B1B1_005B taken out of
   build_wave316.HOOK_TARGETS, then `python3 -m emu.display_tour316 OUT --bios SETS
   --record F` on all four BIOS sets, and only those two digests merged (every other
-  capture's digest was unchanged by that run);
+  capture's digest was unchanged by that run).  Input Thru (2026-10-18) adds "6.Input thru"
+  to the Mixer menu and takes 16K of sound memory: the loaded, mixer, disk_7 and sysinfo
+  digests were re-recorded the same way from the Input Thru build (every other digest
+  unchanged by that run);
 * invariant I at every put-char and string-writer (0427:0065) entry: [68AF] = FFh implies LC7981 cursor
   address (MAME hd61830 m_cac) = [68AB];
 * put-char and the string writer entered only on the UI task's stack (SS 73E1 relative) and INT 43 only

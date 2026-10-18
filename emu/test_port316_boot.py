@@ -136,10 +136,11 @@ class Port316Boot(unittest.TestCase):
                 self.assertEqual(raw[1], "." * 7 + "WAVEFORM/ZONES/MUTE.GROUP" + "." * 8)   # cave banner316
                 self.assertEqual(raw[2], "." * 12 + "PMONEY.BETA.1.0" + "." * 13)
                 # cave sysinfo316: stock Free(snd)/Free(seq) formulas; MAME's 2 MB board gives
-                # 1916K; the pool ends at L-1 - 120h = 67DF (entry316: the SCSI reader stack above it)
+                # 1900K (1916K before Input Thru took the top 16K of wave RAM); the pool ends at
+                # L-1 - 120h = 67DF (entry316: the SCSI reader stack above it)
                 # with L = 6900 on every set (entry316 moves a 7000 load), so 407K everywhere
                 seq = 407
-                self.assertEqual(raw[3].replace(".", " "), f"Sound memory free (SND/PGM/SET):  {1916:5d}K")
+                self.assertEqual(raw[3].replace(".", " "), f"Sound memory free (SND/PGM/SET):  {1900:5d}K")
                 self.assertEqual(raw[4].replace(".", " "), f"Seq memory free (SEQ/ALL/MID):    {seq:5d}K")
                 self.assertEqual(raw[5].strip("."), "")                  # no I-0055 (MAME echoes port 50h)
                 self.assertIn("Searching SCSI", s[32.6])
@@ -200,9 +201,10 @@ class Port316Boot(unittest.TestCase):
                 home = profile.cave_home_image()
                 ram = (d / f"cave_{h.label(VIEW_DUMPS[0])}.bin").read_bytes()
                 self.assertEqual(len(ram), len(home))
-                # Boot itself writes one cave variable: the System Information
-                # option probe caches its result (FFh until probed).
-                written = {profile.symbols()["si_option"]}
+                # Boot itself writes two cave variables: the System Information
+                # option probe caches its result (FFh until probed), and the
+                # first mode change computes Input Thru's mixer byte (thru_sync).
+                written = {profile.symbols()["si_option"], profile.symbols()["thru_mix"]}
                 diff = [i for i in range(len(home)) if ram[i] != home[i] and i not in written]
                 self.assertEqual(diff, [], "cave home differs from the loader simulation")
                 self.assertEqual(home[profile.symbols()["si_option"]], 0xFF)

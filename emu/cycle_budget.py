@@ -386,13 +386,28 @@ def windows_of(path: Path) -> dict[str, dict]:
     return out
 
 
-_IDLE = set()
-for _s, _e in IDLE_LOOPS:
-    _IDLE.update(range(BASE + _s, BASE + _e))
+# Cave code that runs only inside the 2D0DB key-wait spin (its hook there), as
+# (first label, label after it): Input Thru's pending-resume gate (thru316.inc
+# thru_idle; the resume itself, thru_idle_resume, is work).
+CAVE_WAITS = (("thru_idle", "thru_idle_end"),)
+_IDLE: set[int] = set()
+
+
+def idle_addresses() -> set[int]:
+    """Physical addresses of the waits (IDLE_LOOPS and CAVE_WAITS of this checkout's payload)."""
+    if not _IDLE:
+        for s, e in IDLE_LOOPS:
+            _IDLE.update(range(BASE + s, BASE + e))
+        profile = h.payload("316", BIOS)
+        syms = profile.symbols()
+        for s, e in CAVE_WAITS:
+            _IDLE.update(range(profile.cave_phys + syms[s], profile.cave_phys + syms[e]))
+    return _IDLE
 
 
 def busy(w: dict) -> int:
-    return w["total"] - sum(c for a, c in w["addr"].items() if a in _IDLE)
+    idle = idle_addresses()
+    return w["total"] - sum(c for a, c in w["addr"].items() if a in idle)
 
 
 def busy_pct(w: dict) -> float:

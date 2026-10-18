@@ -38,7 +38,8 @@ class SystemInformation(unittest.TestCase):
                 rows = [r.replace(".", " ") for r in screens[0]["rows"]]
                 seq = 407           # pool end 6900-1 - 120h on every set (entry316's move, scsistack316)
                 self.assertIn("PMONEY.BETA.1.0", screens[0]["rows"][2])
-                self.assertEqual(rows[3], f"Sound memory free (SND/PGM/SET):  {1916:5d}K")
+                snd = 1900          # 1916K before Input Thru took the top 2000h words (16K) of wave RAM
+                self.assertEqual(rows[3], f"Sound memory free (SND/PGM/SET):  {snd:5d}K")
                 self.assertEqual(rows[4], f"Seq memory free (SEQ/ALL/MID):    {seq:5d}K")
                 self.assertEqual(rows[5].strip(), "")
                 self.assertIn("<Exit>", rows[7])

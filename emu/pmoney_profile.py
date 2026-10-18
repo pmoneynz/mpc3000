@@ -21,6 +21,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+from emu import cycle_budget as cb
 from emu import harness as h
 from emu import pgm as pgm_fixture
 from emu.mpc3k import BUILD, M3K316, run
@@ -182,7 +183,9 @@ class Names:
 
 
 def idle_set(names: "Names") -> set[int]:
+    labels = {name: off for off, name in names.labels}
     ranges = [(names.base + s, names.base + e) for s, e in IDLE_LOOPS] + list(BIOS_WAITS)
+    ranges += [(names.cave + labels[s], names.cave + labels[e]) for s, e in cb.CAVE_WAITS if s in labels]
     return {a for s, e in ranges for a in range(s, e)}
 
 

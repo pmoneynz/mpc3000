@@ -629,7 +629,7 @@ class DiskUtil316(unittest.TestCase):
             with self.subTest(set=label):
                 r = self.get(label, "f16")
                 s = r["screens"]
-                self.assertRegex(text(s[0]), r"Free\(snd\):\s*26K")         # loaded: 32,610K used
+                self.assertRegex(text(s[0]), r"Free\(snd\):\s*10K")         # loaded: 32,610K used; 26K before Input Thru's 16K ring
                 self.assertIn("Disk:SCSI DISK PART B", text(s[1]))
                 self.assertIn("Save a Sound", s[2]["rows"][0])
                 self.assertRegex(text(s[2]), r"Disk:SCSI DISK PART B\s+Free:32736K")

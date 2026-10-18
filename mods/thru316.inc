@@ -785,6 +785,7 @@ thru_idle:
         pop ds
 .test:  test word [es:bx+2], 0xFFFF     ; the replaced instruction; RETF keeps its flags
         retf
+thru_idle_end:                          ; emu/cycle_budget.py CAVE_WAITS: wait-loop code
 
 ; FAR from the mode loop 15AC:0012 (image 0x15AD2; Vailixi C425:0012), in
 ; place of CALLF 02D7:0007: every mode change, the first one after the boot
