@@ -233,7 +233,20 @@ data by programmed I/O (no ch0 DMA write was seen), so SCSI DMA beside the
 audio DMA is not exercised.  A SCSI parameter save with Thru on wrote the same
 `PARAMS.PAR` as without it, apart from the Thru byte (one run, `default`).
 
-### 5.4 Bench additions
+### 5.4 Regression runs (this container: 4 cores, MAME fork `b4ab57e6`, NASM 2.16.03)
+
+- `tests/`: 136 tests, 0 failures (17 skips need hardware captures).
+- Release gate, every `emu.test_*` suite: all suites with the 316 profile
+  pass after the follow-up commit: cycle budget (with `thru_idle` counted
+  as the key-wait spin it runs in), MIDI wake, boot, System Information,
+  display tour (four digests re-recorded: loaded, mixer, disk_7, sysinfo),
+  Input Thru, mute, harness, wave, CHOP and disk utility suites.
+- Not run here: the `capture` profile (needs `build/hardware/2026-10-01-*`
+  dumps, owner's machine) and the `generic` (Vailixi Route A) cases.  Neither
+  build changes: `thru316.inc` is 316-only and their payload hashes are pinned
+  by `tests/`.
+
+### 5.5 Bench additions
 
 | Id | Observation |
 |---|---|
