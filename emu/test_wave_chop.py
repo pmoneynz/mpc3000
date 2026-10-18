@@ -48,7 +48,15 @@ from emu.snd import sine441, snd, stereo1
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "build/emu/wave-chop-tests"
-DIRECTORY_SOURCE = 8192
+DIRECTORY_SOURCE = 16 * 1400   # 16 zones of 1,400 frames: over CHOP's minimum on every profile
+# CHOP's minimum zone (mods/wave_chop.inc CHOP_MIN_FRAMES): 441 frames (10 ms) on the
+# Vailixi profiles; on 3.16 1,368 (31 ms), the shortest Sound stock 3.16 keys on
+# (third Lazy Chop review #7, notes/lazy_chop.md §13.5 item 13), so its message
+# says 31ms.  directory_full's source was 8,192 frames (512-frame zones) before.
+
+
+def short_text(prof: str) -> str:
+    return "ZONE MUST BE AT LEAST 31ms" if prof.startswith("316") else "ZONE MUST BE AT LEAST 10ms"
 # CHOP ZONE's index in the Do list, after the stock options.  Vailixi
 # B99A:0B05 (linear 0x3A4A5) `cmp bx,9` bounds the stock Do table to 0..9;
 # 3.16 0B72:0B0A (image 0xC22A) `cmp bx,7` bounds it to 0..7
@@ -209,6 +217,9 @@ class WaveChop(h.EmuSuite):
             "stereo": (stereo1(), "STEREO", stereo_four + do(V + 8), [V, V + 16, V + 22], {}),
             "tiny": ([[((i * 701) & 65535) - 32768 for i in range(2048)]], "TINY",
                      do(V + 7), [V, V + 21], {}),
+            # 16 zones of 1,000 frames: made on the Vailixi profiles, refused on 3.16.
+            "short1000": ([[((i * 701) & 65535) - 32768 for i in range(16_000)]], "SHORTK",
+                          do(V + 7), [V, V + 21], {}),
             "partial": (sine441(), "PARTIAL", partial, [V, V + 17, V + 32], {}),
             "collision": (sine441(), "ZONE000", four + do(V + 7) + taps((V + 23, "soft4")),
                           [V, V + 21, V + 29], {}),
@@ -322,7 +333,19 @@ class WaveChop(h.EmuSuite):
             with self.subTest(profile=prof):
                 V = self.view(prof)
                 self.assertEqual(records(d, V), records(d, V + 21))
-                self.assert_status(screens[-1], "ZONE MUST BE AT LEAST 10ms")
+                self.assert_status(screens[-1], short_text(prof))
+
+    def test_zones_under_the_stock_playable_minimum_on_316(self):
+        """Third Lazy Chop review #7: 1,000-frame zones are refused on 3.16 (stock
+        3.16 never keys on them) and made on the Vailixi profiles (441 there)."""
+        for prof, d, screens in self.each("short1000"):
+            with self.subTest(profile=prof):
+                V = self.view(prof)
+                if prof.startswith("316"):
+                    self.assertEqual(records(d, V), records(d, V + 21))
+                    self.assert_status(screens[-1], short_text(prof))
+                else:
+                    self.assert_chop(d, V, V + 21, [16_000 * i // 16 for i in range(17)])
 
     def test_edited_outer_boundaries_are_respected(self):
         for prof, d, _ in self.each("partial"):

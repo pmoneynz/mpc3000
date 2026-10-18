@@ -10,7 +10,13 @@ emu/lua/display_watch316.lua, and requires:
 
 * the LCD (pixels and display RAM) at every capture equal to the build without
   display316 (emu/fixtures/display_tour316.json, recorded from the universal-layout build without display316 (SYS af2c32f4…, all four BIOS sets); originally commit 0ae678e's
-  payload on the same tour);
+  payload on the same tour).  Lazy Chop (2026-10-18) shows "Bank A" and the "Chop:>>"
+  hint in the wave view: the wave_view and wave_view_wheel digests were re-recorded from
+  the final Lazy Chop build (review fixes included) with display316 removed: the three
+  WAVE316.args patches 17de/42b0/42d5 deleted and T_B1B1_005B taken out of
+  build_wave316.HOOK_TARGETS, then `python3 -m emu.display_tour316 OUT --bios SETS
+  --record F` on all four BIOS sets, and only those two digests merged (every other
+  capture's digest was unchanged by that run);
 * invariant I at every put-char and string-writer (0427:0065) entry: [68AF] = FFh implies LC7981 cursor
   address (MAME hd61830 m_cac) = [68AB];
 * put-char and the string writer entered only on the UI task's stack (SS 73E1 relative) and INT 43 only

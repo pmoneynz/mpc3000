@@ -69,6 +69,10 @@ audition:
         cmp ax, [cs:aud_start]
         jbe .done
 .bounds:
+%ifdef PROFILE_316
+        call aud_range                  ; the one audition call site (Lazy Chop pads too)
+        jmp .done
+%else
         ; The playback task must not start a sequenced voice of this sound
         ; while its record holds the audition range: hold the playback lock
         ; (its tick only tests BUSY at entry, so the call below cannot wait on it).
@@ -111,10 +115,79 @@ audition:
         mov [es:si+0x18], ax
         mov [es:si+0x1A], dx
         dec byte [BUSY]
+%endif
 .done:  pop es
         pop ds
         popa
         ret
+
+%ifdef PROFILE_316
+; aud_range: play [aud_start, aud_end] of the view's Sound once (play_range of
+; notes/lazy_chop.md section 7), non-toggle: nothing sounding is stopped here.
+; Shared by Ply/Stp (audition), the pads (Zones, Refine) and the take, so every
+; audition reaches CFC6:0CE9 from this one call site and the player hooks below
+; (audition_callsite) treat each one alike (R2).  lc_tune0 = 1 plays at Tune 0
+; (the take, D10).  Callers have checked the range.  Keeps every register.
+aud_range:
+        pusha
+        push es
+        mov byte [cs:lc_aud_n], 0       ; lc_capture lists this audition's channels
+        ; The playback task must not start a sequenced voice of this sound
+        ; while its record holds the audition range: hold the playback lock
+        ; (its tick only tests BUSY at entry, so the call below cannot wait on it).
+        inc byte [BUSY]
+        mov ax, SND_SEG
+        RELOC_PREV
+        mov es, ax
+        mov si, [cs:rec]
+        mov ax, [es:si+0x14]
+        mov dx, [es:si+0x16]
+        mov [cs:aud_saved_start], ax
+        mov [cs:aud_saved_start+2], dx
+        mov ax, [es:si+0x18]
+        mov dx, [es:si+0x1A]
+        mov [cs:aud_saved_end], ax
+        mov [cs:aud_saved_end+2], dx
+        mov al, [es:si+0x12]
+        mov [cs:aud_saved_tune], al
+        cmp byte [cs:lc_tune0], 0
+        je .tune
+        mov byte [es:si+0x12], 0
+.tune:  mov ax, [cs:aud_start]
+        mov dx, [cs:aud_start+2]
+        mov [es:si+0x14], ax
+        mov [es:si+0x16], dx
+        mov ax, [cs:aud_end]
+        mov dx, [cs:aud_end+2]
+        mov [es:si+0x18], ax
+        mov [es:si+0x1A], dx
+        push word [cs:sound_index]
+        FCALL T_CFC6_0CE9
+.return_from_stock:
+        add sp, 2
+        ; Stock calls may change ES; always re-establish the record pointer.
+        mov ax, SND_SEG
+        RELOC_PREV
+        mov es, ax
+        mov si, [cs:rec]
+        mov ax, [cs:aud_saved_start]
+        mov dx, [cs:aud_saved_start+2]
+        mov [es:si+0x14], ax
+        mov [es:si+0x16], dx
+        mov ax, [cs:aud_saved_end]
+        mov dx, [cs:aud_saved_end+2]
+        mov [es:si+0x18], ax
+        mov [es:si+0x1A], dx
+        mov al, [cs:aud_saved_tune]
+        mov [es:si+0x12], al
+        dec byte [BUSY]
+        pop es
+        popa
+        ret
+ %define AUD_RETURN aud_range.return_from_stock
+%else
+ %define AUD_RETURN audition.return_from_stock
+%endif
 
 ; These two stock-player hooks apply only to our exact call chain:
 ; CFC6:039E <- CFC6:0D70 (CE9) <- F07D:audition.return_from_stock.
@@ -129,7 +202,7 @@ audition_callsite:
         RELOC_PREV
         jne .done
         mov bx, [ss:bp]
-        cmp word [ss:bx+2], audition.return_from_stock
+        cmp word [ss:bx+2], AUD_RETURN
         jne .done
         mov si, cs
         cmp [ss:bx+4], si
@@ -177,3 +250,6 @@ aud_end: dd 0
 aud_saved_start: dd 0
 aud_saved_end: dd 0
 aud_too_short: db 0
+%ifdef PROFILE_316
+aud_saved_tune: db 0
+%endif

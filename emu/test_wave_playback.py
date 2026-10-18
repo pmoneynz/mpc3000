@@ -389,10 +389,11 @@ class WavePlayback(h.EmuSuite):
                 self.assertEqual(pixels[f"{V + 6.5:.3f}"],
                                  wave_ref.screen(sine441(), "SINE441",
                                                  wave_ref.View(points, fine=True, zoom=1,
-                                                               too_short=True)))
+                                                               too_short=True, bank=h.view_bank(prof))))
                 self.assertEqual(pixels[f"{V + 8.5:.3f}"],
                                  wave_ref.screen(sine441(), "SINE441",
-                                                 wave_ref.View(points, fine=True, zoom=16)))
+                                                 wave_ref.View(points, fine=True, zoom=16,
+                                                               bank=h.view_bank(prof))))
 
     def test_fine_end_at_record_length(self) -> None:
         half_window = 120 * 16

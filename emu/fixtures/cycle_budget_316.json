@@ -322,10 +322,10 @@
   },
   "view_zones": {
    "rule": "abs",
-   "budget": 320000,
+   "budget": 340000,
    "stock": null,
-   "note": "wave view zone-count redraw",
-   "pmoney": 317270.4
+   "note": "wave view zone-count redraw. Lazy Chop (2026-10-18): 317,270 -> 332,496 (+4.8 %): with the ZONE fields focused the row shows the Lazy Chop soft keys (<Lazy chop> <Snap ON><To program>, 32 glyphs where the stock row had 22) and row 49 'Bank A'; re-pinned at 340,000",
+   "pmoney": 332496.467
   },
   "reverse_per_frame": {
    "rule": "stock/3",
@@ -342,11 +342,11 @@
    "pmoney": 29.278
   },
   "free_cluster_search": {
-   "rule": "stock+5%",
-   "budget": 114158.848,
+   "rule": "stock+7%",
+   "budget": 116333.302,
    "stock": 108722.712,
-   "note": "FAT12 free-cluster search per call, 431 KB save: D1a not built; PMONEY's larger STARTUP.SYS takes more clusters (+3.4 % before the performance pass)",
-   "pmoney": 112432.106
+   "note": "FAT12 free-cluster search per call, 431 KB save: D1a not built; PMONEY's larger STARTUP.SYS takes more clusters (+3.4 % before the performance pass); Lazy Chop (2026-10-18) adds 5.4 KB to STARTUP.SYS: 112,432 -> 114,585 (stock +5.4 %), rule stock+5% -> stock+6%; its three review rounds add 2.4 KB more: 115,710 (stock +6.4 %), rule stock+6% -> stock+7% (the search is stock code; only the file's clusters grew)",
+   "pmoney": 115709.825
   }
  },
  "pmoney_payload_sha256": "bdb0be8440bf8fb1271f31abe2087f1e09792e6569d52db55b6ce29801e06028"

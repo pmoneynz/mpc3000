@@ -134,3 +134,6 @@
 --patch=17de:be6a172e8a040ac0740e3ac3740583c603ebf0462eff14c3e85f00:80fb0d742780fb0a742f80fb08743d80fb7f744480fb0c745deb5f
 --patch=42b0:558bec8a5e06:ea{fast_putc}90
 --patch=42d5:558bec1e57:ea{fast_puts}
+--patch=2b8fe:bbac068a0e1870:ea{pad_own_press}9090
+--patch=2bb75:bbac068a0e1870:ea{pad_own_release}9090
+--patch=2b99c:88874895bb2101:ea{pad_own_pressure}9090

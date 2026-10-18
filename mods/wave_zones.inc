@@ -3,7 +3,16 @@
 ; [current-1,current]; the selected pair is mirrored to stock ZONE_ST/EN.
 ; RAM lives in our relocated, writable cave, never in unowned DGROUP space.
 
+%ifdef PROFILE_316
+; OS 3.16 (Lazy Chop, notes/lazy_chop.md): up to 64 zones over pad banks A-D, the
+; default division stays 16.  The map is a table of {start, end} pairs: Equal
+; Division keeps neighbouring pairs linked (pair[i].end = pair[i+1].start),
+; CHOPS (zones_mode 1) has independent pairs.
+ZONE_MAX equ 64
+%else
 ZONE_MAX equ 16
+%endif
+ZONE_DEFAULT equ 16
 
 ; D6E0:0075 appends a key to KEY_QUEUE, which is not strong enough for the
 ; one-shot resume contract: an older queued mode key could run first.
@@ -181,9 +190,12 @@ zones_enter:
         inc di
         cmp bx, 0x24
         jb .ctail
-        mov byte [cs:zones_count], ZONE_MAX
+        mov byte [cs:zones_count], ZONE_DEFAULT
         mov byte [cs:zones_current], 1
         mov byte [cs:zones_valid], 1
+%ifdef PROFILE_316
+        mov byte [cs:zones_mode], 0             ; a fresh map is an Equal Division
+%endif
         call zones_divide
 .done: pop es
         popa
@@ -206,7 +218,12 @@ zones_divide:
         xor ax, ax
         xor dx, dx
         xor bx, bx
+%ifdef PROFILE_316
+        mov byte [cs:zones_mode], 0             ; a division is an Equal Division
+        mov di, zones_pairs                     ; B[0] = pair[0].start
+%else
         mov di, zones_bounds
+%endif
         mov [cs:di], ax
         mov [cs:di+2], dx
 .next: add ax, [cs:zones_quotient]
@@ -224,6 +241,11 @@ zones_divide:
         add di, 4
         mov [cs:di], ax
         mov [cs:di+2], dx
+%ifdef PROFILE_316
+        add di, 4                               ; B[i] is pair[i-1].end and pair[i].start
+        mov [cs:di], ax                         ; (pair[N].start: zones_pairs has a spare)
+        mov [cs:di+2], dx
+%endif
         loop .next
         mov al, [cs:zones_current]
         cmp al, [cs:zones_count]
@@ -239,9 +261,14 @@ zones_offset:
         xor bx, bx
         mov bl, [cs:zones_current]
         dec bx
+%ifdef PROFILE_316
+        shl bx, 3                               ; {start, end} at [bx], [bx+4]
+        add bx, zones_pairs
+%else
         shl bx, 1
         shl bx, 1
         add bx, zones_bounds
+%endif
         ret
 
 zones_load:
@@ -265,33 +292,81 @@ zones_import:
         call zones_offset
         xor ax, ax
         xor dx, dx
+%ifdef PROFILE_316
+        cmp byte [cs:zones_mode], 0
+        jne .low                                ; CHOPS: anywhere in the Source
+        cmp byte [cs:zones_current], 1
+        je .low
+        mov ax, [cs:bx-8]                       ; the previous pair's start
+        mov dx, [cs:bx-6]
+%else
         cmp byte [cs:zones_current], 1
         je .low
         mov ax, [cs:bx-4]
         mov dx, [cs:bx-2]
+%endif
 .low:   mov [cs:lo], ax
         mov [cs:lo+2], dx
         mov ax, [cs:len]
         mov dx, [cs:len+2]
+%ifdef PROFILE_316
+        cmp byte [cs:zones_mode], 0
+        jne .high
+%endif
         mov cl, [cs:zones_current]
         cmp cl, [cs:zones_count]
         je .high
+%ifdef PROFILE_316
+        mov ax, [cs:bx+12]                      ; the next pair's end
+        mov dx, [cs:bx+14]
+%else
         mov ax, [cs:bx+8]
         mov dx, [cs:bx+10]
+%endif
 .high:  mov [cs:hi], ax
         mov [cs:hi+2], dx
         mov ax, [ZONE_ST]
         mov dx, [ZONE_ST+2]
         call zones_clamp
+%ifdef PROFILE_316
+        mov si, ax                              ; the new start, stored below
+        mov di, dx
+%else
         mov [cs:bx], ax
         mov [cs:bx+2], dx
+%endif
         mov [cs:lo], ax
         mov [cs:lo+2], dx
         mov ax, [ZONE_EN]
         mov dx, [ZONE_EN+2]
         call zones_clamp
+%ifdef PROFILE_316
+        cmp byte [cs:zones_mode], 0
+        je .linked
+        mov cx, ax                              ; CHOPS: a slice under LC_MIN frames is refused,
+        push dx                                 ; the pair is kept
+        sub cx, si
+        sbb dx, di
+        cmp dx, 0
+        pop dx
+        jne .store
+        cmp cx, LC_MIN
+        jb .kept
+        jmp .store
+.linked:
+        mov [cs:bx-4], si                       ; Equal Division: the neighbours' shared ends
+        mov [cs:bx-2], di                       ; (pair[-1] is zones_pairs' guard dword)
+        mov [cs:bx+8], ax
+        mov [cs:bx+10], dx
+.store: mov [cs:bx], si
+        mov [cs:bx+2], di
         mov [cs:bx+4], ax
         mov [cs:bx+6], dx
+.kept:
+%else
+        mov [cs:bx+4], ax
+        mov [cs:bx+6], dx
+%endif
         call zones_load
         popa
         ret
@@ -320,20 +395,34 @@ zones_limits:
         test byte [cs:sel], 2
         jz .done
         call zones_offset
+%ifdef PROFILE_316
+        cmp byte [cs:zones_mode], 0
+        jne lc_chops_limits                     ; CHOPS: [0, end-441] / [start+441, len]
+%endif
         test byte [cs:sel], 1
         jnz .end
         cmp byte [cs:zones_current], 1
         je .done
+%ifdef PROFILE_316
+        mov ax, [cs:bx-8]
+        mov dx, [cs:bx-6]
+%else
         mov ax, [cs:bx-4]
         mov dx, [cs:bx-2]
+%endif
         mov [cs:lo], ax
         mov [cs:lo+2], dx
         ret
 .end:  mov al, [cs:zones_current]
         cmp al, [cs:zones_count]
         je .done
+%ifdef PROFILE_316
+        mov ax, [cs:bx+12]
+        mov dx, [cs:bx+14]
+%else
         mov ax, [cs:bx+8]
         mov dx, [cs:bx+10]
+%endif
         mov [cs:hi], ax
         mov [cs:hi+2], dx
 .done: ret
@@ -349,6 +438,16 @@ zones_store:
         add bx, 4
 .write:mov [cs:bx], ax
         mov [cs:bx+2], dx
+%ifdef PROFILE_316
+        cmp byte [cs:zones_mode], 0
+        jne .one                                ; CHOPS: only this slice
+        test byte [cs:sel], 1                   ; Equal Division: the linked neighbour end,
+        jz .start                               ; start -> pair[c-2].end (or the guard),
+        add bx, 8                               ; end -> pair[c].start (or the spare)
+.start: mov [cs:bx-4], ax
+        mov [cs:bx-2], dx
+.one:
+%endif
         pop bx
 .done: ret
 
@@ -359,6 +458,10 @@ zones_adjust:
         mov di, zones_current
         cmp byte [cs:onview], 2
         je .change
+%ifdef PROFILE_316
+        cmp byte [cs:zones_mode], 0
+        jne .done                               ; CHOPS: the count is the take's, kept
+%endif
         mov di, zones_count
         mov al, [cs:zones_count]
         mov cl, ZONE_MAX
@@ -396,6 +499,16 @@ zones_adjust:
 .done: ret
 
 zones_title:
+%ifdef PROFILE_316
+        mov ax, 'ZO'                            ; "ZONE" or, for a CHOPS map, "CHOP"
+        mov dx, 'NE'
+        cmp byte [cs:zones_mode], 0
+        je .prefix
+        mov ax, 'CH'
+        mov dx, 'OP'
+.prefix:mov [cs:s_zones], ax
+        mov [cs:s_zones+2], dx
+%endif
         xor ax, ax
         mov al, [cs:zones_current]
         mov di, s_zones+5
@@ -431,6 +544,13 @@ zones_current: db 1
 zones_identity: times 25 db 0
 align 2
 zones_source: dw 0
+%ifdef PROFILE_316
+zones_mode: db 0                                ; 0 Equal Division, 1 CHOPS
+align 4
+zones_guard: dd 0                               ; pair[-1].end: written by linked edits of zone 1
+zones_pairs: times ZONE_MAX * 2 + 1 dd 0        ; {start, end} per zone, + pair[N].start
+%else
 zones_bounds: times ZONE_MAX+1 dd 0
+%endif
 zones_quotient: dd 0
 zones_remainder: dw 0

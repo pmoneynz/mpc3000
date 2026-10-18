@@ -157,7 +157,7 @@ class Port316Boot(unittest.TestCase):
             with self.subTest(bios=bios):
                 pixels = h.lcd_pixels(d)[f"{V:.3f}"]
                 self.assertEqual(pixels, wave_ref.screen(sine441(), "SINE441",
-                                                         wave_ref.View([0, 55125, 0, 55125 // 16])))
+                                                         wave_ref.View([0, 55125, 0, 55125 // 16], bank="A")))
                 zones = h.zone_rows(d)[V]
                 self.assertEqual((zones["valid"], zones["current"], zones["count"], zones["sel"]),
                                  (1, 1, 16, 0))

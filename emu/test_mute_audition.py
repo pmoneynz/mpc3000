@@ -32,7 +32,7 @@ from pathlib import Path
 import unittest
 
 from emu import harness as h
-from emu.panel import key_tap, pad_hit, panel_pad
+from emu.panel import key_tap, pad_hit, panel_pad, write_smf
 from emu.snd import sine, snd
 from emu.test_mute_ui import at, delay, each_run, later
 from emu.test_mute_voice import TEMPLATE, load_actions, parse_events, program_fixture
@@ -51,6 +51,10 @@ END = 83.0
 class MuteAudition(h.EmuSuite):
     RUNS = RUNS
     PROFILE_NAMES = h.ALL_PROFILES        # no GENERIC case: capture and 316
+    # PMONEY on 3.16: in the wave view the pads play zones (Lazy Chop D1,
+    # mods/lazychop316.inc).  The 3.16 "wave" case plays the two program notes
+    # from MIDI In 1 instead (notes are not owned, D8): the same notes, the same
+    # note-on path and mute group, so every assertion is the same.
 
     @classmethod
     def cases(cls, profile, runs):
@@ -71,11 +75,21 @@ class MuteAudition(h.EmuSuite):
         }
         cancel = h.taps((profile.timeline.cancel, "soft4")) if profile.is316 else []
         t, dt = at(profile), delay(profile)
+        midi = None
+        if profile.is316:
+            midi = write_smf(runs / "wave-midi.mid", [(t(PAD1_AT), bytes((0x90, 0x23, 0x7F))),
+                                                     (t(PAD1_AT + 1.5), bytes((0x80, 0x23, 0))),
+                                                     (t(PAD2_AT), bytes((0x90, 0x24, 0x7F))),
+                                                     (t(PAD2_AT + 1.5), bytes((0x80, 0x24, 0)))])
         # One image per case (harness.run_case): MAME mounts -flop read/write.
-        return {name: h.Case(events=cancel + later(load_actions() + actions + pads, dt),
-                             times=[t(x) for x in (74.0, QUIET_AT, END - 1.0, END)],
-                             files=[(program, "MUTE.PGM"), (mono, "TEST.SND")], parts=("mute_voice",))
-                for name, actions in definitions.items()}
+        cases = {}
+        for name, actions in definitions.items():
+            via_midi = profile.is316 and name == "wave"
+            cases[name] = h.Case(events=cancel + later(load_actions() + actions + ([] if via_midi else pads), dt),
+                                 times=[t(x) for x in (74.0, QUIET_AT, END - 1.0, END)],
+                                 files=[(program, "MUTE.PGM"), (mono, "TEST.SND")], parts=("mute_voice",),
+                                 kwargs={"extra": ["-midiin1", str(midi)], "snapshot": False} if via_midi else None)
+        return cases
 
     def events(self, d: Path, kind: str) -> list[dict[str, int | float | str]]:
         return [event.values for event in parse_events(d / "mute_voice.log") if event.kind == kind]

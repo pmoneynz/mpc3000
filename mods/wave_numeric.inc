@@ -290,7 +290,13 @@ numeric_commit:
         sbb dx, [cs:numeric_current+2]
         mov bl, [cs:numeric_sel]
         mov [cs:sel], bl
+%ifdef PROFILE_316
+        mov byte [cs:lc_commit], 1      ; a committed value: Lazy Chop's snap applies
         call move
+        mov byte [cs:lc_commit], 0
+%else
+        call move
+%endif
         call numeric_sync_all
         ret
 

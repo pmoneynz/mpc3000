@@ -2,7 +2,7 @@
 -- The harness preamble (emu/harness.py observer()) defines CAVE (assembled
 -- map offsets), CAVE_SEG (runtime cave segment L+7E00) and SND_SEG (runtime
 -- sound segment L+539D, records at +4800).  Same output as wave_zones.lua:
--- zones.jsonl and records_<t>.bin.  Read-only.
+-- zones.jsonl (plus "mode": 0 Equal Division, 1 CHOPS) and records_<t>.bin.  Read-only.
 local machine = manager.machine
 local cpu = machine.devices[":maincpu"]
 local prog, ioport = cpu.spaces["program"], cpu.spaces["io"]
@@ -26,11 +26,13 @@ emu.register_periodic(function()
     log:write(string.format('{"time":%.3f,"valid":%d,"current":%d,"count":%d,"focus":%d,"sel":%d,"zoom":%d,"bounds":[',
         times[next_time], byte("zones_valid"), byte("zones_current"), byte("zones_count"), byte("onview"), byte("sel"),
         prog:read_u16(phys(CAVE_SEG, CAVE.zoom))))
+    -- 3.16 keeps {start, end} pairs (wave_zones.inc, Lazy Chop): boundary i of an
+    -- Equal Division is pair i's start (pair N's start is kept equal to pair N-1's end).
     for i = 0, 16 do
         if i > 0 then log:write(",") end
-        log:write(prog:read_u32(phys(CAVE_SEG, CAVE.zones_bounds + i * 4)))
+        log:write(prog:read_u32(phys(CAVE_SEG, CAVE.zones_pairs + i * 8)))
     end
-    log:write("]}\n")
+    log:write(string.format('],"mode":%d}\n', byte("zones_mode")))
     log:flush()
     local records = assert(io.open(string.format("%s/records_%g.bin", out, times[next_time]), "wb"))
     for i = 0, 128 * 0x24 - 1 do

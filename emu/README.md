@@ -73,6 +73,7 @@ Extra probes in `emu/lua/`, passed as
 | `snddump.lua` | Sound records `A2AE:4800` and each sound's wave RAM words at every snapshot time (`snd_dir.log`, `wave_<t>_idx<i>.bin`; `SNDDUMP_PCM=0` for the directory only) |
 | `wcu_dump.lua` | V53 wait control / refresh registers after 1 s (`wcu.txt`) |
 | `cave_watch.lua` | Reads (including fetches) and writes of the code cave in EPROM and in the Route A RAM copy (`cave.txt`) |
+| `lazychop316.lua` | Lazy Chop (316): owned pad timestamps, the take's t0, stock note-ons, ring-5 writes, DSP key-ons/stops, keys the view reads, cave/program snapshots (`emu/test_lazychop.py`) |
 
 ## Cycle profiler (`emu/profile.py`, fork `nec_prof`)
 

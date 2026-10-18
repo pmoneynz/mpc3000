@@ -112,13 +112,23 @@ view:
         mov [cs:aud_too_short], al
         mov word [cs:zoom], ZOOM0
         call zones_enter
+%ifdef PROFILE_316
+        call lc_enter                   ; the view owns the pads while it shows a zone map
+%endif
         FCALL T_B1B1_004F               ; save stock text for numeric entry
         call refresh
         FCALL T_C4C8_0F5F               ; graphics mode + blit 8010:1591
-.key:   push 0
+.key:
+%ifdef PROFILE_316
+        call lc_poll                    ; a take: chops, end of the Source, STOP
+        jc .redraw
+        or al, al                       ; AL = a key it read, else 0
+        jnz .keyed
+%endif
+        push 0
         FCALL T_BDE3_000E               ; next key after the global filter
         add sp, 2
-        mov bl, al
+.keyed: mov bl, al
         mov ax, [KEY_REPEAT]             ; BDE3 coalesces consecutive +/- keys
         or ax, ax
         jnz .repeat_ready
@@ -126,6 +136,12 @@ view:
 .repeat_ready:
         mov [cs:key_repeat], ax
         mov byte [cs:aud_too_short], 0
+%ifdef PROFILE_316
+        call lc_dispatch                ; pads, the take, the Lazy Chop soft keys
+        cmp al, 1
+        je .key
+        ja .redraw
+%endif
         cmp byte [cs:onview], 0
         jne .dispatch
         cmp bl, 0x0D
@@ -274,7 +290,11 @@ view:
         FCALL T_C4C8_0F0D               ; blit
 %endif
         jmp .key
-.exit:  push ax
+.exit:
+%ifdef PROFILE_316
+        call lc_leave                   ; every exit: a take is cancelled, the pads are stock
+%endif
+        push ax
         FCALL T_C4C8_0409               ; clear, text mode, INT 43 AX=1
         pop ax
         pop di
@@ -415,6 +435,10 @@ move:
         mov dx, [es:di+2]
         add ax, [cs:delta]
         adc dx, [cs:delta+2]
+%ifdef PROFILE_316
+        call lc_refuse                  ; CHOPS: an edit out of [lo, hi] is refused
+        jc .refused
+%endif
         cmp dx, [cs:lo+2]               ; below lo?
         jg .notlo
         jl .setlo
@@ -433,6 +457,10 @@ move:
 .store: mov [es:di], ax
         mov [es:di+2], dx
         call zones_store
+%ifdef PROFILE_316
+        call lc_after_move              ; snap a committed CHOPS slice start (D4)
+.refused:
+%endif
         ret
 
 ; ---------------------------------------------------------------- scan
@@ -1099,7 +1127,11 @@ draw:
         mov ax, TOP
         mov dx, BOT - TOP + 1
         call invert
-.t:     mov ax, SND_SEG                 ; name: 16 characters at +00
+.t:
+%ifdef PROFILE_316
+        call lc_markers                 ; chop / slice-start ticks (take, CHOPS)
+%endif
+        mov ax, SND_SEG                 ; name: 16 characters at +00
         RELOC_PREV
         mov es, ax
         mov si, [cs:rec]
@@ -1168,7 +1200,11 @@ draw:
 .vl:    mov ax, 49
         mov bx, 24
         call text
-.nv:    mov si, s_full
+.nv:
+%ifdef PROFILE_316
+        call lc_row49                   ; "Bank A", the take's offset, or a status
+%endif
+        mov si, s_full
         cmp byte [cs:fine], 0
         je .keys
         mov ax, [cs:zoom]               ; fine: "Zoom:nn" at column 33
@@ -1180,7 +1216,14 @@ draw:
         mov si, s_zoom
         call text
         mov si, s_fine
-.keys:  mov ax, 57
+.keys:
+%ifdef PROFILE_316
+        push si
+        call lc_softkeys                ; CF = 1: the take's or the zone page's row drawn
+        pop si
+        jc .keys_done
+%endif
+        mov ax, 57
         mov bx, 21
         call text
         mov ax, 57
@@ -1203,6 +1246,7 @@ draw:
         mov bx, 34
         mov si, s_exit
         call text
+.keys_done:
         cmp byte [cs:onview], 2
         jae zones_focus
         cmp byte [cs:onview], 0         ; View field selected: its cell, rows 49..55
@@ -1250,6 +1294,7 @@ draw:
  %include "bugfix316.inc"               ; stock 3.16 bug fixes (load/save, errors, mixer)
  %include "perf316.inc"                 ; performance items (notes/performance.md)
  %include "display316.inc"              ; put-char without INT 43 round trips (notes/performance.md)
+ %include "lazychop316.inc"             ; Lazy Chop: pad ownership, the take, CHOPS, Convert
 %endif
 
 ; Per pair: label strings, label columns, value columns.

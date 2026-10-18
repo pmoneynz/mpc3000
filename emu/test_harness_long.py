@@ -114,12 +114,12 @@ class Long(h.EmuSuite):
                 px = h.lcd_pixels(d)
                 zone = [0, L // 16]
                 self.assertEqual(px[f"{VL:.3f}"], wave_ref.screen(
-                    planes, "LONG", wave_ref.View([START, END, *zone])))
+                    planes, "LONG", wave_ref.View([START, END, *zone], bank=h.view_bank(prof))))
                 moved = START + 5 * STEP
                 self.assertEqual(px[f"{VL + 2.5:.3f}"], wave_ref.screen(
-                    planes, "LONG", wave_ref.View([moved, END, *zone])))
+                    planes, "LONG", wave_ref.View([moved, END, *zone], bank=h.view_bank(prof))))
                 self.assertEqual(px[f"{VL + 4.5:.3f}"], wave_ref.screen(
-                    planes, "LONG", wave_ref.View([moved, END, *zone], fine=True)))
+                    planes, "LONG", wave_ref.View([moved, END, *zone], fine=True, bank=h.view_bank(prof))))
 
     def test_point_motion_carries_across_16_bits(self):
         for prof, d, _ in self.each("long"):

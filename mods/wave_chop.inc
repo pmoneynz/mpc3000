@@ -4,7 +4,13 @@
 ; is a near helper and deliberately keeps the suspended B99A page BP live.
 ; All mutable state is CS-relative because the F07D cave is copied to RAM.
 
+%ifdef PROFILE_316
+CHOP_MIN_FRAMES equ 1368        ; the shortest Sound stock 3.16 keys on (lazychop316.inc
+                                ; LC_MIN, notes/lazy_chop.md §13.5 item 13): CHOP ZONE,
+                                ; ZONE->NEW SOUND and Convert make nothing shorter
+%else
 CHOP_MIN_FRAMES equ 441
+%endif
 CHOP_ERR_EMPTY equ -0x0101
 CHOP_ERR_MAP equ -0x0102
 CHOP_ERR_SHORT equ -0x0103
@@ -450,8 +456,13 @@ chop_create_all:
         ; allocates a smaller caller count but clamps record +1C to 441; the
         ; stock SND loader repeats that mismatch on reload, so shorter exact
         ; Sounds are not persistent-safe without a separate loader patch.
+%ifdef PROFILE_316
+        mov ax, [cs:zones_pairs]
+        mov dx, [cs:zones_pairs+2]
+%else
         mov ax, [cs:zones_bounds]
         mov dx, [cs:zones_bounds+2]
+%endif
         cmp dx, [cs:chop_source_len+2]
         ja .return
         jb .first_in_range
@@ -463,9 +474,14 @@ chop_create_all:
         xor si, si
 .validate_zone:
         mov bx, si
+%ifdef PROFILE_316
+        shl bx, 3                       ; pair i: {start, end} at [bx], [bx+4]
+        add bx, zones_pairs
+%else
         shl bx, 1
         shl bx, 1
         add bx, zones_bounds
+%endif
         mov ax, [cs:bx+4]
         mov dx, [cs:bx+6]
         cmp dx, [cs:bx+2]
@@ -532,9 +548,14 @@ chop_create_all:
 .create_zone:
         xor bx, bx
         mov bl, [cs:chop_zone]
+%ifdef PROFILE_316
+        shl bx, 3
+        add bx, zones_pairs
+%else
         shl bx, 1
         shl bx, 1
         add bx, zones_bounds
+%endif
         mov ax, [cs:bx]
         mov dx, [cs:bx+2]
         mov [cs:chop_start], ax
@@ -546,7 +567,9 @@ chop_create_all:
         mov [cs:chop_count], ax
         mov [cs:chop_count+2], dx
 
-%ifdef CHOP_OWN_NAMES
+%ifdef PROFILE_316
+        call chop_name_slice            ; ZONEnnn, or Lazy Chop's <source>nn (lazychop316.inc)
+%elifdef CHOP_OWN_NAMES
         call chop_make_name
 %else
         push 1
@@ -751,6 +774,18 @@ chop_make_name:
         push bx
         push cx
         push di
+%ifdef PROFILE_316
+        ; the whole "ZONE000" + 9 spaces template: chop_name also holds Lazy
+        ; Chop's slice names (lazychop316.inc chop_name_slice)
+        mov word [cs:chop_name], 'ZO'
+        mov word [cs:chop_name+2], 'NE'
+        mov bx, 7
+.blank: mov byte [cs:chop_name+bx], ' '
+        inc bx
+        cmp bx, 16
+        jb .blank
+        mov byte [cs:chop_name+16], 0
+%endif
         mov word [cs:chop_name_tries], 1000
 .try:   mov ax, [cs:chop_name_counter]
         cmp ax, 999
@@ -841,7 +876,7 @@ editdo_map: db 0, 0x80, 1, 2, 3, 4, 5, 0x81, 6, 7    ; list index -> 3.16 handle
 %ifdef PROFILE_316                      ; chop_show_status blanks the row (du_eol)
 chop_empty_text: db "EMPTY ZONE - ADJUST BOUNDARIES", 0
 chop_stale_text: db "REOPEN WAVE VIEW FOR THIS SOUND", 0
-chop_short_text: db "ZONE MUST BE AT LEAST 10ms", 0
+chop_short_text: db "ZONE MUST BE AT LEAST 31ms", 0
 %else                                   ; padded to 40 columns over the soft-key row
 chop_empty_text: db "EMPTY ZONE - ADJUST BOUNDARIES          ", 0
 chop_stale_text: db "REOPEN WAVE VIEW FOR THIS SOUND         ", 0

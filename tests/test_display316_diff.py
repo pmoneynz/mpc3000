@@ -595,7 +595,9 @@ class DisplayDiff(unittest.TestCase):
                                 ("wave.asm", "out 0xE2, al"), ("wave.asm", "out 0xE2, al")])
         calls = sorted((n, i) for n, t in sources.items() for i, line in enumerate(t.splitlines())
                        if re.match(r"\s*(\.\w+:)?\s*call\s+fast_blit", line))
-        self.assertEqual([n for n, _ in calls], ["mute_ui.inc", "wave.asm"])
+        # lazychop316.inc: the Slices to Program page, its redraw, the Replace prompt, messages and progress, all drawn
+        # inside the wave view (graphics mode, between the view's T_C4C8_0F5F and T_C4C8_0409).
+        self.assertEqual([n for n, _ in calls], ["lazychop316.inc"] * 5 + ["mute_ui.inc", "wave.asm"])
         ints = [n for n, t in sources.items() if re.search(r"^\s*int\s+0x43", t, re.M | re.I)]
         self.assertEqual(ints, ["display316.inc"])
 

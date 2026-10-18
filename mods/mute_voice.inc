@@ -168,6 +168,16 @@ mute_voice_alloc_wrapper:
         cmp ax, MUTE_VOICE_COUNT
         jae .done                       ; defensive: stock normally returns 0..31
         mov bx, ax
+%ifdef PROFILE_316
+        ; Lazy Chop's targeted stop (lazychop316.inc lc_alloc_seen): only while
+        ; the wave view owns the pads or lists audition channels; both bytes are
+        ; 0 once the view has closed, so then this costs one MOV, OR and Jcc.
+        mov dl, [cs:lc_owned]
+        or dl, [cs:lc_aud_n]
+        jz .seen
+        call lc_alloc_seen               ; BX = channel; keeps every register
+.seen:
+%endif
         cmp byte [bp-2], 1
         jne .clear
         mov dl, [bp-1]

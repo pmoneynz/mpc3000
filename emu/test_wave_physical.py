@@ -176,7 +176,11 @@ class WavePhysical316(unittest.TestCase):
             with self.subTest(profile=label):
                 base.RUNS = RUNS316 / label
                 self.results = results
-                check(self)
+                base.VIEW_BANK = 'A'            # PMONEY 3.16: "Bank A" in the wave view
+                try:
+                    check(self)
+                finally:
+                    base.VIEW_BANK = None
 
     def test_trim_and_zone(self):
         self.each_set(base.Mpc3kBoot.test_wave_view_edits_trim_and_zone)

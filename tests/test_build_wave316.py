@@ -24,23 +24,32 @@ from mods import buildkit as kit  # noqa: E402
 from mods import route_c as rc  # noqa: E402
 
 HAVE_TOOLS = shutil.which("nasm") is not None and shutil.which("ndisasm") is not None
-SYS_SHA256 = "1638489e813b98b439e102a5763b6aac8f995a1f64f7389ed337c0564b1be7b2"
-IMG_SHA256 = "e5ef60379748312e8e3cb37336ba84d70cb4939f32726de8a945ef6872d85b49"
-CAVE_SHA256 = "7551e909db371801a53a21f65c0cdd5ade7f24e318ea6904caa638596ec368ac"
+SYS_SHA256 = "0ca40f240bb61a8006a0ce83228a3d84e9c915410d104b56cc84b66b0bbd1e03"
+IMG_SHA256 = "f0545ab440892cca03e3d672bdbed0888d4cab97eeea9a83ebc1213405bd75dd"
+CAVE_SHA256 = "009e644587aa085bb324820a9bb1682522af4a782bb2a3f1f136d35009345084"
 # Size budget (notes/port_316.md "Cave space"): entry316 runs 3.16 at L = 6900
 # on every EPROM set (3.08/3.11 load at 7000 and are moved down), so the cave
 # home 7E00 must end below F400h: 53,248 bytes on every machine.  Lower
 # HOME_BUDGET after each size step; raise it only with a note.
 HOME_LIMIT = 0xF4000 - 0x69000 - 0x7E00 * 16
 CAVE_HOME_IMAGE = 0x7E00 * 16      # image offset of the cave home (relative paragraph 7E00)
-HOME_BUDGET = 21_386            # bytes (+232 display316 put-char and string writer, 2026-10-17;
+HOME_BUDGET = 29_100            # bytes (+102 Lazy Chop third review: + and - coalesced in the
+                                # cave, digit-ending disk names, notes/lazy_chop.md "Third review",
+                                # 2026-10-18; 28,998 with +866 Lazy Chop second review: key polling, the disk
+                                # name scan and its 125-byte bitmap, notes/lazy_chop.md "Second
+                                # review", 2026-10-18; 28,132 with +1,394 Lazy Chop review fixes, 26,738 with +5,352 Lazy Chop, lazychop316.inc and the 64-zone pair table,
+                                # notes/lazy_chop.md "Implementation", 2026-10-18; 21,386 with
+                                # +232 display316 put-char and string writer, 2026-10-17;
                                 # earlier: entry316 copies to the home (19,200 after the size
                                 # pass; +350 for the audit and stock-bug fixes, 2026-10-16;
                                 # 20,690 with the performance pass, perf316.inc and the view's
                                 # fast paths without S6 and D1a, 2026-10-16; 21,140 with the
                                 # crash fixes C1-C3 and scsistack316, 2026-10-17; 21,154 with
                                 # scsistack316's no-wrap fallback, 2026-10-17)
-HOME_HEADROOM = 31_000          # kept free under the universal page-61 limit (31,862 free with
+HOME_HEADROOM = 24_000          # kept free under the universal page-61 limit: 24,148 free with
+                                # the Lazy Chop third review (24,250 with the second, 2026-10-18; 25,000 before, 25,116
+                                # free with the first review fixes; 26,000 before that, 26,510
+                                # free with Lazy Chop; it was 31,000 before, 31,862 free with
                                 # display316; 32,094 before it,
                                 # 2026-10-17; before the universal layout the 3.08/3.11
                                 # limit left 3,436 and this was 3,400).  This is the binding
@@ -71,8 +80,8 @@ class PinnedBuild(unittest.TestCase):
         self.assertEqual((sim["6900"]["pool_end"], sim["7000"]["pool_end"]), ("67DF", "67DF"))
         self.assertEqual((sim["6900"]["runtime_segment"], sim["7000"]["runtime_segment"]), ("6900", "6900"))
         self.assertEqual((sim["6900"]["moved"], sim["7000"]["moved"]), (False, True))
-        self.assertEqual((sim["copy_words"], sim["min_move"]), ("29C5", "01F2"))
-        self.assertEqual((sim["table"]["bytes"], sim["table"]["records"]), (7639, 7317))
+        self.assertEqual((sim["copy_words"], sim["min_move"]), ("38D6", "01F5"))
+        self.assertEqual((sim["table"]["bytes"], sim["table"]["records"]), (7683, 7347))
         copied = 2 * int(sim["copy_words"], 16)
         self.assertLessEqual(copied, HOME_BUDGET, f"cave home {copied} B over budget")
         self.assertGreaterEqual(HOME_LIMIT - copied, HOME_HEADROOM)
@@ -82,8 +91,13 @@ class PinnedBuild(unittest.TestCase):
         # the size pass (push cs, shared ui316 helpers) 251 and 36; the audit
         # and stock-bug fixes (bugfix316.inc) 259 and 35; the performance pass
         # (perf316.inc, R5 so_mtc_send, the view's fast paths) 267 and 40;
-        # display316 (BIOS DS 59FA twice and the stock fallback 0427:0046) +3
-        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (279, 41))
+        # display316 (BIOS DS 59FA twice and the stock fallback 0427:0046) +3;
+        # Lazy Chop (its stock targets, SND_SEG and PLAYER_SEG words) 21 and 6;
+        # its review fixes (T_D547_02CF, T_D6E0_008B, T_C4C8_0F5F; one
+        # T_D52A_0190 fewer) +2; the second review (find first / next, a second
+        # T_D6E0_0000, two T_C4C8_0F5F; two T_BDE3_000E and T_D6E0_008B fewer) +2;
+        # the third (+ and - coalesced: two more T_D6E0_0000) +2
+        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (306, 46))
 
 
 @unittest.skipUnless(HAVE_TOOLS, "needs nasm and ndisasm")

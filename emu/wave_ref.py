@@ -13,6 +13,11 @@ inverted over rows 7-14; rows 49-55 Length, for a stereo sound "View:" L/R
 at column 19 (its cell inverted over rows 49-55 when selected), and Zoom in
 the fine view; rows 57-63 soft keys. Rows 15 and 48 stay blank. Plane R is
 the second plane.
+
+PMONEY on OS 3.16 (View.bank set, mods/lazychop316.inc): "Bank X" at row 49,
+column 26 (the pad bank), "Chop:>>" at column 33 unless the ZONE fields are
+focused or the view is fine, and with the ZONE fields focused the Lazy Chop soft
+keys "<Lazy chop>" (column 0), "<Snap ON>" (12), "<To program>" (21), "<Exit>".
 """
 
 from __future__ import annotations
@@ -37,6 +42,8 @@ class View:
     zone_current: int = 1
     zone_count: int = 16
     zone_focus: int = 0         # 0 none, 2 current zone, 3 total count
+    bank: str | None = None     # PMONEY 3.16: the pad bank letter shown at row 49
+    snap: bool = True           # PMONEY 3.16: Lazy Chop's snap soft key
 
 
 def fmt(frames: int) -> str:
@@ -109,11 +116,20 @@ def screen(planes: list[list[int]], name: str, v: View) -> list[str]:
     if len(planes) == 2:
         _text(lit, 49, 19, "View:")
         _text(lit, 49, 24, "LR"[v.plane])
+    if v.bank is not None:
+        _text(lit, 49, 26, f"Bank {v.bank}")
+        if not v.zone_focus and not v.fine:
+            _text(lit, 49, 33, "Chop:>>")
     if v.fine:
         _text(lit, 49, 33, f"Zoom:{v.zoom:02d}")
-    _text(lit, 57, 21, "<Full>" if v.fine else "<Fine>")
-    _text(lit, 57, 10, "<Trim>" if v.sel & 2 else "<Zone>")
-    _text(lit, 57, 0, "Too short" if v.too_short else "<Ply/Stp>")
+    if v.bank is not None and v.zone_focus:
+        _text(lit, 57, 0, "<Lazy chop>")
+        _text(lit, 57, 12, "<Snap ON>" if v.snap else "<SnapOFF>")
+        _text(lit, 57, 21, "<To program>")
+    else:
+        _text(lit, 57, 21, "<Full>" if v.fine else "<Fine>")
+        _text(lit, 57, 10, "<Trim>" if v.sel & 2 else "<Zone>")
+        _text(lit, 57, 0, "Too short" if v.too_short else "<Ply/Stp>")
     _text(lit, 57, 34, "<Exit>")
     if v.zone_focus:
         _invert(lit, (35 if v.zone_focus == 2 else 38) * 6, 12, 0, 7)

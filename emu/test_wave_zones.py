@@ -47,6 +47,11 @@ def observer(run_dir: Path = RUNS, map_path: Path | None = None) -> Path:
     return path
 
 
+def zone_max(label: str) -> int:
+    """Equal Division zones at most: 16, or 64 on PMONEY 3.16 (mods/wave_zones.inc)."""
+    return 64 if label.startswith("316") else 16
+
+
 def four_zones(at: float = V + 1) -> list:
     """Mono: Right x3 reaches the zone count; the wheel takes it 16 -> 4."""
     return taps((at, "right"), (at + 1, "right"), (at + 2, "right")) + dial(-12, at + 3)
@@ -129,10 +134,11 @@ class WaveZones(h.EmuSuite):
                 pixels = h.lcd_pixels(d)
                 self.assertEqual(pixels[f"{V + 8.5:.3f}"], wave_ref.screen(sine441(), "TEST",
                                  wave_ref.View([0, 55125, 13781, 27562], sel=2,
-                                               zone_current=2, zone_count=4, zone_focus=2)))
+                                               zone_current=2, zone_count=4, zone_focus=2,
+                                               bank=h.view_bank(prof))))
                 self.assertEqual(pixels[f"{V + 6:.3f}"], wave_ref.screen(sine441(), "TEST",
                                  wave_ref.View([0, 55125, 0, 13781], sel=2,
-                                               zone_count=4, zone_focus=3)))
+                                               zone_count=4, zone_focus=3, bank=h.view_bank(prof))))
 
     def test_count_change_resets_manual_boundaries(self):
         for prof, d, _ in self.each("count_reset"):
@@ -157,7 +163,8 @@ class WaveZones(h.EmuSuite):
                 self.assertIn("mode=32", screens[3]["head"])
                 self.assertEqual(h.lcd_pixels(d)[f"{V + 13:.3f}"], wave_ref.screen(
                     sine441(), "TEST", wave_ref.View([0, 55125, 13781, 27562],
-                                                       zone_current=2, zone_count=4)))
+                                                       zone_current=2, zone_count=4,
+                                                       bank=h.view_bank(prof))))
                 self.assertEqual((after["valid"], after["current"], after["count"], after["bounds"]),
                                  (1, before["current"], before["count"], before["bounds"]))
 
@@ -182,13 +189,17 @@ class WaveZones(h.EmuSuite):
                 self.assertEqual((zone["focus"], zone["current"]), (2, 2))
                 self.assertEqual(count["focus"], 3)
 
-    def test_count_is_bounded_one_through_sixteen(self):
+    def test_count_is_bounded_one_through_the_maximum(self):
+        # Vailixi profiles: 16 zones.  PMONEY on 3.16: 64 (Lazy Chop, R3: banks A-D;
+        # the default division stays 16; the 64 clamp: emu/test_lazychop.py "zones").
         for prof, d, _ in self.each("count_limits"):
             with self.subTest(profile=prof):
                 V = self.view(prof)
+                most = zone_max(prof)
                 r = zone_rows(d)
                 top, bottom, top_again = r[V + 4.5], r[V + 7], r[V + 11]
-                self.assertEqual([top["count"], bottom["count"], top_again["count"]], [16, 1, 16])
+                self.assertEqual([top["count"], bottom["count"], top_again["count"]],
+                                 [min(17, most), 1, min(21, most)])
                 self.assertEqual(bottom["bounds"][:2], [0, 55125])
 
     def test_coalesced_wheel_bursts_apply_every_zone_step(self):
@@ -196,10 +207,11 @@ class WaveZones(h.EmuSuite):
             with self.subTest(profile=prof):
                 V = self.view(prof)
                 r = zone_rows(d)
+                high = min(22, zone_max(prof))                       # count 13 + 9
                 self.assertEqual([(r[t]["current"], r[t]["count"]) for t in sorted(r)],
-                                 [(1, 4), (1, 13), (10, 13), (1, 13), (6, 13), (6, 16), (6, 7),
-                                  (1, 7)])
-                self.assertEqual(r[V + 19.5]["bounds"][:8], [55125 * i // 7 for i in range(8)])
+                                 [(1, 4), (1, 13), (10, 13), (1, 13), (6, 13), (6, high), (6, high - 9),
+                                  (1, high - 9)])
+                self.assertEqual(r[V + 19.5]["bounds"][:high - 8], [55125 * i // (high - 9) for i in range(high - 8)])
                 # Coalescing really happened: the stock reader handed the
                 # cave counts above one, and every burst drew fewer screens
                 # than it had events.

@@ -12,6 +12,7 @@ CAVEDEMO) are built into build/emu/tests-mods.
 
 from __future__ import annotations
 
+import functools
 import re
 import shutil
 import struct
@@ -29,6 +30,9 @@ from emu import wave_ref
 from emu.snd import disk as snd_disk, sine441, snd, stereo1
 
 RUNS = BUILD / "emu" / "tests"
+# wave_ref.View.bank of the runs the wave-view checks read: None here; PMONEY on 3.16 shows
+# the pad bank (emu/test_wave_physical.py WavePhysical316 sets "A").
+VIEW_BANK: str | None = None
 # Demo payloads (MOD350, canary, PETER, CAVEDEMO) are built from the current
 # sources into a test-private directory; build/mods is never written.
 MODS = BUILD / "emu" / "tests-mods"
@@ -378,7 +382,7 @@ class Mpc3kBoot(unittest.TestCase):
         pixels = {b.split()[0]: b.splitlines()[1:65] for b in blocks}
         wave = sine441()[0]
         a3, b = WAVE_START + 3 * (len(wave) // 240), WAVE_END
-        View = wave_ref.View
+        View = functools.partial(wave_ref.View, bank=VIEW_BANK)
         first_zone_end = len(wave) // 16
         for t, view in (("80.000", View([WAVE_START, b, 0, first_zone_end])), ("82.500", View([a3, b, 0, first_zone_end])),
                         ("84.500", View([a3, b, 0, first_zone_end], fine=True)),
@@ -400,7 +404,7 @@ class Mpc3kBoot(unittest.TestCase):
     def test_wave_view_field_selects_plane(self) -> None:
         blocks = (RUNS / "wave_stereo" / "lcd_pixels.txt").read_text().split("@ ")[1:]
         pixels = {b.split()[0]: b.splitlines()[1:65] for b in blocks}
-        points, View = [STEREO_START, STEREO_END, 0, 0], wave_ref.View
+        points, View = [STEREO_START, STEREO_END, 0, 0], functools.partial(wave_ref.View, bank=VIEW_BANK)
         for t, view in (("80.000", View(points)), ("83.000", View(points, sel=1, onview=True)),
                         ("85.000", View(points, sel=1, onview=True, plane=1)),
                         ("87.000", View(points, sel=1, plane=1)),
@@ -429,7 +433,7 @@ class Mpc3kBoot(unittest.TestCase):
 
         blocks = (RUNS / "wave_edges" / "lcd_pixels.txt").read_text().split("@ ")[1:]
         pixels = {b.split()[0]: b.splitlines()[1:65] for b in blocks}
-        self.assertEqual(pixels["94.000"], wave_ref.screen([[]], "EDGE", wave_ref.View([0, 0, 0, 0])))
+        self.assertEqual(pixels["94.000"], wave_ref.screen([[]], "EDGE", wave_ref.View([0, 0, 0, 0], bank=VIEW_BANK)))
 
     def test_wave_view_help_is_safe_when_there_are_no_sounds(self) -> None:
         before, after = self.results["wave_no_sound"]

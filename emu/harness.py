@@ -560,6 +560,12 @@ def wave_events(*more: list[tuple[float, bytes]], load_at: float | None = None,
     return events
 
 
+def view_bank(label: str) -> str | None:
+    """wave_ref.View.bank for a result label: PMONEY on 3.16 shows the pad bank
+    (mods/lazychop316.inc), bank A unless a case presses Pad Bank."""
+    return "A" if label.startswith("316") else None
+
+
 def label(t: float) -> str:
     """File label used by the Lua observers for a probe time (Lua '%g')."""
     return f"{t:g}"

@@ -25,7 +25,9 @@ copied per case.  Boot snapshots are off: their key ignores the SCSI device.
     check enters the partition reader 2AB2:04F7 on the UI stack with SP below
     its 100Eh-byte frame; the reader runs on the private stack between the
     sequence pool and the image, and no write lands in [cave end, image
-    0x84000) (stock: the frame wraps to 73E1:F7C2 = image 0x835D2).
+    0x84000) (stock: the frame wraps to 73E1:F7C2 = image 0x835D2), nor a
+    stack write (at the writer's SS:SP) anywhere in the cave home: since Lazy
+    Chop the home itself reaches past image 0x835D2.
 """
 from __future__ import annotations
 
@@ -128,7 +130,8 @@ READER = 0x2B017                     # 2AB2:04F7, the SCSI partition reader (ima
 UI_SS = 0x73E1                       # the UI task's stack segment (create-table record 7, relative)
 FRAME = 0x100E + 2                   # SUB SP,100Eh after PUSH BP: an entry SP below this wraps
 WATCH_FROM = 34.0                    # after boot (the EPROM's RAM test writes everywhere at reset)
-# Read-only observer: writes in [cave end, image 0x84000), reader entries (SS:SP),
+# Read-only observer: writes in [cave end, image 0x84000) and stack writes (within
+# 64 bytes of the writer's SS:SP) in the cave home, reader entries (SS:SP),
 # and writes made on the reader's private stack (SS = its segment).
 STACK_WATCH = """
 local cpu = manager.machine.devices[":maincpu"]
@@ -143,8 +146,9 @@ local stk_seg = (IMAGE_PHYS - 0x300000) // 16 - {paras}
 local entry = IMAGE_PHYS + {reader}
 local n_stack = 0
 STACK_WATCH_TAPS = {{
-  prog:install_write_tap((CAVE_PHYS + CAVE_LEN) & ~1, IMAGE_PHYS + 0x84000 - 1, "sw_top", function(off, data, mask)
-    if armed and off >= CAVE_PHYS + CAVE_LEN then log:write(string.format("TOP %.6f image=%05X pc=%s ss:sp=%04X:%04X\\n", now(), off - IMAGE_PHYS, pc(), st("SS"), st("SP"))); log:flush() end
+  prog:install_write_tap(CAVE_PHYS & ~1, (math.max(CAVE_PHYS + CAVE_LEN, IMAGE_PHYS + 0x84000) - 1) | 1, "sw_top", function(off, data, mask)
+    local stack = 0x300000 + ((st("SS") * 16 + st("SP")) & 0xfffff)
+    if armed and (off >= CAVE_PHYS + CAVE_LEN or (off >= stack - 64 and off < stack + 64)) then log:write(string.format("TOP %.6f image=%05X pc=%s ss:sp=%04X:%04X\\n", now(), off - IMAGE_PHYS, pc(), st("SS"), st("SP"))); log:flush() end
   end),
   prog:install_read_tap(entry & ~1, (entry | 1) + 2, "sw_entry", function(off, data, mask)
     if armed then log:write(string.format("ENTRY %.6f pc=%s ss:sp=%04X:%04X\\n", now(), pc(), st("SS"), st("SP"))); log:flush() end

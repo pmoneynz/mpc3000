@@ -363,3 +363,22 @@ BIOS_DS_SEG    equ 0x59FA       ; F800 BIOS data (Vailixi DS 0040): 3.16 BIOS co
 %define T_B1B1_003C 0x0427:0x0046       ; put-char after its frame and MOV BL,[BP+6]: MOV AX,4 / INT 43 / AX=7 / AX=3
 %define T_B1B1_0060 0x0427:0x006A       ; string writer after PUSH BP / MOV BP,SP / PUSH DS / PUSH DI: LDS DI,[BP+6] / the INT 43 loop
 %define T_B1B1_0041 0x0427:0x004B       ; put-char tail: MOV AX,7 / INT 43 / MOV BX,AX / MOV AX,3 / INT 43 / POP BP
+
+; ---------------------------------------------------------------- Lazy Chop (lazychop316.inc, notes/lazy_chop.md)
+; Panel parser 2B6D:0109 (Vailixi D547:0105), entered from the serial ISR 2B6D:006B.
+PANEL_STATUS   equ 0x7018       ; 7628: event status byte being parsed (90h pad / 80h release)
+LC_PAD_VEL     equ 0x701A       ; 762A: velocity of the pad event (2B6D:0224)
+LC_PAD_RAW     equ 0x701C       ; 762C: pad 0..15 of the message, before the bank (2B6D:0155)
+LC_BANK        equ 0xD38F       ; D6A2: pad bank 00/10/20/30h (Pad Bank, 3481:064E)
+LC_STOP_HELD   equ 0xA49F       ; A7B2: STOP held (2B6D:0401 sets, release 2B6D:0441 clears)
+LC_TIME_BASE   equ 0xD501       ; D814: TCT0 time base dword, +20000 per 100 Hz tick (2B50:0018)
+LC_TICKS       equ 0xD38C       ; D69F: 100 Hz tick count word (2B50:0028)
+LC_KICK         equ 0xD398       ; D6AB: the UI kick key (D6E0:001B returns it when the queue is empty)
+%define T_D547_0231 0x2B6D:0x0235       ; pad press: queue its 4 bytes in ring 5 (after MOV BX,6ACh / MOV CL,[7018h])
+%define T_D547_0251 0x2B6D:0x0255       ; after that queue: next state 0121h, return to the ISR
+%define T_D547_04B6 0x2B6D:0x04AC       ; pad release: queue its 3 bytes in ring 5 (after the same two moves)
+%define T_D547_04CD 0x2B6D:0x04C3       ; after that queue: next state 0121h, return
+%define T_D547_02CF 0x2B6D:0x02D3       ; pad pressure: JMP to the state store, after MOV BX,0121h
+%define T_D52A_0190 0x2B50:0x0194       ; TCT0 timestamp: DX:AX in 0.5 us units (PUSHF/CLI; BX, CX change)
+%define T_DA04_002B 0x302F:0x0029       ; program record (index word) -> DX:AX far pointer, 0 past the count
+%define T_DE5C_000E 0x3481:0x000E       ; global key filter (raw key word) -> AX = the key, 0 when handled
