@@ -62,7 +62,8 @@ is **UNDETERMINED** (bench item T4).
   `05 30 F8 83 D2 FE` -> `05 30 D8 83 D2 FE` (pool length = banks<<20 −
   107D0h − 2000h). Base = `21E7:0206()` + 107D0h. Allocation, compaction,
   rebuild, Delete All, loaders and every free-memory display then exclude it.
-  Thru refuses to run if the bank count `[F16A]` is 0. Mono loops one 1FF0h
+  Thru refuses to run if the bank count `[F16A]` is 0 or above 16
+  (the stock sizer accepts 1, 4 or 16; a 32 MB board is 16). Mono loops one 1FF0h
   range; stereo uses two 0FF0h halves 1000h apart (stock keeps a gap between
   halves; its reason is **UNDETERMINED**, so a gap is kept). Ends are 16-word
   aligned (DSP reg 1 carries A[23:4]).

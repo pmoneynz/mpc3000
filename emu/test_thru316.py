@@ -109,13 +109,17 @@ class InputThru(unittest.TestCase):
                          [53.0], [(sine_snd, "SINE441.SND")]),
             }
             for name, (events, times, files) in cases.items():
-                jobs[(p.label, name)] = (p, runs, name, events, times, files)
+                jobs[(p.label, name)] = (p, runs, name, events, times, files, {})
+            # 32 MB board: [F16A] = 16 banks.  The boot snapshot is a 2 MB board.
+            big = {"board_mb": 32, "snapshot": False}
+            jobs[(p.label, "mono32")] = (p, runs, "mono32", cases["mono"][0], [38.0], [], big)
+            jobs[(p.label, "stereo32")] = (p, runs, "stereo32", cases["stereo"][0], [39.0], [], big)
             jobs[(p.label, "pads")] = cls.pads_case(p, runs)
 
         def execute(key, job):
-            p, runs, name, events, times, files = job
+            p, runs, name, events, times, files, kw = job
             screens = h.run_case(p, runs, name, times=times, events=events, files=files, parts=["thru"],
-                                 env={"THRU_FROM": "30.0"})
+                                 env={"THRU_FROM": "30.0"}, **kw)
             log = runs / name / "thru.log"
             h.require_marker(log, f'"t":{times[-1]:.3f}')
             return p, screens, parse(log)
@@ -135,7 +139,7 @@ class InputThru(unittest.TestCase):
                                           (main + 5.0, "main_screen"))
         for k in range(40):
             events += pad_hit(panel_pad(1 + k % 2), main + 6.0 + 0.08 * k, hold=0.04)
-        return (p, runs, "pads", events, [main + 5.5, main + 11.0], [(program, "MUTE.PGM"), (sound, "TEST.SND")])
+        return (p, runs, "pads", events, [main + 5.5, main + 11.0], [(program, "MUTE.PGM"), (sound, "TEST.SND")], {})
 
     def each(self, name):
         return [(label, r) for (label, case), r in self.results.items() if case == name]
@@ -215,6 +219,27 @@ class InputThru(unittest.TestCase):
                 self.assertEqual(keyed, {3, 31})
                 mix = mixers(log, cave)
                 self.assertEqual((mix[31], mix[3]), (0x4F00, 0x004F))
+
+    def test_32mb_board_runs_with_the_ring_at_the_top(self) -> None:
+        """A 32 MB board stores 16 banks in [F16A]; Thru ran up to 8 (bench THRU 01:
+        Status NO SOUND MEMORY on a 32 MB MPC3000)."""
+        for name, t, voices in (("mono32", 38.0, {0, 31}), ("stereo32", 39.0, {0, 3, 16, 31})):
+            for label, (p, screens, log) in self.each(name):
+                with self.subTest(set=label, case=name):
+                    rows = [r.replace(".", " ") for r in screens[0]["rows"]]
+                    self.assertTrue(rows[4].startswith("Status:ON"), rows[4])
+                    s = snap_at(log, t)
+                    self.assertEqual((s["banks"], s["in_on"], s["stage_on"], s["status"]), (16, 1, 1, 1))
+                    self.assertEqual(reserved(s), voices)
+                    top = 16 << 20
+                    self.assertEqual(s["pool_len"], top - POOL_BASE - RING_WORDS)
+                    ring = top - RING_WORDS
+                    self.assertEqual(s["wave"][:3], [ring >> 20, (ring >> 4) & 0xFFFF, (ring & 15) << 12])
+                    if name == "stereo32":
+                        right = ring + 0x1000
+                        self.assertEqual(s["wave"][5:], [right >> 20, (right >> 4) & 0xFFFF, (right & 15) << 12,
+                                                         ((right + 0xFF0) >> 20) | 0x110,
+                                                         ((right + 0xFF0) >> 4) & 0xFFFF])
 
     def test_level_is_stored_and_rewrites_only_the_mixer(self) -> None:
         for label, (p, screens, log) in self.each("level"):

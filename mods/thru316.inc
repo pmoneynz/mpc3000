@@ -459,7 +459,7 @@ thru_rings:
         mov dx, [POOL_BANKS]            ; wave words: banks << 20
         or dx, dx
         jz .none
-        cmp dx, 8
+        cmp dx, 16                      ; OS accepts 1, 4 or 16 banks (32 MB board)
         ja .none
         mov cl, 4
         shl dx, cl

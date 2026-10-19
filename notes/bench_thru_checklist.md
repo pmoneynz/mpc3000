@@ -6,13 +6,13 @@ pass over the bench-proven PMONEY features.  Everything new is **PROVEN in
 MAME only**; whether Thru passes audio at all is **UNDETERMINED** until this
 bench (MAME has no input device).
 
-**Build:** branch `claude/input-monitoring-passthrough-o4qvp1`, commit
-`8f463c2` (= `port-316` `48d62ff` Lazy Chop + Input Thru).
+**Build:** `port-316` after `a77b810`: Lazy Chop + Input Thru, with the
+Thru bank limit raised to 16 (32 MB board; see Results, attempt 1).
 
 | File | Size | SHA-256 |
 |---|---:|---|
-| `build/mods/WAVE316.SYS` | 499,303 | `e24a38c80a78b41cf2bb75405308597cd2cbd6a4c18cffc32e2fa7e19964ac78` |
-| `build/mods/WAVE316.img` | 1,474,560 | `21b5cf72220b7db433aeeeb2825c85be4673de8b12e0308a012352f3122d18bf` |
+| `build/mods/WAVE316.SYS` | 499,303 | `9017b0f21290699401e7d90a92ac02e39f7d934cdd096a4f7df3e51c4be3b928` |
+| `build/mods/WAVE316.img` | 1,474,560 | `449051e69bb8501a2b1b8fcf55d1d990d5625571ecc134d118542f9f0b10938a` |
 
 The image holds `STARTUP.SYS` (the SYS above), `SINE441.SND`, `STEREO1.SND`.
 The banner still reads `WAVEFORM/ZONES/MUTE GROUP` / `PMONEY BETA 1.0`; the
@@ -21,8 +21,8 @@ build is identified by Mixer/Effects showing `6.Input thru`.
 ## Deploy
 
 ```bash
-shasum -a 256 WAVE316.img        # must print 21b5cf72...18bf
-python3 build/deploy_wave316_usb.py --expect-sha 21b5cf72220b7db433aeeeb2825c85be4673de8b12e0308a012352f3122d18bf --select
+shasum -a 256 WAVE316.img        # must print 449051e6...938a
+python3 build/deploy_wave316_usb.py --expect-sha 449051e69bb8501a2b1b8fcf55d1d990d5625571ecc134d118542f9f0b10938a --select
 ```
 
 As for BENCH 08: the script adds the image in the first free USB slot and
@@ -70,4 +70,17 @@ clicks when Thru resumes, buzz, level jumps, left/right swaps.
 
 ## Results
 
-(to fill in after the bench)
+### Attempt 1 (2026-10-20, image `21b5cf72`, USB `Disk_03.IMG`)
+
+Peter's MPC3000, about 32 MB sound memory.  Cables checked; Sample New Sound
+monitors input normally.  Input Thru page: `Thru:MONO LFT`, `Input:ANALOG`,
+`Level: 31`, **`Status:NO SOUND MEMORY`**, no audio.
+
+Cause **PROVEN** (code): the stock sizer stores the wave size in 2 MB banks
+at `[F16A]` (`M3K316.SYS` file `0x29A6B`) and accepts boards of 1, 4 or 16
+banks; `thru_rings` rejected more than 8 (`cmp dx, 8`), so a 32 MB board
+(16 banks) set status 3.  That `[F16A]` is 16 on this unit is inferred from
+the memory size, not read.  Every earlier Thru MAME case ran a 2 MB board.
+Fix: limit 16; `emu/test_thru316.py` `mono32`/`stereo32` run Thru on a
+32 MB board (Status ON, ring at the top of 16 banks).  Next attempt: image
+`449051e6`.

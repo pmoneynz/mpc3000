@@ -24,9 +24,9 @@ from mods import buildkit as kit  # noqa: E402
 from mods import route_c as rc  # noqa: E402
 
 HAVE_TOOLS = shutil.which("nasm") is not None and shutil.which("ndisasm") is not None
-SYS_SHA256 = "e24a38c80a78b41cf2bb75405308597cd2cbd6a4c18cffc32e2fa7e19964ac78"
-IMG_SHA256 = "21b5cf72220b7db433aeeeb2825c85be4673de8b12e0308a012352f3122d18bf"
-CAVE_SHA256 = "a4941230abd863cb2c0c595c205d726cfe9213c5bd6a757bbe6cf160ae8ced23"
+SYS_SHA256 = "9017b0f21290699401e7d90a92ac02e39f7d934cdd096a4f7df3e51c4be3b928"
+IMG_SHA256 = "449051e69bb8501a2b1b8fcf55d1d990d5625571ecc134d118542f9f0b10938a"
+CAVE_SHA256 = "012de870daacf8453273ca6ac3cf98e8e6ff9709ad21d14a4c46f77ada70392a"
 # Size budget (notes/port_316.md "Cave space"): entry316 runs 3.16 at L = 6900
 # on every EPROM set (3.08/3.11 load at 7000 and are moved down), so the cave
 # home 7E00 must end below F400h: 53,248 bytes on every machine.  Lower
