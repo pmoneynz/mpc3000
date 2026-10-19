@@ -28,10 +28,12 @@ image hash is a function of its files. Builders no longer need mtools.
 | `build_romdump.py`, `romdump.asm` | Capture runtime `F800:0000–7FFF` to preallocated `BIOS.BIN`; physical 32 KiB capture verified |
 | `build_wave_physical.py` | WAVEHW, hash-pinned captured ROM profile with exact high-ROM guard; hooks generated from `WAVE.args`; every cave far target checked against the capture |
 | `build_romapp.py`, `romapp.asm` | Guarded 336 KiB application/data capture to `ROMAPP.BIN`; excludes NVRAM, uses captured PGR wrapper |
+| `AKAI.args`, `akai.asm` | Disk → 8 `<Save>`: save a Sound to an Akai S1000 floppy ([notes](../notes/akai_save.md)) |
 | `PETER.args`, `CAVEDEMO.args` | Version-screen credit and execution-from-RAM demonstrations |
 
 ```bash
 python3 mods/build_mod_sys.py @mods/DEMO351.args   # build/mods/DEMO351.{SYS,img}; --out DIR elsewhere
+python3 mods/build_mod_sys.py @mods/AKAI.args      # build/mods/AKAI.{SYS,img}: Akai S1000 save
 python3 mods/build_canary.py                       # build/mods/STARTUP.SYS, vailixi350-canary.img
 python3 mods/build_wave_bench.py                   # build/mods/WAVEBENCH.{img,json}
 python3 mods/build_romcheck.py                     # build/mods/ROMCHECK.{SYS,img,json}

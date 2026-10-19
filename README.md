@@ -219,6 +219,11 @@ that do not fit start a second disk (`DRUMS01`, `DRUMS02`, …). `--density dd` 
 `--s3000` for a native S3000 floppy (3.50 loads those 21 frames late; see the note).
 Evidence and the 3.50 loader: [`notes/akai_disk.md`](notes/akai_disk.md).
 
+On the MPC itself, the `AKAI` mod (`python3 mods/build_mod_sys.py @mods/AKAI.args`) relabels
+Disk item 8 `8.Akai S1000/3000` and adds soft key 3 `<Save>` there: choose a Sound with the
+wheel and it is written to the Akai S1000 floppy, byte-identical to what `snd2akai.py` makes.
+Emulator-proven, not yet run on hardware: [`notes/akai_save.md`](notes/akai_save.md).
+
 ## 7. ROM binaries (`07-rom/`)
 
 Peter supplies binaries. Inventory: [`07-rom/ROM_INVENTORY.md`](07-rom/ROM_INVENTORY.md).
