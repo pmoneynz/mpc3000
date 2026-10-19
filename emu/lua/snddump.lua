@@ -50,8 +50,9 @@ local function dump(t)
 			local name = {}
 			for k = 0, 16 do local c = rd8(o + k); if c == 0 then break end; name[#name + 1] = string.char(c) end
 			local st, len, wa = rd8(o + 0x13), rd32(o + 0x1c), rd32(o + 0x20)
-			log:write(string.format("idx %d name='%s' vol=%d stereo=%d start=%d end=%d len=%d wave=%08X\n",
-				i, table.concat(name), rd8(o + 0x11), st, rd32(o + 0x14), rd32(o + 0x18), len, wa))
+			local tune = rd8(o + 0x12); if tune >= 0x80 then tune = tune - 0x100 end
+			log:write(string.format("idx %d name='%s' vol=%d stereo=%d start=%d end=%d len=%d wave=%08X tune=%d\n",
+				i, table.concat(name), rd8(o + 0x11), st, rd32(o + 0x14), rd32(o + 0x18), len, wa, tune))
 			local words = len * (st + 1)
 			if want_pcm and words > 0 and words < 0x400000 then
 				local f = io.open(string.format("%s/wave_%g_idx%d.bin", out, t, i), "wb")

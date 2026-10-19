@@ -14,6 +14,7 @@ uncertainty or correct a proven error. Status of the project:
 | [`mute_groups.md`](mute_groups.md) | BENCH 06 controls, menu hooks, UI execution evidence |
 | [`mute_voice.md`](mute_voice.md) | Shared note-on/voice allocator hooks and group choking |
 | [`mute_storage.md`](mute_storage.md) | Program state lifetime and PGM/APS extensions |
+| [`akai_disk.md`](akai_disk.md) | Disk 8 Akai S1000/S3000 floppy loader; what `tools/snd2akai.py` writes |
 | [`artifact_identity.md`](artifact_identity.md) | What the bytes are |
 | [`address_model.md`](address_model.md) | How those bytes are addressed |
 | [`boot_reset_to_bios_banner.md`](boot_reset_to_bios_banner.md) | First connected slice |

@@ -203,6 +203,21 @@ Panel µPD78C10 **TxD** → TE7774 **RX2 & RX3** (wire-OR). MIDI IN1/IN2 → RX1
 - Distinct from the burned LS/MS ROM sets (3.08 / 3.11 / 3.12 / Vailixi 3.50)
 - Full notes: [`07-rom/v3.16 maintenance upgrade/README.md`](07-rom/v3.16%20maintenance%20upgrade/README.md)
 
+## ★ MPC `.SND` → Akai S1000/S3000 floppy
+
+```bash
+python3 tools/snd2akai.py KICK.SND PAD.SND -o build/akai/DRUMS.img --label DRUMS   # raw 1.6 MB image
+python3 tools/snd2akai.py KICK.SND PAD.SND -o build/akai/DRUMS.hfe                 # HxC/FlashFloppy/MAME
+python3 tools/snd2akai.py --list build/akai/DRUMS.img
+python3 tools/snd2akai.py --extract build/akai/DRUMS.img -o build/akai/snd/         # back to .SND
+```
+
+Writes an Akai floppy the MPC3000 loads with **Disk → 8** and an S1000/S3000/S3200 reads
+natively. Stereo sounds become `NAME-L`/`NAME-R`; soft start/end and tune are kept. Sounds
+that do not fit start a second disk (`DRUMS01`, `DRUMS02`, …). `--density dd` for 800 KB,
+`--s3000` for a native S3000 floppy (3.50 loads those 21 frames late; see the note).
+Evidence and the 3.50 loader: [`notes/akai_disk.md`](notes/akai_disk.md).
+
 ## 7. ROM binaries (`07-rom/`)
 
 Peter supplies binaries. Inventory: [`07-rom/ROM_INVENTORY.md`](07-rom/ROM_INVENTORY.md).
