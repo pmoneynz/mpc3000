@@ -272,6 +272,8 @@ class ConvertTests(Fixture):
             self.assertEqual(sa.main(["--list", str(self.dir / "o" / "D.img")]), 0)
             self.assertEqual(sa.main(["--extract", str(self.dir / "o" / "D.img"), "-o", str(self.dir / "x")]), 0)
             self.assertEqual(sa.main([*paths, "-o", str(self.dir / "o" / "D.hfe")]), 0)
+            self.assertEqual(sa.main(["--blank", "-o", str(self.dir / "E.img"), "--density", "dd"]), 0)
+        self.assertEqual((self.dir / "E.img").read_bytes(), sa.AkaiFloppy(sa.DD).image())
         self.assertIn("S1000 floppy 'DRUMS', 4 file(s)", out.getvalue())
         back, src = sa.read_snd((self.dir / "x" / "KICK_01.SND").read_bytes()), sa.read_snd(self.sounds()["KICK.SND"])
         self.assertEqual((back.name, back.planes, back.start, back.end, back.tune),

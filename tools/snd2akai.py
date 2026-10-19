@@ -4,6 +4,7 @@
     python3 tools/snd2akai.py *.SND -o build/akai/DRUMS.hfe --label DRUMS
     python3 tools/snd2akai.py --list build/akai/DRUMS.img
     python3 tools/snd2akai.py --extract build/akai/DRUMS.img -o build/akai/snd/
+    python3 tools/snd2akai.py --blank -o build/akai/EMPTY.img
 
 The MPC3000 reads the result with Disk -> 8 "Load S1000/S3000 Sample Files";
 S1000, S1100, S3000, S3200 and CD3000 samplers read it as an Akai disk.
@@ -552,6 +553,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--label", default="NOT NAMED", help="volume label (12 Akai characters)")
     ap.add_argument("--list", type=Path, metavar="IMG", help="list an Akai floppy image")
     ap.add_argument("--extract", type=Path, metavar="IMG", help="write the image's samples back as .SND")
+    ap.add_argument("--blank", action="store_true", help="write an empty formatted Akai floppy to -o")
     args = ap.parse_args(argv)
     try:
         if args.list:
@@ -572,6 +574,14 @@ def main(argv: list[str] | None = None) -> int:
                 path = args.out / f"{sound.name.replace(' ', '_') or 'SAMPLE'}.SND"
                 path.write_bytes(write_snd(sound))
                 print(path)
+            return 0
+        if args.blank:
+            if args.snd or not args.out or args.out.suffix.lower() not in (".img", ".hfe"):
+                ap.error("--blank takes only -o OUT.img|OUT.hfe")
+            img = AkaiFloppy(DENSITIES[args.density], args.s3000, args.label).image()
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            args.out.write_bytes(hfe(img) if args.out.suffix.lower() == ".hfe" else img)
+            print(f"{args.out}: empty {'S3000' if args.s3000 else 'S1000'} {args.density.upper()} floppy")
             return 0
         if not args.snd or not args.out:
             ap.error("give .SND files and -o OUT.img|OUT.hfe, or --list / --extract IMG")

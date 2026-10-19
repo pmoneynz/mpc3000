@@ -210,6 +210,7 @@ python3 tools/snd2akai.py KICK.SND PAD.SND -o build/akai/DRUMS.img --label DRUMS
 python3 tools/snd2akai.py KICK.SND PAD.SND -o build/akai/DRUMS.hfe                 # HxC/FlashFloppy/MAME
 python3 tools/snd2akai.py --list build/akai/DRUMS.img
 python3 tools/snd2akai.py --extract build/akai/DRUMS.img -o build/akai/snd/         # back to .SND
+python3 tools/snd2akai.py --blank -o build/akai/EMPTY.img                         # empty Akai disk
 ```
 
 Writes an Akai floppy the MPC3000 loads with **Disk → 8** and an S1000/S3000/S3200 reads
