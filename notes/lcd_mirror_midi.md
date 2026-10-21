@@ -300,3 +300,29 @@ Three read-only reviews of `f3b63b4` (assembly; tests and viewer; stock interact
 | The tick can run nested inside INT 0D, INT 0E or IRQ 9 | Nested ticks do nothing |
 | "IVT[8] planted last"; `340C` suspend "until the rings drain" | Corrected (§2, §3.2) |
 | Viewer cursor drawn when mode 0 | Hidden when mode 0 |
+
+## 9. Deferred: iPhone viewer (after the bench)
+
+**Gate:** start only after LCD MIRROR BENCH 01 passes, any fixes it needs are in,
+and the laptop viewer has been used on the real unit without problems
+(owner decision, 2026-10-21). Until then the laptop viewer is the only receiver.
+
+**Why an app:** the Python viewer needs desktop Python (python-rtmidi, Tk), and
+Safari on iOS has no Web MIDI, so neither runs on a phone. A class-compliant 5-pin
+MIDI to USB-C cable works with an iPhone 15 or later through CoreMIDI, with no
+driver. Its **IN** plug goes into the MPC's **OUT D**.
+
+**Scope:**
+- SwiftUI app with CoreMIDI input; picks the first source (or one chosen in a list) and follows it being unplugged and plugged back in.
+- A Swift port of `Decoder` from `tools/lcd_mirror_midi_viewer.py`, protocol 2 (or whatever the bench leaves it at), with the same counters: msgs, drops, dups, bad, aborted, foreign.
+- Draws the 40×8 text with the `emu/lcd_font.py` glyphs (hatch for codes it lacks), the cursor (hidden in mode 0), and the 240×64 Mixer pixels (bit 7 leftmost). Landscape, scaled to the screen, LCD colours.
+- Shows how long ago data last arrived, since the mirror is silent during count-in, play and record by design.
+- Optional: save a session log in the `--log` format, shareable to the Mac.
+
+**Verification:**
+- Decoder unit tests ported from `tests/test_lcd_mirror_protocol.py`: all 256 codes, run tokens, 7-in-8, PCOPY, drops, HELLO resync, malformed messages.
+- Replay test: feed the MAME recordings (`build/emu/lcdmirror316-tests/*/io_trace.log`, or a replay host `midi.log`) through the Swift decoder. The decoded screen must equal the Python decoder's at every probe time.
+- Run in the iOS Simulator (Claude can drive it). On the phone itself it needs the owner's Apple developer signing in Xcode.
+- Last step: a short bench with the phone beside the laptop viewer, both on the same stream through a MIDI splitter or thru box. The counters and screens must agree.
+
+**Starting point:** the Swift app scaffolding in `MPC3000-mac-port/app`. A new target or repository is the owner's choice when this starts.
