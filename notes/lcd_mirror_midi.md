@@ -27,8 +27,9 @@ Vailixi addresses are named for comparison only. DS offsets are 3.16 DGROUP
 ## 1. What it does
 
 On every 100 Hz tick, inside 3.16's tick interrupt, the cave compares the screen
-with its copy of what the viewer already has. It then queues at most one SysEx
-message (64 bytes or fewer) on one MIDI OUT (default OUT D):
+with its copy of what the viewer already has. It then queues SysEx messages
+(64 bytes or fewer each, up to three per tick, never more than 64 bytes waiting
+in the ring) on one MIDI OUT (default OUT D):
 - **Text:** the 40×8 text shadow, the cursor and the OS cursor mode.
 - **Graphics:** the Mixer page's framebuffer, 1,920 bytes.
 
@@ -37,7 +38,7 @@ The laptop viewer decodes the stream and draws it.
 **Why a floppy and 3.16:** the ROM loader boots a floppy's first `*.SYS` and
 never returns ([`floppy_loader.md`](floppy_loader.md)).
 - No EPROM is touched.
-- The mirror's 3.8 KB of code and state live in the Route C cave home, RAM
+- The mirror's 4.4 KB of code and state live in the Route C cave home, RAM
   above the 3.16 image.
 - Rollback is removing the floppy.
 
@@ -69,7 +70,7 @@ Vailixi).
 | Send API | `DC5B` | `3286`: `0039` send_block(buffer far, count, port 1-4), `0086` real-time sender. `0019` send_byte has no caller | bytes; `syncout316.inc` | PROVEN (0019 dead: HYPOTHESIS) |
 | Sending-disabled gate | `[9644]` | `[9331]`, an error mask (bits 01/02/04/08/20) | §3.1 | PROVEN |
 | Control shadows | `[9628+i]` | `[9315+i]`, ports `C6/CE/D6/DE` | `3286:0010` (pinned) | PROVEN |
-| System tick | `IVT[8]` = `D52A:0008` | `2B50:000C`..`0061` IRET. IVT[8] is planted last by `02B2` at image `0x2BC9`, after every queue exists | §3.2 | PROVEN |
+| System tick | `IVT[8]` = `D52A:0008` | `2B50:000C`..`0061` IRET. IVT[8] is planted by `02B2` at image `0x2BC9`, the first of its vector installs and after every queue exists | §3.2 | PROVEN |
 | Mixer graphics init | `C4C8`, IR0 = 32,07,1D,3F | `1650:0F53` (registers 0-3 ← 32h, 07h, 1Dh, 3Fh via `1650:0F8D`); blit `1650:0F01` writes FB bit-reversed | agent | PROVEN |
 | Mixer framebuffer | `8010:1591` | `[1579]`, 30 bytes × 64 rows | `profile_316.inc` `FB` | PROVEN |
 | Mixer flag | `[8010:98DC]` | `[95C9]`: set to 1 only in `1650:0F53`, set to 0 only at the end of `1650:03FD` | `0x17453 C6 06 C9 95 01`, `0x16936 C6 06 C9 95 00` (pinned) | PROVEN |
@@ -102,52 +103,58 @@ Vailixi).
 ### 3.2 Interrupt safety and where the hook runs
 
 **The tick handler** `2B50:000C` runs between the AMX ISR entry `47BF:0151` and the AMX ISR exit `47BF:018E`. Inside that bracket:
-- it saves every register;
-- it switches to the AMX interrupt stack;
+- it saves every register and, at the outermost level, switches to the AMX interrupt stack (`7076:0000`..`1130`, 4,400 bytes);
 - it counts ticks and wakes kernel timers;
 - it reads the footswitches;
-- it runs `INT 42`;
-- it sends `OUT C010h,60h`.
+- it runs `INT 42` (`0009:205A` at run time);
+- it sends `OUT C010h,60h`, the end of interrupt (HYPOTHESIS: every ISR writes `60h` + its level).
 
-No `STI` is reachable. PROVEN (code). The sequencer clock is IRQ 9 (`2C45`), not this tick.
+No `STI` is reachable. PROVEN (two independent walks, the second with the footswitch tables bounded by hand; `tools/scsi_reader_reach.py` over-reads those tables and maps INT 42 to the boot-time `194E`). The sequencer clock is IRQ 9 (`2C45`), not this tick.
 
 **Why the hook is not the IVT[8] chain the handoff suggested:** at the outermost level, `47BF:018E` can dispatch a higher-priority task before its RETF. A `PUSHF/CALLF` chain on IVT[8] would then run late, on a task stack, outside the bracket. PROVEN (code).
 
-**The hook instead** replaces the handler's `CALLF 47BF:018E` at `2B50:005C` (image `0x2B55C`, `9A 8E 01 BF 47`) with `CALLF lm_tick`:
-- `lm_tick` does its work, then `JMP FAR 47BF:018E`.
-- The exit pops this CALLF's return address (`2B50:0061`), so the stack is left as found.
-- The work therefore runs inside the bracket, after the tick's end-of-interrupt write, with IF = 0, on the AMX interrupt stack. It cannot be preempted or run twice.
-- That `OUT C010h,60h` is the end of interrupt for this level is HYPOTHESIS.
+**The hook** replaces the handler's `CALLF 47BF:018E` at `2B50:005C` (image `0x2B55C`) with `CALLF lm_tick`, which ends `JMP FAR 47BF:018E`. The exit pops this CALLF's return (`2B50:0061`) and reloads everything from its own frame, so it relies on no incoming register. The stack is left exactly as found; the cave's peak stack use is 34 bytes. PROVEN (review).
 
-**Is queuing from the tick safe?** The ring push is a `PUSHF/CLI` critical section with no lock or flag, so pushing from the ISR is safe. PROVEN. Message integrity is the real issue:
-- The only OUT-ring writer is `send_block`, and only tasks call it (tasks 2 and 7: SPP, MMC SysEx, note-offs and repeats, Sample Dump).
-- It queues byte by byte with interrupts enabled between bytes, so the tick could fall inside a task's message. PROVEN.
-- The cave therefore replaces `send_block`'s first 8 bytes (image `0x32899`, no relocation inside) with `JMPF lm_send_block`. That is the stock body inside a nesting count; the tick sends nothing while the count is non-zero.
-- The mirror's own message enters the ring whole under `CLI`.
-- Result: no message on the port is split by the other writer. Task-against-task interleaving (task 2 inside task 7's Sample Dump) is a stock hazard and stays as stock.
+**Nested ticks.** `2B50:0194` (the TCT0 timestamp routine, reached from INT 0D, INT 0E and IRQ 9) opens a window with only the tick unmasked, so the tick can run inside another ISR, whose mask then stays in force.
+- MAME, Vailixi set, the test walk: 35 of 6,126 cave entries were nested (AMX nesting byte `FF`), the rest outermost (`00`).
+- The cave reads the nesting byte (`[47BF:003C]` → `593F:0024`, byte `+10h`, decremented by the entry at `47BF:016B`; bytes pinned) and does nothing on a nested tick. PROVEN (MAME).
 
-**Stock interaction that forces silence during playback:** while `[A49B] >= 6`, task 2 calls `340C:0000` at `422F:0399`. That suspends task 2 whenever any OUT bulk ring is non-empty. PROVEN (code).
-- So any mirror traffic during playback would hold back sequencer output.
-- The mirror sends nothing while `[A49B] >= 6`, and only into an empty ring otherwise.
-- Bound at the moment Play is pressed: at most one message (≤ 64 bytes, ≤ 20.5 ms at 31,250 baud) is still draining. Whether a first note is then late on hardware is UNDETERMINED (bench gate 5).
-- In MAME, no SysEx starts during play on any set (test).
+**Interrupts during the work.** After its gates, with IF still 0, the cave sets IF = 1 and builds and queues its messages.
+- That is legal inside the bracket: a nested interrupt raises AMX's nesting level and its exit returns without a task switch; only the outermost exit dispatches.
+- No task can run, so the shadow and framebuffer cannot change under the scan. The only critical section is the ring push and the transmitter start, done under `PUSHF/CLI`. IF is 0 again before the AMX exit.
+
+**Message integrity.** The only OUT-ring writers are `send_block` (tasks 2 and 7: SPP, MMC SysEx, notes from pads, soft thru and step-edit audition, Sample Dump) and the cave. PROVEN (review: all 19 relocations of segment `77CA` accounted for; INT 0D writes only input rings).
+- `send_block` queues byte by byte with interrupts enabled between bytes. The cave replaces its first 8 bytes (image `0x32899`) with `JMPF lm_send_block`: the stock body inside a nesting count; the tick builds nothing while the count is non-zero.
+- The cave's own message enters the ring whole under `CLI`.
+- So no message on the port is split by the other writer. 3.16 never uses running status on output, so a cut can never make the next bytes merge with old data. PROVEN.
+
+**Silence rules.** The cave queues nothing:
+- while `[A49B] != 0`: count-in, wait for key, play, record. While `[A49B] >= 6` task 2 suspends itself (`340C:0000`, one caller `422F:0399`) whenever any OUT ring is non-empty, for up to one sequencer tick; states 2 and 4 lead straight into it. PROVEN (code); the meaning of 2 and 4 is HYPOTHESIS.
+- while `[9331] != 0` (3.16 holds all output), and it asks for a full repaint when it clears;
+- for 0.4 s (40 ticks) after any 3.16 message on the mirror's own port (`lm_send_block` sees the port), so live notes and SPP never queue behind a mirror message once 3.16 is using the port;
+- while a task message is half queued.
+
+**The ring budget.** A built message waits (`lm_pending`) until the ring would then hold at most 64 bytes. So at the moment the transport starts, at most 64 bytes (20.5 ms at 31,250 baud) are still draining, the same bound as an empty-ring rule. The wire stays about 85% busy during page changes (2,630-2,690 B/s measured, against 3,125 B/s).
 
 **Starting the transmitter:** pushing into the ring and setting bit 1 of the control shadow is not enough. The TxRdy ISR `2C08:000E` reads the bulk ring only when bit 1<<port of `[965C]` is set. PROVEN.
-- `lm_kick` does exactly what the stock kick does: `OR [965C]`, then `OR [9315+i],2`, then `OUT`.
-- The ISR clears the enable bits of ports that were not ready, so the cave re-kicks on every tick while its ring holds bytes.
+- `lm_kick` does what the stock kick does: `OR [965C]`, `OR [9315+i],2`, `OUT`.
+- The ISR clears the enable of ports that were not ready, so the cave re-kicks on every tick while its ring holds bytes (not while `[9331]` holds output, as stock).
+- Every write of these bytes from a task is under `CLI` in stock too; no read-modify-write race. PROVEN (review).
 
-**Interrupt-off time, MAME, Vailixi set, the test walk, final build** (`emu/lua/lcdmirror_cost.lua`: opcode-fetch taps; 5,480 ticks):
+**Cost at the board's 16 MHz** (MAME, `NEC_CPU_DIV=2`, Vailixi set, the test walk, 6,126 ticks; `python3 -m emu.lcdmirror_cost`; opcode-fetch taps, a few cycles early from prefetch):
 
-| Measured | p50 | p90 | p99 | max |
+| Interrupts-off window | p50 | p90 | p99 | max |
 |---|---:|---:|---:|---:|
-| Stock tick handler, entry → IRET | 16.7 µs | — | 35.3 µs | 36.2 µs |
-| Cave added, `lm_tick` → AMX exit | 44.4 µs | 44.5 µs | 106.9 µs | 156.0 µs |
-| Cave added, Mixer page window (53.5-56 s) | 56.1 µs | — | — | 140.6 µs |
+| Stock tick: entry → AMX exit | 34.1 µs | 38.0 µs | 50.1 µs | 50.1 µs |
+| Mirror tick: entry → the cave's STI | 49.5 µs | 50.1 µs | 59.4 µs | 65.7 µs |
+| Mirror: one message into the ring | 22.6 µs | 44.7 µs | 46.8 µs | 46.9 µs |
+| Mirror: CLI after the work → AMX exit | 12.3 µs | 12.4 µs | 14.5 µs | 14.6 µs |
 
-- The first draft (byte loops, whole-screen compare per tick) took 389 µs at p50. The cave now compares two text rows or 128 framebuffer bytes per tick with `REPE CMPSW`. It builds each message backward so that one `REP MOVSB` (two when the message wraps) puts it in the ring, and caps ROW at 24 codes.
-- The worst case, stock plus cave, is below one MIDI byte time (320 µs).
-- Whether the TE7774 receiver loses input during that time is unknown hardware (UNDETERMINED; bench gate 6).
-- The MAME 16 MHz cycle model matching the board is HYPOTHESIS ([`performance.md`](performance.md) §3).
+- The worst window the mirror adds or lengthens is 66 µs. Stock's own worst during playback is 111 µs (`emu/fixtures/cycle_budget_316.json`, `ifoff_max_us_play`).
+- Time in the cave per tick, interruptible part included: p50 101 µs, p99 290 µs, max 667 µs (about 1% CPU idle).
+- 3.16's own TxRdy ISR costs about 72 µs per MIDI byte sent (p50; 98 µs max), with interrupts off; stock's cost per byte is the same. That is the mirror's largest CPU cost: 0.9 s over the 102 s walk (stock with only its clock: 0.08 s), about 18% of the CPU during a full Mixer repaint.
+- An earlier draft measured at the fork's default 32 MHz and reported half these times; at 16 MHz that draft (one message, whole-screen compares, interrupts off throughout) would have added up to about 380 µs. Found in review; the figures above replace it.
+- Whether the TE7774 loses MIDI input in a 66 µs or 98 µs window is unknown hardware (UNDETERMINED; bench gate 6). The MAME 16 MHz cycle model matching the board is HYPOTHESIS ([`performance.md`](performance.md) §1).
 
 ### 3.3 The Mixer flag
 
@@ -179,85 +186,84 @@ MAME agrees: the decoded MODE follows the page in every run, and the decoded fra
 - This repo's harness traces the OUT D transmit data register, I/O `D8h` (fork wiring, [`emu/test_syncout.py`](../emu/test_syncout.py)).
 - The test checks both: the same walk in two binaries.
 
-## 4. Protocol (version 1, frozen)
+## 4. Protocol (version 2)
 
 `F0 7D 4D 33 4B <type> <seq> <payload> F7`, at most 64 bytes.
 - `7D` is the non-commercial manufacturer ID; `4D 33 4B` is "M3K".
-- `seq` is a 7-bit count of messages that entered the ring; gaps are drops.
+- `seq` is a 7-bit count of messages that entered the ring; gaps are drops. A HELLO resyncs the viewer.
 
 | Type | Payload | Sent |
 |---|---|---|
-| `01` HELLO | proto 1, mod version 1, OS 3, 16 | about 2 s after the hook first runs, then after every 5 s with nothing to send |
-| `02` ROW | row, col, len 1..24, codes escaped | a changed span; a row marked whole goes in up to two messages |
+| `01` HELLO | proto 2, mod version 2, OS 3, 16 | at start, after 5 s with nothing to send, and with every full repaint |
+| `02` ROW | row, col, len 1..40, codes | a changed span (as much as fits); a row marked whole goes in one or more messages |
 | `03` CURSOR | row, col, mode & 7F, mode >> 7 | cursor word or `[1D02]` changed, and after FULL / return to text |
 | `04` MODE | `00` text, `01` graphics | `[95C9]` changed, and after FULL |
-| `05` PIX | offset >> 7, offset & 7F, len 1..32, 7-in-8 | a changed run of FB; the whole FB after MODE 01 or FULL |
-| `06` FULL | none | after HELLO, after `[9331]` clears, and when a ring had no room |
+| `05` PIX | offset >> 7, offset & 7F, len 1..32, 7-in-8 | a changed run of FB |
+| `06` FULL | none | at start, every 15 s, after `[9331]` clears, after Stop if a message was draining at the start |
+| `07` PCOPY | offset >> 7, offset & 7F, len 1..127, distance >> 7, distance & 7F | FB bytes `offset+i` = `offset-distance+i`, in order (overlap allowed); the mod uses distance 30 (one row up) |
 
-**Encoding rules:**
-- **Escapes:** a code below `7E` is sent as itself; `7E nn` means `80|nn`; `7F nn` means the literal `nn` (`7E`, `7F`).
-- **7-in-8:** for each group of up to 7 bytes, one byte of high bits (bit i = bit 7 of byte i), then each byte & 7F.
-- **PIX bytes** are FB as stored. Bit 7 is the leftmost pixel: PROVEN (MAME), with 0 differing pixels this way and 6,374 the other way. The OS bit-reverses each byte for the LC7981.
+**ROW codes:** a code below `7D` is sent as itself; `7E nn` means `80|nn`; `7F nn` means the literal `nn` (`7D`, `7E`, `7F`); `7D n c` means `n` (4..127) copies of the code `c`, itself escaped. `len` counts decoded codes. Protocol 1 had no run token and sent `7D` as itself.
 
-The handoff's ROW length limit of 40 cannot fit 64 bytes when codes are escaped, so ROW carries at most 24 codes (2·24 + 11 ≤ 64).
+**7-in-8:** for each group of up to 7 bytes, one byte of high bits (bit i = bit 7 of byte i), then each byte & 7F.
+
+**PIX and PCOPY bytes** are FB as stored. Bit 7 is the leftmost pixel: PROVEN (MAME), with 0 differing pixels this way and 6,374 the other way. The OS bit-reverses each byte for the LC7981.
+
+**Why version 2:** measured on the walk's captures.
+- Runs: text payload falls to 72% of the plain encoding, and whole rows fit one message.
+- PCOPY: the Mixer page has no runs at all (0 runs of 4 or more equal bytes), but strips repeat and rows match the row above. Copy from one row up takes a full Mixer repaint from 2,880 to about 1,930 bytes; unrestricted LZ over the whole framebuffer would reach only about 1,860, so the wire floor is about 0.6 s.
+- The copy source is what the viewer already has: the first 30 bytes are compared with the viewer's copy, the rest with framebuffer bytes the copy itself writes.
 
 ## 5. The mod
 
 | Part | Where | What |
 |---|---|---|
 | Hook 1 | image `0x2B55C` `9A 8E 01 BF 47` → `9A lm_tick` | per tick, inside the AMX bracket |
-| Hook 2 | image `0x32899` `55 8B EC 80 3E 31 93 00` → `EA lm_send_block 90 90 90` | send_block with the nesting count |
+| Hook 2 | image `0x32899` `55 8B EC 80 3E 31 93 00` → `EA lm_send_block 90 90 90` | send_block with the nesting count and the port hold-off |
 | Banner | DGROUP `0x61B5A` `System 3.16 (02/20/05)` → `System 3.16 LCD mirror` | identifies the floppy at boot |
-| Cave | 3,820 bytes at home paragraph `7E00` (logical `E7000`, physical `3E7000`) | code, the 320-byte text copy, the 1,920-byte FB copy, the message buffer |
+| Cave | about 4.4 KB at home paragraph `7E00` (logical `E7000`, physical `3E7000`) | code, the 320-byte text copy, the 1,920-byte FB copy, the message buffer |
 
-**Gates on each tick, in this order:**
+**Per outermost tick:**
 1. Start-up: 200 ticks, and the ring must hold capacity `5FA`.
-2. Ring non-empty: kick and stop.
-3. `[9331] != 0`: stop.
-4. `[A49B] >= 6`: stop.
-5. A task inside `send_block`: stop.
-6. Otherwise build at most one message, push it and kick.
+2. `[9331] != 0`: nothing (FULL when it clears).
+3. Every 15 s: HELLO and a full repaint.
+4. `[A49B] != 0`, the hold-off, or a task inside `send_block`: only re-kick the transmitter.
+5. Otherwise, with interrupts on: up to three messages, each pushed when the ring would then hold at most 64 bytes.
 
-**Port:** a build-time option, `--port 1-4` (default 4, OUT D).
+**Scans** compare up to 80 text cells or 128 framebuffer bytes per tick with `REPE CMPSW`, from where the last message ended, so no changing cell can starve the others.
+
+**Port:** a build-time option, `--port 1-4` (default 4, OUT D). Ports 1-3 are built and checked by the builder but were not run in MAME.
 
 **Builder checks:**
 - `mods/build_wave316.verify()`: both loaders simulated, entry316, hooks landing on their labels, every relocated cave word a known segment.
 - The instruction shapes of `T_FB00_0194` (`47BF:018E`) and `T_DA09_0030` (`3033:003E`) equal the Vailixi routines they are named after. Both were added to `profile_316.inc`; the PMONEY `WAVE316.SYS` stays byte-identical (`9017b0f2…b928`).
-- The `STOCK_FACTS` bytes.
+- The `STOCK_FACTS` bytes, including the AMX nesting byte and the `[A49B]` gate before `340C:0000`.
 
-## 6. Results (MAME; emulator results, not hardware results)
+## 6. Results (MAME at 16 MHz; emulator results, not hardware results)
 
-**Build:** `python3 mods/build_lcdmirror316.py`
+**Build:** `python3 mods/build_lcdmirror316.py` (hashes in [`bench_lcdmirror_checklist.md`](bench_lcdmirror_checklist.md)).
 
-| File | Bytes | SHA-256 |
-|---|---:|---|
-| `build/lcd_mirror/M3K316.SYS` | 469,175 | `5a34eab0b537c309afbed0d4df897391542b8ec09581a88a114658eed06341c8` |
-| `build/lcd_mirror/LCDMIRROR_316.img` | 1,474,560 | `6f9629d9032d150eca0ad623792c0fbb3794357d0382411f2c2b9985526809b2` |
-| `build/lcd_mirror/STOCK_316.img` (control) | 1,474,560 | `2752cf3e29141880a1f9949a68d2dfdf02b3dc7f536998632844ccf10946c3e1` |
-
-**`MPC3K_BIOS_316=all python3 -m unittest emu.test_lcdmirror316`:** 6 tests OK on `default` (3.12), `vailixi`, `v311` and `v308` (one execution each). Harness binary pinned `b4ab57e`; replay host on the Vailixi set.
-- At all 16 probe times, the decoded stream equals the captured LCD (text codes up to the `00`/`20` blanks; Mixer pixels exactly). This holds from the harness trace and from the replay host's `--midi-log`.
-- The stream is well formed:
-  - no drops, nothing malformed or cut, no foreign SysEx;
-  - longest message 48 bytes;
-  - contiguous sequence numbers, HELLO first;
-  - at least 60 PIX messages and 2 MODE messages.
+**`MPC3K_BIOS_316=all python3 -m unittest emu.test_lcdmirror316`:** 6 tests OK on `default` (3.12), `vailixi`, `v311` and `v308` (one execution each, `NEC_CPU_DIV=2`). Harness binary pinned `b4ab57e`; replay host on the Vailixi set.
+- At all 17 probe times the decoded stream equals the captured LCD: text codes up to the `00`/`20` blanks, the cursor (row, column, mode) against the machine's own cursor word and `[1D02]` (`emu/lua/lcdmirror_watch.lua`), and Mixer pixels exactly. This holds from the harness trace and from the replay host's `--midi-log`. The replay host runs the same core: its byte times match the harness to about 1 µs, so it is a second recording, not an independent model.
+- The stream is well formed: no drops, dups, malformed, cut or foreign messages; longest 51 bytes; contiguous sequence numbers; HELLO first; PIX and PCOPY both used.
 - OUT A-C carry only 3.16's clock while the dial passes them, as in the stock control (±1 clock).
 - The stock control shows the same display RAM at every probe time and sends only real-time bytes on OUT D.
-- 3.16's MIDI clock on OUT D during 4 s of Play: the same F8 count as stock (±2; > 150), the same FA/FC counts. No SysEx starts while the transport runs.
+- Clock on the mirror's port while stopped (from MIDI clock OUT D until Play): every F8 interval within one byte time of 20.833 ms (measured −0.068 to +0.069 ms; stock is steady). During Play: the same F8 count as stock (±2), the same FB and FC counts, and no SysEx.
 
-**Latency from the key press until the decoded picture last settled** (all four sets agree within 0.04 s; the replay host gives the same):
+**Latency from the key press until the decoded picture (text and cursor, or pixels) last settled**, all four sets:
 
-| Step | Seconds |
-|---|---|
-| Cursor moves, wheel edits | 0.00 – 0.06 |
-| Whole page changes | 0.16 – 0.29 |
-| MIDI clock wheel (4 steps over 0.45 s) | 0.46 |
-| Mixer page (whole framebuffer) | 1.25 |
+| Step | Seconds | OS drawing alone |
+|---|---|---|
+| Cursor moves | 0.007 – 0.016 | ≤ 0.002 |
+| Wheel edits | 0.021 – 0.053 | ≤ 0.011 |
+| Whole page changes | 0.11 – 0.23 | 0.02 – 0.09 |
+| MIDI clock wheel (4 steps over 0.45 s) | 0.46 – 0.49 | 0.45 |
+| Mixer page (whole framebuffer) | 0.83 – 0.85 | 0.21 |
 
-**Viewer glyphs:** the viewer draws 20-7E with [`emu/lcd_font.py`](../emu/lcd_font.py) (photographed glyphs, designed ones for the rest). Other codes are drawn as a hatch.
-- The MAME character ROM hatches the codes without a photograph, so the viewer and MAME's pixels differ in those cells (for example `Q`, `X`) and in the cursor cell.
-- Codes are compared exactly. Pixels differ by design.
+Before this pass (protocol 1, one message per tick into an empty ring, 32 MHz CPU): pages 0.16–0.29 s, Mixer 1.25 s, cursor moves unmeasured (the old check compared text only).
+
+**Viewer:** `--headless` prints each screen once nothing has arrived for 0.1 s (text with the cursor marked, or pixels), with all six counters. `--log` records every message and every counter change. It notices a port that disappeared and reconnects, and shows how long ago data last arrived (the mirror is silent during play by design). Tests: `tests/test_lcd_mirror_protocol.py` (14, including a fake-port live loop).
+
+**Viewer glyphs:** 20-7E come from [`emu/lcd_font.py`](../emu/lcd_font.py) (photographed glyphs, designed ones for the rest); other codes are a hatch. MAME's character ROM hatches the codes without a photograph, so the viewer and MAME's pixels differ in those cells and in the cursor cell. Codes are compared exactly.
 
 `emu.test_core` (mac-port, unchanged): 17 tests OK.
 
@@ -266,9 +272,31 @@ The handoff's ROW length limit of 40 cannot fit 64 bytes when codes are escaped,
 | ID | Question | Tag |
 |---|---|---|
 | LM-H1 | Does the board send the stream on OUT D at all (TE7774 port D, cable, interface)? | UNDETERMINED |
-| LM-H2 | Does the extra 45-160 µs with interrupts off per tick lose MIDI input or panel bytes? | UNDETERMINED |
-| LM-H3 | Is the first note after Play late by up to one queued message (≤ 20.5 ms)? | UNDETERMINED |
-| LM-H4 | Is `OUT C010h,60h` the tick's end of interrupt, so later interrupts can be taken during the cave? (A wrong answer delays them by ≤ 160 µs.) | HYPOTHESIS |
-| LM-H5 | Do cheap USB-MIDI interfaces pass 48-byte SysEx intact? | UNDETERMINED |
-| LM-H6 | A Sample Dump flush (`2CF7:001A`) can cut a mirror message in flight. The viewer counts it as `aborted` and repairs at the next HELLO (≤ 5 s idle). | PROVEN (code), not exercised |
-| LM-H7 | The viewer freezes while the transport runs (by design, §3.2). | PROVEN (MAME) |
+| LM-H2 | Do the 66 µs tick window and 3.16's own 72-98 µs TxRdy window per byte lose MIDI input or panel bytes? | UNDETERMINED |
+| LM-H3 | Is the first note after Play, count-in or an external Start late by up to 64 queued bytes (≤ 20.5 ms)? | UNDETERMINED |
+| LM-H4 | Is `OUT C010h,60h` the tick's end of interrupt? | HYPOTHESIS (consistent pattern) |
+| LM-H5 | Do USB-MIDI interfaces pass 51-byte SysEx intact? | UNDETERMINED |
+| LM-H6 | A flush (`2CF7:001A`: the error box, Sample Dump) or an MTC quarter frame (`F1`, only on the message draining at transport start) can cut a mirror message. The viewer counts it `aborted`; the next full repaint (≤ 15 s, or at Stop) repairs it. | PROVEN (code), not exercised |
+| LM-H7 | The viewer freezes during count-in, wait for key, play and record (by design). | PROVEN (MAME) |
+| LM-H8 | With MIDI clock or MTC on the mirror's port, a Continue sent within about 20 ms of an SPP could overtake it behind a mirror message. Sync defaults to off; the 0.4 s hold-off starts at the SPP. Keep sync and Sample Dump off the mirror's port. | PROVEN (mechanism), occurrence UNDETERMINED |
+| LM-H9 | The "Sending note off messages..." panic waits for every port to drain after each of its 128 messages; mirror traffic while its text is being sent lengthens it slightly. | PROVEN (code), bounded |
+
+## 8. Adversarial review (2026-10-21) and what changed
+
+Three read-only reviews of `f3b63b4` (assembly; tests and viewer; stock interactions), each finding reproduced before it was acted on.
+
+| Finding | Disposition |
+|---|---|
+| Cost figures measured at the fork's default 32 MHz; "below one byte time" did not hold at 16 MHz | All timing now at `NEC_CPU_DIV=2`; interrupts on during the work; windows re-measured (§3.2) |
+| Cursor never checked; three probes tested nothing new | Cursor checked against the machine at every text probe; latency includes it |
+| Clock test looked only at Play, when the mirror is silent; FA count was 0 = 0 | Jitter checked across the shared stopped span; FB and FC counted |
+| `--headless` printed partial frames, no pixels or cursor; `aborted` not visible; reconnect could never trigger | Settled printing, pixels, cursor, all counters on screen and in the log, port-presence reconnect, data age |
+| Decoder: long foreign SysEx counted bad; duplicate seq counted 127 drops; reboot counted as drops; CURSOR/MODE unchecked | Fixed and tested |
+| `lm_err` set only when the ring was empty | Set whenever `[9331] != 0` |
+| A cut message repaired only after 5 s of a still screen | Full repaint every 15 s and after a risky Play |
+| Scan starvation by a fast-changing cell | Scans resume after the last message |
+| Live notes on the mirror's port wait behind a mirror message; idle repaint took 25% of the Mixer page's wire | 0.4 s hold-off after 3.16 uses the port; idle sends HELLO alone, full repaint every 15 s |
+| States 2 and 4 (count-in, wait for key) still sending | Silent unless `[A49B] = 0` |
+| The tick can run nested inside INT 0D, INT 0E or IRQ 9 | Nested ticks do nothing |
+| "IVT[8] planted last"; `340C` suspend "until the rings drain" | Corrected (§2, §3.2) |
+| Viewer cursor drawn when mode 0 | Hidden when mode 0 |

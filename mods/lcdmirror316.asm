@@ -35,8 +35,8 @@ editdo_trunc_text equ 0
  %define LM_PORT 4                      ; MIDI OUT 1-4 = A-D; build_lcdmirror316.py --port
 %endif
 
-LM_VERSION   equ 1                      ; mod version in HELLO
-LM_PROTO     equ 1                      ; protocol version in HELLO
+LM_VERSION   equ 2                      ; mod version in HELLO
+LM_PROTO     equ 2                      ; protocol version in HELLO
 LM_SHADOW    equ 0x662B                 ; BIOS_DS_SEG: text shadow, row * 40 + column
 LM_CURSOR    equ 0x68AB                 ; BIOS_DS_SEG: cursor 0..13Fh (word)
 LM_CMODE     equ 0x1D02                 ; DGROUP: cursor mode the OS gave INT 43 AX=2 (3.50 1D1A)
@@ -44,12 +44,18 @@ LM_MIXFLAG   equ 0x95C9                 ; DGROUP: 1 while the Mixer page shows p
 LM_TRANSPORT equ 0xA49B                 ; DGROUP: transport state, 0 stopped, >= 6 running (3.50 A7AE)
 LM_BULKON    equ 0x965C                 ; DGROUP: bulk ring active, bit per OUT (TxRdy ISR 2C08)
 LM_FB_SIZE   equ 30 * 64
-LM_SCAN      equ 128                    ; framebuffer bytes compared per tick (15 ticks a frame; divides 1920)
-LM_ROWMAX    equ 24                     ; codes per ROW message (2 x 24 escaped + 11 <= 64)
+LM_SCAN      equ 128                    ; framebuffer bytes compared per tick (15 ticks a frame)
+RUN          equ 0x7D                   ; ROW run token: 7D n c (protocol 2)
+RUN_MIN      equ 4
+LM_ROW       equ 30                     ; framebuffer bytes per row (PCOPY distance)
 LM_PIX       equ 32                     ; framebuffer bytes per PIX message
 LM_CAP       equ 0x5FA                  ; bulk ring capacity (3.16 MIDI init)
+LM_BUDGET    equ 64                     ; ring bytes allowed after a push (the Play bound)
+LM_PER_TICK  equ 3                      ; messages built per tick at most
 LM_START     equ 200                    ; ticks after the hook first runs before anything is sent
-LM_IDLE      equ 500                    ; ticks without a message before HELLO + full repaint
+LM_IDLE      equ 500                    ; ticks without a message before a HELLO
+LM_REFRESH   equ 1500                   ; HELLO + full repaint at least this often (15 s)
+LM_HOLD      equ 40                     ; ticks of silence after 3.16 sends on the mirror's port
 LM_MAXMSG    equ 64
 
 %if LM_PORT == 1
@@ -63,6 +69,9 @@ LM_RING      equ 0x2534
 %else
  %error LM_PORT must be 1-4
 %endif
+AMX_SEG      equ 0x47BF                 ; 3.16's AMX kernel (Vailixi FB00)
+AMX_NEST_PTR equ 0x003C                 ; AMX_SEG: far pointer to the kernel data
+AMX_NEST     equ 0x10                   ; byte there: interrupt nesting (47BF:016B)
 LM_TXSH      equ SO_TXSH + LM_PORT - 1  ; TE7774 control shadow of the port
 LM_TXPORT    equ 0xC6 + 8 * (LM_PORT - 1)
 
@@ -79,7 +88,14 @@ lm_tick:
         push ds
         push es
         cld
+        mov ax, AMX_SEG                 ; the AMX nesting byte: 0 at the outermost
+        RELOC_PREV                      ; interrupt (its entry 47BF:0166 decrements it
+        mov es, ax                      ; and switches stacks only from 0)
+        les bx, [es:AMX_NEST_PTR]
+        cmp byte [es:bx+AMX_NEST], 0
+        jne .nested                     ; inside another ISR, whose mask still holds: no work
         call lm_work
+.nested:
         pop es
         pop ds
         popa
@@ -98,7 +114,10 @@ lm_send_block:
         cmp byte [SO_ERR], 0
         jne .ret
         mov bl, [bp+12]
-        dec bl
+        cmp bl, LM_PORT                 ; 3.16 uses the mirror's port: the mirror waits
+        jne .other                      ; LM_HOLD ticks, so live notes do not queue behind it
+        mov word [cs:lm_hold], LM_HOLD
+.other: dec bl
         js .ret
         cmp bl, 3
         ja .ret
@@ -124,14 +143,19 @@ lm_rings: dw 0x132E, 0x1930, 0x1F32, 0x2534    ; = 3286:0000 (checked by the bui
 
 ; ---------------------------------------------------------------- one tick's work
 
-; DS = DGROUP, ES = BIOS data throughout; cave variables through CS.
+; Gates first, with IF = 0 (as entered).  Then, with interrupts enabled (still
+; inside the AMX bracket: a nested interrupt counts up AMX's nesting level and its
+; exit returns here without a task switch; no task can run, so the shadow and FB
+; cannot change under the scan), up to LM_PER_TICK messages are built and queued.
+; A built message waits in lm_msg (lm_pending) until the ring holds at most
+; LM_BUDGET - its length bytes, so the ring never holds more than LM_BUDGET bytes
+; of mirror and stock together on entry to a push: at Play the sequencer waits
+; for at most LM_BUDGET bytes (20.5 ms at 31,250 baud), as with an empty-ring rule,
+; but the wire stays busy.  Returns with IF = 0.
 lm_work:
         mov ax, DGROUP_SEG
         RELOC_PREV
         mov ds, ax
-        mov ax, BIOS_DS_SEG
-        RELOC_PREV
-        mov es, ax
         cmp byte [cs:lm_up], 0
         jne .up
         inc word [cs:lm_wait]
@@ -140,38 +164,81 @@ lm_work:
         call lm_ring_count              ; CF = 1: the ring is not set up yet
         jc .ret
         mov byte [cs:lm_up], 1
-        mov byte [cs:lm_want], WANT_HELLO
-.up:    call lm_ring_count
-        jc .ret
-        or ax, ax
-        jz .empty
-        cmp byte [SO_ERR], 0            ; bytes waiting: keep the transmitter on,
-        jne .ret                        ; unless 3.16 holds output (its kick does too)
-        call lm_kick
-        ret
-.empty: cmp byte [SO_ERR], 0            ; 3.16 has MIDI output suppressed
+        mov byte [cs:lm_want], WANT_HELLO | WANT_FULL
+.up:    cmp byte [SO_ERR], 0            ; 3.16 has MIDI output suppressed
         je .ok
         mov byte [cs:lm_err], 1         ; its error box may flush the rings
-        ret
+.ret:   ret
 .ok:    cmp byte [cs:lm_err], 0
         je .err0
         mov byte [cs:lm_err], 0
         or byte [cs:lm_want], WANT_FULL
-.err0:  cmp byte [LM_TRANSPORT], 6      ; playing or recording
-        jae .ret
+.err0:  inc word [cs:lm_since]
+        cmp word [cs:lm_since], LM_REFRESH
+        jb .fresh
+        or byte [cs:lm_want], WANT_HELLO | WANT_FULL    ; repairs any cut message, shows late viewers
+.fresh: cmp byte [LM_TRANSPORT], 0      ; count-in, wait for key, playing, recording:
+        je .stopped                     ; only keep the transmitter going
+        cmp byte [cs:lm_playing], 0
+        jne .kick
+        mov byte [cs:lm_playing], 1     ; Play: a message still draining may be cut by
+        call lm_ring_count              ; MTC (F1) on this port, so repaint after Stop
+        jc .kick
+        or ax, ax
+        jz .kick
+        mov byte [cs:lm_cutrisk], 1
+        jmp .kick
+.stopped:
+        cmp byte [cs:lm_playing], 0
+        je .still
+        mov byte [cs:lm_playing], 0
+        cmp byte [cs:lm_cutrisk], 0
+        je .still
+        mov byte [cs:lm_cutrisk], 0
+        or byte [cs:lm_want], WANT_FULL
+.still: cmp word [cs:lm_hold], 0
+        je .free
+        dec word [cs:lm_hold]
+        jmp .kick
+.free:
         cmp byte [cs:lm_inflight], 0    ; a task message is half queued
-        jne .ret
-        call lm_next                    ; CF = 1: a message is in lm_msg
+        jne .kick
+        mov byte [cs:lm_n], LM_PER_TICK
+..@lm_if_on:
+        sti
+.loop:  cmp byte [cs:lm_pending], 0
+        jne .try
+        mov ax, DGROUP_SEG
+        RELOC_PREV
+        mov ds, ax
+        mov ax, BIOS_DS_SEG
+        RELOC_PREV
+        mov es, ax
+        call lm_next                    ; CF = 1: a message is built
         jnc .idle
-        call lm_push
+        mov byte [cs:lm_pending], 1
         mov word [cs:lm_idle], 0
-.ret:   ret
+.try:   call lm_push                    ; CF = 1: it went in
+        jnc .stop
+        dec byte [cs:lm_n]
+        jnz .loop
+        jmp short .stop
 .idle:  inc word [cs:lm_idle]
         cmp word [cs:lm_idle], LM_IDLE
-        jb .ret
+        jb .stop
         mov word [cs:lm_idle], 0
         or byte [cs:lm_want], WANT_HELLO
-        ret
+.stop:
+..@lm_if_off:
+        cli
+        mov ax, DGROUP_SEG
+        RELOC_PREV
+        mov ds, ax
+.kick:  call lm_ring_count              ; bytes waiting: keep the transmitter on (the
+        jc .ret                         ; TxRdy ISR drops a port that was not ready)
+        or ax, ax
+        jz .ret
+        jmp lm_kick
 
 ; AX = bytes in the port's bulk ring; CF = 1 if the ring does not hold its
 ; capacity (not created yet, or not the ring this build expects).
@@ -190,26 +257,26 @@ lm_ring_count:
         stc
         ret
 
-; Copy the message into the bulk ring as one unit and start the transmitter,
-; both with interrupts off (as 3033:003E and 3286:0086 do per byte).  The
-; message was built backward (lm_begin), so its bytes lie in memory in the order
-; the ring stores them: the ring's put index counts down, so the first byte goes
-; at put-1, and one REP MOVSB per contiguous piece copies it (two when the
-; message wraps at index 0).  A ring without room for the whole message takes
-; nothing and a full repaint is asked for.  The sequence number counts only
-; messages that went in.
+; Queue the built message if the ring then holds at most LM_BUDGET bytes, and
+; start the transmitter, with interrupts off (as 3033:003E and 3286:0086 do per
+; byte).  The message was built backward (lm_begin), so its bytes lie in memory
+; in the order the ring stores them: the ring's put index counts down, so the
+; first byte goes at put-1, and one REP MOVSB per contiguous piece copies it (two
+; when the message wraps at index 0).  CF = 1 if it went in (lm_pending cleared,
+; sequence number advanced); CF = 0 leaves it pending.  Keeps the interrupt flag.
 lm_push:
         pushf
         cli
+        push ds
         mov ax, RING_SEG
         RELOC_PREV
         mov es, ax
         mov bx, LM_RING
         mov cx, [cs:lm_len]
-        mov ax, [es:bx]
-        sub ax, [es:bx+2]               ; free bytes
-        cmp ax, cx
-        jb .full
+        mov ax, [es:bx+2]
+        add ax, cx
+        cmp ax, LM_BUDGET
+        ja .wait
         add [es:bx+2], cx
         mov dx, [es:bx+4]               ; put index
         mov si, [cs:lm_start]
@@ -239,10 +306,16 @@ lm_push:
         call lm_kick
         inc byte [cs:lm_seq]
         and byte [cs:lm_seq], 0x7F
+        mov byte [cs:lm_pending], 0
+        pop ds
+..@lm_push_end1:
         popf
+        stc
         ret
-.full:  or byte [cs:lm_want], WANT_FULL
+.wait:  pop ds
+..@lm_push_end2:
         popf
+        clc
         ret
 
 ; Start the port's transmitter as the stock kick 33AF:0043 does: the bulk-active
@@ -258,7 +331,7 @@ lm_kick:
 
 ; ---------------------------------------------------------------- choosing the message
 
-WANT_HELLO   equ 1                      ; send HELLO, then FULL
+WANT_HELLO   equ 1                      ; send HELLO
 WANT_FULL    equ 2                      ; send FULL, then everything
 WANT_MODE    equ 4                      ; send MODE even if unchanged
 WANT_CURSOR  equ 8                      ; send CURSOR even if unchanged
@@ -269,7 +342,6 @@ lm_next:
         test byte [cs:lm_want], WANT_HELLO
         jz .no_hello
         and byte [cs:lm_want], ~WANT_HELLO
-        or byte [cs:lm_want], WANT_FULL
         mov al, 1                       ; HELLO
         call lm_begin
         mov al, LM_PROTO
@@ -286,6 +358,7 @@ lm_next:
         jz .no_full
         and byte [cs:lm_want], ~WANT_FULL
         or byte [cs:lm_want], WANT_MODE | WANT_CURSOR
+        mov word [cs:lm_since], 0
         mov byte [cs:lm_rows], 0xFF     ; every row whole
         mov byte [cs:lm_dcol], 0
         mov word [cs:lm_pfull], 0       ; every framebuffer byte
@@ -323,10 +396,11 @@ lm_next:
 
 ; ---------------------------------------------------------------- text
 
-; A row marked in lm_rows goes whole, from lm_dcol, LM_ROWMAX codes per message.
-; Otherwise two rows (lm_tscan) are compared with the viewer's copy per tick and
-; the first changed span goes (changes closer than 3 cells merged, at most
-; LM_ROWMAX codes); the slice stays until it compares equal.  Then the cursor.
+; A row marked in lm_rows goes whole, from lm_dcol, as many codes per message as fit.
+; Otherwise up to 80 cells from lm_tpos are compared with the viewer's copy per tick
+; and the first changed span goes (changes closer than 3 cells merged, at most
+; as many codes as fit); the scan resumes after it, so every cell gets its turn.
+; After an equal slice, the cursor.
 lm_text:
         push es
         pop ds                          ; DS = BIOS data (the shadow)
@@ -342,19 +416,24 @@ lm_text:
         xor bh, bh
         mov bp, 39
         jmp short .span
-.scan:  mov al, [cs:lm_tscan]
-        mov ah, 80
-        mul ah
-        mov si, ax
+.scan:  mov si, [cs:lm_tpos]            ; even cell; compare up to 80 cells from it
+        mov cx, 320
+        sub cx, si
+        cmp cx, 80
+        jbe .c
+        mov cx, 80
+.c:     shr cx, 1                       ; in words
         lea di, [si+lm_text_copy]
         add si, LM_SHADOW
         push cs
         pop es
-        mov cx, 40                      ; two rows, in words
         repe cmpsw
         jne .found
-        inc byte [cs:lm_tscan]
-        and byte [cs:lm_tscan], 3
+        sub si, LM_SHADOW
+        cmp si, 320
+        jb .k
+        xor si, si
+.k:     mov [cs:lm_tpos], si
         jmp lm_cursor
 .found: lea ax, [si-2-LM_SHADOW]        ; the differing word's first cell
         mov bx, ax
@@ -391,38 +470,64 @@ lm_text:
 .span:  mov al, 40                      ; DL row, BX first column, BP last column
         mul dl
         mov si, ax
-        mov cx, bp
-        sub cx, bx
-        inc cx                          ; CX = codes in the span
+        add si, bx                      ; SI = first cell (row * 40 + column)
+        add bp, ax
+        inc bp                          ; BP = the cell after the span
+        mov [cs:lm_first], si
         mov byte [cs:lm_cut], 0
-        cmp cx, LM_ROWMAX
-        jbe .fits
-        mov cx, LM_ROWMAX
-        mov byte [cs:lm_cut], 1
-.fits:  mov al, 2                       ; ROW
+        mov al, 2                       ; ROW
         call lm_begin
         mov al, dl
         stosb
         mov al, bl
         stosb
+        mov [cs:lm_lenpos], di
+        stosb                           ; the code count, filled in below
+        ; Tokens: a run of RUN_MIN or more equal codes is 7D n c, any other code
+        ; goes alone, escaped.  A token takes at most 4 bytes; one is started
+        ; only while 4 bytes and the F7 still fit in LM_MAXMSG.
+.tok:   cmp si, bp
+        jae .count
+        cmp di, lm_msg + 4
+        jb .short
+        mov al, [si+LM_SHADOW]
+        mov bx, si
+.rl:    inc bx
+        cmp bx, bp
+        jae .rd
+        cmp [bx+LM_SHADOW], al
+        je .rl
+.rd:    mov cx, bx
+        sub cx, si                      ; CX = run length
+        cmp cx, RUN_MIN
+        jb .lit
+        mov ah, al
+        mov al, RUN
+        stosb
         mov al, cl
         stosb
-        add si, bx                      ; SI = first cell
-.ch:    mov al, [si+LM_SHADOW]
-        mov [cs:si+lm_text_copy], al
-        inc si
-        cmp al, 0x7E
-        jb .plain
-        mov ah, al
-        mov al, 0x7F                    ; 7E, 7F: 7F nn
-        test ah, 0x80
-        jz .esc
-        mov al, 0x7E                    ; 80..FF: 7E (nn & 7F)
-        and ah, 0x7F
-.esc:   stosb
         mov al, ah
-.plain: stosb
-        loop .ch
+        call lm_esc
+.cp:    mov [cs:si+lm_text_copy], al
+        inc si
+        loop .cp
+        jmp short .tok
+.lit:   mov [cs:si+lm_text_copy], al
+        inc si
+        call lm_esc
+        jmp short .tok
+.short: mov byte [cs:lm_cut], 1         ; the rest of the span next time
+.count: mov ax, si                      ; the scan goes on after what was sent
+        inc ax
+        and ax, ~1
+        cmp ax, 320
+        jb .tp
+        xor ax, ax
+.tp:    mov [cs:lm_tpos], ax
+        mov ax, si
+        sub ax, [cs:lm_first]
+        mov bx, [cs:lm_lenpos]
+        mov [cs:bx], al                 ; codes sent
         mov al, 1
         mov cl, dl
         shl al, cl                      ; AL = this row's bit
@@ -441,6 +546,27 @@ lm_text:
         and [cs:lm_rows], al            ; the whole row went
         mov byte [cs:lm_dcol], 0
         jmp lm_end
+
+; STOSB code AL escaped: below 7D as itself, 80..FF as 7E (AL & 7F), 7D..7F as
+; 7F AL.  Keeps AL.
+lm_esc: cmp al, RUN
+        jb .one
+        push ax
+        test al, 0x80
+        jz .lit
+        mov al, 0x7E
+        stosb
+        pop ax
+        push ax
+        and al, 0x7F
+        stosb
+        pop ax
+        ret
+.lit:   mov al, 0x7F
+        stosb
+        pop ax
+.one:   stosb
+        ret
 
 ; CURSOR when the cursor word or the OS cursor-mode byte changed.
 lm_cursor:
@@ -486,23 +612,29 @@ lm_cursor:
 
 ; ---------------------------------------------------------------- pixels
 
-; After MODE 01 or FULL every framebuffer byte goes in LM_PIX runs (lm_pfull
-; counts up to LM_FB_SIZE); then one LM_SCAN slice per tick (lm_pscan) is
-; compared with the viewer's copy and the first difference starts a run.
-; DS = DGROUP.
+; After MODE 01 or FULL every framebuffer byte is sent in order (lm_pfull counts
+; up to LM_FB_SIZE); then one LM_SCAN slice per tick (lm_pscan) is compared with
+; the viewer's copy (resuming after the last run) and the first difference starts a run.  A run that repeats
+; what the viewer has one row up (30 bytes back) goes as PCOPY, up to 127 bytes;
+; any other as PIX, LM_PIX bytes.  DS = DGROUP.
 lm_pixels:
         mov si, [cs:lm_pfull]
         cmp si, LM_FB_SIZE
         jae .scan
-        lea ax, [si+LM_PIX]
-        mov [cs:lm_pfull], ax
+        mov byte [cs:lm_infull], 1
         jmp short .run
-.scan:  mov si, [cs:lm_pscan]
+.scan:  mov byte [cs:lm_infull], 0
+        mov si, [cs:lm_pscan]           ; even; compare up to LM_SCAN bytes from it
+        mov cx, LM_FB_SIZE
+        sub cx, si
+        cmp cx, LM_SCAN
+        jbe .c
+        mov cx, LM_SCAN
+.c:     shr cx, 1
         lea di, [si+lm_fb_copy]
         add si, FB
         push cs
         pop es
-        mov cx, LM_SCAN / 2
         repe cmpsw
         jne .found
         sub si, FB
@@ -517,29 +649,42 @@ lm_pixels:
         cmp al, [cs:si+lm_fb_copy]
         jne .run
         inc si
-.run:   mov cx, LM_FB_SIZE              ; SI = first byte; CX = run length
+.run:   call lm_copylen                 ; CX = PCOPY length, 0 if under RUN_MIN
+        jcxz .pix
+        mov al, 7                       ; PCOPY
+        call lm_begin
+        call lm_offset
+        mov al, cl
+        stosb
+        xor al, al                      ; distance 30: 00 1E
+        stosb
+        mov al, LM_ROW
+        stosb
+        push si
+        push di
+        push es
+        push cx
+        lea di, [si+lm_fb_copy]         ; the viewer's copy follows
+        add si, FB
+        push cs
+        pop es
+        rep movsb
+        pop cx
+        pop es
+        pop di
+        pop si
+        jmp short .done
+.pix:   mov cx, LM_FB_SIZE              ; SI = first byte; CX = run length
         sub cx, si
         cmp cx, LM_PIX
         jbe .len
         mov cx, LM_PIX
-.len:   mov ax, si
-        add ax, cx
-        and ax, ~(LM_SCAN - 1)          ; rescan the slice the run ends in
-        cmp ax, LM_FB_SIZE
-        jb .ps
-        xor ax, ax
-.ps:    mov [cs:lm_pscan], ax
-        mov al, 5                       ; PIX
+.len:   mov al, 5                       ; PIX
         call lm_begin
-        mov ax, si
-        shl ax, 1
-        mov al, ah                      ; offset bits 7..13
-        stosb
-        mov ax, si
-        and al, 0x7F
-        stosb
+        call lm_offset
         mov al, cl
         stosb
+        push si
 .group: mov bp, di                      ; 7-in-8: high-bit byte, then up to 7 bytes
         stosb                           ; (placeholder)
         xor dl, dl
@@ -560,7 +705,83 @@ lm_pixels:
 .gend:  mov [cs:bp], dl
         or cx, cx
         jnz .group
+        mov cx, si
+        pop si
+        sub cx, si                      ; CX = bytes sent
+.done:  mov ax, si                      ; SI first byte, CX bytes: where next
+        add ax, cx
+        cmp byte [cs:lm_infull], 0
+        je .incr
+        mov [cs:lm_pfull], ax
         jmp lm_end
+.incr:  inc ax                          ; the scan goes on after the run
+        and ax, ~1
+        cmp ax, LM_FB_SIZE
+        jb .ps
+        xor ax, ax
+.ps:    mov [cs:lm_pscan], ax
+        jmp lm_end
+
+; STOSB the two 7-bit halves of framebuffer offset SI.  Keeps CX, SI.
+lm_offset:
+        mov ax, si
+        shl ax, 1
+        mov al, ah                      ; offset bits 7..13
+        stosb
+        mov ax, si
+        and al, 0x7F
+        stosb
+        ret
+
+; CX = how many framebuffer bytes from SI the viewer would get right by copying
+; from 30 bytes back, in order, if at least RUN_MIN, else 0.  The first 30 come
+; from what the viewer has (lm_fb_copy), the rest from bytes the copy itself
+; writes (FB, one row up).  At most 127 and the end of FB.  DS = DGROUP; keeps
+; SI; ES, DI change.
+lm_copylen:
+        xor cx, cx
+        cmp si, LM_ROW
+        jb .ret
+        mov dx, LM_FB_SIZE
+        sub dx, si
+        cmp dx, 127
+        jbe .n
+        mov dx, 127                     ; DX = the most it may be
+.n:     push si
+        mov cx, dx
+        cmp cx, LM_ROW
+        jbe .a
+        mov cx, LM_ROW
+.a:     mov bx, cx                      ; BX = bytes compared against the copy
+        lea di, [si+lm_fb_copy-LM_ROW]
+        add si, FB
+        push cs
+        pop es
+        repe cmpsb
+        jne .miss
+        cmp dx, bx
+        jbe .all                        ; all compared, all equal
+        sub si, LM_ROW                  ; then FB against FB one row up
+        mov di, si
+        add si, LM_ROW
+        push ds
+        pop es
+        mov cx, dx
+        sub cx, bx
+        repe cmpsb
+        jne .miss
+.all:   mov cx, dx
+        jmp short .got
+.miss:  sub si, FB + 1                  ; SI = the first differing byte
+        pop cx
+        push cx
+        sub si, cx
+        mov cx, si                      ; equal bytes before it
+.got:   pop si
+        cmp cx, RUN_MIN
+        jae .ret
+        xor cx, cx
+.ret:   ret
 
 ; ---------------------------------------------------------------- message buffer
 
@@ -612,16 +833,26 @@ lm_start: dw 0                          ; first byte of the built message
 lm_len:   dw 0
 lm_cur:   dw 0xFFFF                     ; cursor word the viewer has
 lm_pfull: dw LM_FB_SIZE                 ; next byte of a full framebuffer send
-lm_pscan: dw 0                          ; slice the framebuffer scan compares
+lm_pscan: dw 0                          ; next framebuffer byte the scan compares (even)
+lm_tpos:  dw 0                          ; next cell the text scan compares (even)
+lm_since: dw 0                          ; ticks since the last full repaint
+lm_hold:  dw 0                          ; ticks left of the hold after a 3.16 message
 lm_inflight: db 0                       ; task messages being queued (lm_send_block)
+lm_pending: db 0                        ; a built message waits for room
+lm_n:     db 0                          ; messages left this tick
+lm_playing: db 0                        ; the transport was seen running
+lm_cutrisk: db 0                        ; a message was draining when it started
 lm_err:   db 0                          ; [SO_ERR] was seen non-zero
 lm_up:    db 0
 lm_want:  db 0
 lm_seq:   db 0
-lm_tscan: db 0                          ; row pair the text scan compares
 lm_rows:  db 0xFF                       ; rows to send whole (bit = row)
 lm_dcol:  db 0                          ; column a cut whole row resumes from
 lm_cut:   db 0                          ; the span in hand did not fit one message
+align 2
+lm_first: dw 0                          ; first cell of the ROW being built
+lm_lenpos: dw 0                         ; its code-count byte in lm_msg
+lm_infull: db 0                         ; the run in hand is part of a full send
 lm_mode:  db 0                          ; 0 text, 1 graphics, as the viewer has it
 lm_cmode: db 0xFF                       ; cursor-mode byte the viewer has
 align 2

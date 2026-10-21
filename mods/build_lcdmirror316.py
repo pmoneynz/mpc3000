@@ -49,6 +49,8 @@ STOCK_FACTS = (
     (0x17453, "c606c99501", "1650:0F53 graphics init sets [95C9] = 1 (LM_MIXFLAG)"),
     (0x16936, "c606c99500", "1650:03FD text re-init sets [95C9] = 0"),
     (0x04288, "891e021d", "0427:0018 INT 43 AX=2 wrapper stores the cursor mode in [1D02] (LM_CMODE)"),
+    (0x47D56, "2ec53e3c00fe4d107813", "47BF:0166 AMX ISR entry: LDS DI,[CS:3C] / DEC BYTE [DI+10] / JS (nesting byte)"),
+    (0x42682, "803e9ba406", "422F:0392 CMP BYTE [A49B],6: the gate before 340C:0000, where task 2 waits for empty OUT rings"),
 )
 def stock_facts(image: bytes) -> list[str]:
     facts = []
@@ -125,7 +127,8 @@ def build(port: int = 4, out: Path | None = None) -> dict:
         "images": images,
         "cave": {"bytes": len(cave), "home_paragraph": f"{w316.CAVE_HOME:04X}",
                  "labels": {k: f"{v:04X}" for k, v in sorted(asm.labels.items())
-                            if k.startswith("lm_") and "." not in k}},
+                            if k.startswith("lm_") and "." not in k},
+                 "probe_labels": {k: f"{v:04X}" for k, v in sorted(asm.labels.items()) if k.startswith("..@lm_")}},
         "patches": [{"image": f"0x{p.off:05X}", "old": p.old.hex(), "new": p.new.hex()} for p in patches],
         "changed_file_ranges": [
             {"file": f"0x{a:06X}-0x{b:06X}",

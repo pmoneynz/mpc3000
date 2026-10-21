@@ -32,8 +32,8 @@ class Build(unittest.TestCase):
         self.assertEqual(a["images"], b["images"])
         self.assertEqual(kit.sha256(lm.w316.M3K316.read_bytes()), lm.w316.M3K316_SHA256)
         self.assertEqual(lm.w316.M3K316.read_bytes(), stock)
-        disk = (out_a / "STOCK_316.img").read_bytes()
-        self.assertIn(stock[:4096], disk)                  # the control holds the stock file
+        self.assertIn(stock, (out_a / "STOCK_316.img").read_bytes())          # the whole stock file
+        self.assertIn((out_a / "M3K316.SYS").read_bytes(), (out_a / "LCDMIRROR_316.img").read_bytes())
 
     def test_hooks_and_patches(self) -> None:
         m, out = self.build(4)

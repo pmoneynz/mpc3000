@@ -24,6 +24,7 @@ pixels.  The stream must be well formed (no drops, no message over 64 bytes,
 nothing malformed or cut), the stock control must show the same LCD at every
 probe time, and the clock on OUT D must arrive as it does without the mirror.
 
+The CPU runs at the board's 16 MHz (MPC3K_LM_DIV=1 for the fork's historical 32 MHz).
 These are emulator results, not hardware results (notes/lcd_mirror_midi.md).
 """
 from __future__ import annotations
@@ -47,11 +48,22 @@ MACPORT = h.REPO.parent / "MPC3000-mac-port" / "build"
 REPLAY = Path(os.environ.get("MPC3K_REPLAY", MACPORT / "core" / "mpc3k_replay"))
 REPLAY_ROMS = Path(os.environ.get("MPC3K_REPLAY_ROMS", MACPORT / "roms"))
 PORT = 4                                 # OUT D
+# NEC_CPU_DIV=2 runs the V53 at the board's 16 MHz (emu/README.md "Cycle profiler");
+# the fork's default 1 is twice as fast.  The 16 MHz boot reaches the SCSI search
+# cancel 18 s later (emu/cycle_budget.py T0 = 51.0 against 33.0).
+CPU_DIV = os.environ.get("MPC3K_LM_DIV", "2")
+SHIFT = 18.0 if CPU_DIV == "2" else 0.0
+ENV = {"NEC_CPU_DIV": CPU_DIV}
 TX_D = 0xD8                              # TE7774 transmit data, OUT D (fork wiring, emu/test_syncout.py)
+CURSOR_PHYS = 0x300000 + (0x6900 + 0x59FA) * 16 + 0x68AB     # 3.16 BIOS-copy cursor word
+CMODE_PHYS = 0x300000 + (0x6900 + 0x609C) * 16 + 0x1D02      # DGROUP [1D02] cursor mode
+WATCH_ENV = {"LM_CURSOR_PHYS": f"{CURSOR_PHYS:X}", "LM_CMODE_PHYS": f"{CMODE_PHYS:X}"}
+F8_PERIOD = 60 / 120 / 24                # 120 BPM, 24 clocks per quarter: 20.833 ms
+BYTE_TIME = 10 / 31250                   # one MIDI byte on the wire: 0.32 ms
 PROBE = 2.2                              # seconds after an input
 STEP = 2.5
 # (time, input, label): an input is a panel key name or ("dial", steps).
-WALK = [
+_WALK = [
     (36.0, "main_screen", "play_record"),
     (38.5, "down", "cursor_trk"),
     (41.0, ("dial", 1), "track_change"),
@@ -71,14 +83,16 @@ WALK = [
     (76.5, "play", None),                # running: the screen changes every beat; no probe
     (80.5, "stop", "stopped"),
 ]
-PLAY, STOP = 76.5, 80.5
-END = 84.0
+WALK = [(t + SHIFT, what, label) for t, what, label in _WALK]
+PLAY, STOP = 76.5 + SHIFT, 80.5 + SHIFT
+END = 84.0 + SHIFT
+CANCEL = h.CANCEL_SCSI_316 + SHIFT
 
 
 def walk() -> tuple[list[tuple[float, bytes]], list[str], list[float], list[str]]:
     """(harness panel events, replay event lines, probe times, labels)."""
-    smf = h.taps((h.CANCEL_SCSI_316, "soft4"))
-    lines = [f"{h.CANCEL_SCSI_316} key {panel.KEYS['soft4']} 1", f"{h.CANCEL_SCSI_316 + 0.1:.3f} key {panel.KEYS['soft4']} 0"]
+    smf = h.taps((CANCEL, "soft4"))
+    lines = [f"{CANCEL} key {panel.KEYS['soft4']} 1", f"{CANCEL + 0.1:.3f} key {panel.KEYS['soft4']} 0"]
     times, labels = [], []
     for t, what, label in WALK:
         if isinstance(what, tuple):
@@ -114,6 +128,19 @@ def screens_hex(run: Path) -> dict[float, tuple[str, list[bytes]]]:
     return out
 
 
+def cursor_at(run: Path, t: float) -> tuple[int, int, int]:
+    """(row, col, mode) the viewer should show at t, from emu/lua/lcdmirror_watch.lua
+    (a cursor word past the screen is sent as cell 0, lcdmirror316.asm lm_cursor)."""
+    cur = mode = None
+    for line in (run / "lcdmirror_watch.txt").read_text().splitlines():
+        ts, c, m = line.split()
+        if float(ts) > t:
+            break
+        cur, mode = int(c, 16), int(m, 16)
+    cell = cur if cur < 320 else 0
+    return cell // 40, cell % 40, mode
+
+
 def decode_until(stream: list[tuple[float, int]], t: float) -> v.Decoder:
     dec = v.Decoder()
     for when, byte in stream:
@@ -133,6 +160,8 @@ def mismatches(stream: list[tuple[float, int]], run: Path, times: list[float], l
         kind, rows = captured[t]
         s = dec.screen
         if kind == "text":
+            if s.cursor != cursor_at(run, t):
+                bad.append(f"{t} {label}: cursor {s.cursor}, machine {cursor_at(run, t)}")
             got = s.text_codes()
             # The mirror sends the BIOS shadow; display RAM holds 00 in cells the
             # shadow has as 20 (the put-char skips a cell whose shadow already holds
@@ -159,7 +188,7 @@ def run_replay(sys_img: Path, out: Path, lines: list[str]) -> Path:
     proc = subprocess.run([str(REPLAY), "--rom", str(REPLAY_ROMS), "--work", str(out), "--events",
                            str(out / "events.txt"), "--stop", str(END), "--bios", "vailixi",
                            "--floppy", str(floppy), "--midi-log", str(log), "--lcd-pgm", str(out / "lcd.pgm")],
-                          capture_output=True, text=True, timeout=900)
+                          capture_output=True, text=True, timeout=900, env={**os.environ, **ENV})
     (out / "replay_stdout.txt").write_text(proc.stdout + proc.stderr)
     if proc.returncode != 0:
         raise RuntimeError(f"mpc3k_replay exited {proc.returncode}; see {out / 'replay_stdout.txt'}")
@@ -187,6 +216,40 @@ def messages(stream: list[tuple[float, int]]) -> list[bytes]:
             if b == 0xF7:
                 out.append(bytes(cur))
                 cur = None
+    return out
+
+
+def settle_times(stream: list[tuple[float, int]], run: Path, times: list[float],
+                 labels: list[str]) -> dict[str, float | None]:
+    """Seconds from each input until the decoded picture (text and cursor, or pixels)
+    last became the captured one (0 when it already was; None: no byte between the
+    input and the probe)."""
+    captured, pixels = screens_hex(run), h.lcd_pixels(run)
+    inputs = [t for t, _, label in WALK if label]
+
+    def norm(rows):
+        return [bytes(0x20 if c == 0 else c for c in r) for r in rows]
+    out = {}
+    for t_in, t, label in zip(inputs, times, labels):
+        kind, rows = captured[t]
+        cursor = cursor_at(run, t)
+
+        def ok() -> bool:
+            sc = dec.screen
+            if kind == "text":
+                return not sc.graphics and norm(sc.text_codes()) == norm(rows) and sc.cursor == cursor
+            return sc.graphics and sc.fb_pixels() == pixels[f"{t:.3f}"]
+        dec, settled, started = v.Decoder(), None, False
+        for when, byte in stream:
+            if when > t:
+                break
+            if when >= t_in and not started:
+                started = True
+                settled = t_in if ok() else None        # already right at the input
+            dec.feed(byte)
+            if started:
+                settled = (settled or when) if ok() else None
+        out[label] = (settled - t_in) if started and settled is not None else None
     return out
 
 
@@ -223,7 +286,8 @@ class LcdMirror(unittest.TestCase):
             kind, bios, name = key
             out = RUNS / f"{kind}-{bios}-{name}"
             if kind == "harness":
-                mpc3k.run(bios, probe_times + [END], out, floppy=img, panel=midi, trace=[TX_D])
+                mpc3k.run(bios, probe_times + [END], out, floppy=img, panel=midi, trace=[TX_D],
+                          env={**ENV, **WATCH_ENV}, extra=["-autoboot_script", str(h.LUA / "lcdmirror_watch.lua")])
                 return out
             return run_replay(img, out, lines)
         cls.runs = h.run_parallel(jobs, go, workers=min(4, h.WORKERS))
@@ -267,8 +331,9 @@ class LcdMirror(unittest.TestCase):
                 self.assertEqual(len(msgs), dec.messages)
                 self.assertEqual([m[6] for m in msgs], [i & 0x7F for i in range(len(msgs))], "sequence numbers")
                 self.assertEqual(msgs[0][5], v.HELLO)
-                self.assertEqual(dec.screen.hello, (v.PROTO, 1, 3, 16))
-                self.assertGreaterEqual(dec.kinds.get(v.PIX, 0), lm_fb_runs())
+                self.assertEqual(dec.screen.hello, (v.PROTO, 2, 3, 16))
+                self.assertGreater(dec.kinds.get(v.PIX, 0), 0)
+                self.assertGreater(dec.kinds.get(v.PCOPY, 0), 0)
                 self.assertGreaterEqual(dec.kinds.get(v.MODE, 0), 2)
 
     def test_stock_control_shows_the_same_lcd(self) -> None:
@@ -291,47 +356,26 @@ class LcdMirror(unittest.TestCase):
                                  "SysEx started while the transport ran")
 
     def test_os_clock_on_the_same_output(self) -> None:
+        """3.16 sends F8 on OUT D from the moment MIDI clock OUT D is chosen, stopped too, so
+        the clock and the mirror share the port from then until Play.  A real-time byte
+        waits at most for the byte on the wire (the TxRdy ISR takes the RT ring first)."""
         stock = dict(self.harness_runs("stock"))
+        shared = (WALK[[w[2] for w in WALK].index("midi_clock_out_d")][0] + 1.0, PLAY)
         for bios, run in self.harness_runs("mirror"):
             with self.subTest(set=bios):
+                for name, stream in (("mirror", harness_stream(run)), ("stock", harness_stream(stock[bios]))):
+                    f8 = [t for t, b in stream if b == 0xF8 and shared[0] <= t < shared[1]]
+                    self.assertGreater(len(f8), 100, name)
+                    worst = max(abs(b - a - F8_PERIOD) for a, b in zip(f8, f8[1:]))
+                    self.assertLessEqual(worst, BYTE_TIME * 1.1, f"{name}: F8 interval off by {worst * 1e3:.3f} ms")
                 mine, theirs = harness_stream(run), harness_stream(stock[bios])
                 n_mine, n_stock = clocks(mine, PLAY, STOP + 0.5), clocks(theirs, PLAY, STOP + 0.5)
                 self.assertGreater(n_stock, 150)                 # 120 BPM, 24 per quarter: ~48 per second
                 self.assertLessEqual(abs(n_mine - n_stock), 2)
-                for b in (0xFA, 0xFC):                           # start and stop
-                    self.assertEqual(sum(1 for t, x in mine if x == b), sum(1 for t, x in theirs if x == b))
-
-
-def settle_times(stream: list[tuple[float, int]], run: Path, times: list[float],
-                 labels: list[str]) -> dict[str, float | None]:
-    """Seconds from each input until the decoded picture last became the captured one
-    (None: the stream did not change between the input and the probe)."""
-    captured, pixels = screens_hex(run), h.lcd_pixels(run)
-    inputs = [t for t, _, label in WALK if label]
-
-    def norm(rows):
-        return [bytes(0x20 if c == 0 else c for c in r) for r in rows]
-    out = {}
-    for t_in, t, label in zip(inputs, times, labels):
-        kind, rows = captured[t]
-        dec, settled, seen = v.Decoder(), None, False
-        for when, byte in stream:
-            if when > t:
-                break
-            dec.feed(byte)
-            if when < t_in:
-                continue
-            seen = True
-            sc = dec.screen
-            ok = (not sc.graphics and norm(sc.text_codes()) == norm(rows)) if kind == "text" else \
-                (sc.graphics and sc.fb_pixels() == pixels[f"{t:.3f}"])
-            settled = (settled or when) if ok else None
-        out[label] = (settled - t_in) if seen and settled is not None else None
-    return out
-
-
-def lm_fb_runs() -> int:
-    return v.FB_SIZE // v.PIX_MAX                                 # a whole framebuffer at Mixer entry
+                for b in (0xFB, 0xFC):                           # 3.16 sends Continue at Play, Stop at Stop
+                    n = sum(1 for t, x in theirs if x == b)
+                    self.assertGreater(n, 0, f"{b:02X}")
+                    self.assertEqual(sum(1 for t, x in mine if x == b), n)
 
 
 if __name__ == "__main__":
