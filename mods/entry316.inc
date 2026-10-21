@@ -28,7 +28,9 @@
 ;    entry316; a smaller D halts.  No stack is used (IF = 0; no PUSH, CALL or
 ;    INT), and BP is kept as the loader left it.
 ; 1. Copy the cave to its home, L + CAVE_HOME.  The cave is org 0, so every
-;    offset is the same in both copies.
+;    offset is the same in both copies.  Like .move, this uses no stack: the
+;    loader's SS:SP (L+7066:0100) points into the staged cave (image
+;    0x68340 + 0x841E = 0x7075E) as soon as the cave is that long.
 ; 2. Keep 3.16's fixed sequence pool (logical 2000..6FFFE, image 0x48526)
 ;    below the 3.16 image.  At L <= 6900h the pool otherwise overlaps image
 ;    0..6FFE, and recording overwrites live 3.16 code (MAME: Song after
@@ -49,8 +51,10 @@ entry316:
         RELOC_PREV
         cmp dx, UNIV_SEG - 1
         ja .move
-        push cs
-        pop ds
+        mov ax, cs                      ; no PUSH CS / POP DS: the loader's stack
+        mov ds, ax                      ; top (image 7066:0100 - 2 = 0x7075E) lies
+                                        ; inside this staged cave once it passes
+                                        ; 0x841E bytes, so steps 1-3 use no stack
         mov ax, CAVE_SEG
         RELOC_PREV
         mov es, ax

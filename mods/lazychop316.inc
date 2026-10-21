@@ -16,7 +16,7 @@
 ;             the view's entry releases normally and [9447] stays exact.
 ; Owned = lc_owned (set only inside the wave view, cleared on its every exit)
 ; and MODE 'L' and OPTION 6 (belt and braces: a stuck flag cannot silence the
-; pads outside Edit Sound).  MIDI notes are not owned (D8).
+; pads outside Edit Sound), or tm_owned (the Track Mute page) and its MODE (trackmute316.inc).  MIDI notes are not owned (D8).
 ;
 ; Playback: aud_range (wave_playback.inc) is the one audition entry; the take,
 ; the pads and Ply/Stp all reach CFC6:0CE9 from it.  Mono retrigger (D5) stops
@@ -45,9 +45,12 @@ LC_OWNER_AUD    equ 0x62        ; owner note of a CFC6:0CE9 voice (20ED:0D70 PUS
 ; JMPF from 2B6D:022E.  AL, BL, CL are the parser's (free here: the replaced
 ; bytes set BX and CL).  Owned path: AX, BX, CX, DX change, as the stock queue
 ; calls do; SI, DI, ES are kept.
+pad_own_stock equ pad_own_press.stock   ; Track Mute's way back to the stock queue
 pad_own_press:
         cmp byte [cs:lc_owned], 0
         jne .check
+        cmp byte [cs:tm_owned], 0       ; Track Mute (trackmute316.inc)
+        jne tm_pad_press
 .stock: mov bx, 0x06AC                  ; the replaced bytes
         mov cl, [PANEL_STATUS]
         FJMP T_D547_0231

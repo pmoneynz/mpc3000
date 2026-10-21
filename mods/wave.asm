@@ -1441,6 +1441,8 @@ num:    times 11 db 0
 %ifdef PROFILE_316
 %include "banner316.inc"
 %include "sysinfo316.inc"
+%include "namewheel316.inc"              ; spell names with the data wheel (Extra Settings 2)
+%include "trackmute316.inc"              ; SONG on the Song page: mute tracks with the pads
 cave_copy_end:                          ; end of everything the 3.16 entry copies
 %include "entry316.inc"                 ; runs only from the staging copy
 %endif

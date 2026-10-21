@@ -16,6 +16,8 @@ uncertainty or correct a proven error. Status of the project:
 | [`mute_storage.md`](mute_storage.md) | Program state lifetime and PGM/APS extensions |
 | [`lazy_chop.md`](lazy_chop.md) | Lazy Chop on 3.16: pad ownership, the take, CHOPS refine, Convert (spec and as built) |
 | [`input_thru.md`](input_thru.md) | Input Thru on 3.16: the stock sampler monitor kept running in every mode (design and as built) |
+| [`track_mute.md`](track_mute.md) | Track Mute on 3.16: SONG on the Song page, pads mute tracks of the playing sequence |
+| [`name_wheel.md`](name_wheel.md) | Name Wheel on 3.16: spell any name with the data wheel (Extra Settings 2) |
 | [`bench_thru_checklist.md`](bench_thru_checklist.md) | THRU BENCH 01: hardware checklist for Lazy Chop and Input Thru (image `449051e6`) |
 | [`artifact_identity.md`](artifact_identity.md) | What the bytes are |
 | [`address_model.md`](address_model.md) | How those bytes are addressed |

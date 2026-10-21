@@ -72,14 +72,21 @@ xp_other_dispatch:
         sub bx, 0x75
         FJMP T_C84C_016D                ; cmp bx,5 / dispatch table
 
-; Near.  The Extra Settings page: six OFF/ON choice fields, <Do it> (Soft
-; Key 1) returns the play-screen mode [XP_PLAY_SCREEN], any other key that
-; leaves the field editor is returned.  AX = key or mode.
+; Near.  The Extra Settings pages: OFF/ON choice fields, <More> / <Back>
+; (Soft Key 4) flips between page 1 (xp_rows) and page 2 (xp_rows2), <Do it>
+; (Soft Key 1) returns the play-screen mode [XP_PLAY_SCREEN], any other key
+; that leaves the field editor is returned.  AX = key or mode.
 xp_extra_screen:
         push si
-        mov bx, xp_s_title
-        call du_title
+        mov byte [cs:xp_page], 0
+.page:  mov bx, xp_s_title
         mov si, xp_rows
+        cmp byte [cs:xp_page], 0
+        je .titled
+        mov bx, xp_s_title2
+        mov si, xp_rows2
+.titled:
+        call du_title
 .row:   mov al, [cs:si]                 ; row number, 0 ends
         or al, al
         jz .rows_done
@@ -103,13 +110,25 @@ xp_extra_screen:
         jmp .row
 .rows_done:
         mov al, 7
-        mov bx, xp_s_doit
-        call du_row_put
-.key:   push byte 1
+        mov bx, xp_s_more
+        cmp byte [cs:xp_page], 0
+        je .keys
+        mov bx, xp_s_doit2
+.keys:  call du_row_put
+.key:   push byte 4                     ; low 3 bits: soft keys 1-4 leave the editor
         FCALL T_B060_035D
         add sp, 2
         or al, al
         jz .key
+        cmp al, 0x79                    ; Soft Keys 2 and 3 do nothing here
+        je .key
+        cmp al, 0x7A
+        je .key
+        cmp al, 0x75                    ; Soft Key 4: the other page
+        jne .not_page
+        xor byte [cs:xp_page], 1
+        jmp .page
+.not_page:
         cmp al, 0x78                    ; Soft Key 1 <Do it>
         jne .leave
         mov al, [XP_PLAY_SCREEN]
@@ -134,6 +153,8 @@ xp_seq_warn:
 ; JMP from 3481:02BD (image 0x34ACD), the key filter's 'Q' case after PLAY or
 ; PLAY START, past the stock mode 'K' 10..15 test.
 xp_play_stay:
+        cmp byte [cs:tm_owned], 0       ; Track Mute stays open while
+        jne .stay                       ; the sequence plays (trackmute316.inc)
         cmp byte [XP_STAY_MIXER], 0
         je .edit
         cmp byte [MODE], 'J'
@@ -289,4 +310,3 @@ xp_s_stay_edit:  db "Stay in Edit Sound on PLAY/START:    ", 0
 xp_s_stay_mixer: db "Stay in Mixer on PLAY/START:         ", 0
 xp_s_mute:       db "Mute outputs during sound edits:     ", 0
 xp_s_lock:       db "Lock Edit Sound <Do> while running:  ", 0
-xp_s_doit:       db "<Do it>", 0

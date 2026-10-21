@@ -446,3 +446,16 @@ reader, it cannot re-enter it, and the fallback can no longer run the frame
 on a shallow stack ("SCSI reader stack" above). The FDC byte limit (cave
 offset `0x7319`) is gone too (same section).
 `tests/test_build_wave316.py` encodes these limits.
+
+**Staged cave versus the loader's stack (2026-10-22).** The cave is staged at
+image `0x68340` (paragraph 6834) and the loader hands over with `SS:SP =
+L+7066:0100`, so the stack top is image `0x7075E`, cave offset `0x841E`.
+Until 2026-10-22 entry316's steps 1-3 began with `PUSH CS / POP DS`, which
+writes that word: harmless while the cave was shorter than `0x841E` bytes,
+but with Name Wheel and Track Mute (cave `0x88BA` bytes) it overwrote two
+bytes of the staged cave before the copy home, on 3.12 and 3.50 (`L = 6900`).
+**PROVEN** by `tests/test_build_wave316.py`
+`test_entry316_bytes_run_in_x86sub` (interpreter run against the builder's
+model: the home differed at cave `0x841E`). entry316 now sets DS with `MOV
+AX,CS / MOV DS,AX`, so neither path uses the stack; the model test allows
+no difference but the stack slot, which stays untouched.

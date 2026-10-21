@@ -407,3 +407,30 @@ FDC_DS_SEG     equ 0x6097       ; floppy BIOS data segment: INT 40 handler 0009:
 %define T_C4C8_0094 0x1650:0x0088       ; Mixer menu: mov al,dl / return
 %define T_B060_000D 0x02D7:0x0007       ; reset the field list (mode loop, before each mode)
 %define T_C6C2_000B 0x1849:0x000F       ; Sample New Sound page
+
+; ---------------------------------------------------------------- Name Wheel (namewheel316.inc, notes/name_wheel.md)
+; The stock text-field editor: 3.16 04D5 is Vailixi B261 (handler 04D5:000E = B261:000A, offsets +4).
+NW_OFF       equ 0x8322         ; last byte of the parameter-block reserve: 0 = Name Wheel ON (stored inverted)
+NAME_BUF     equ 0x7A38         ; 41-byte edit buffer
+NAME_POS     equ 0x7A61         ; cursor in the buffer (signed byte)
+NAME_LEN     equ 0x7A65         ; field length
+NAME_ORIG    equ 0x1D4F         ; stock wheel's "original character" slot (DS 1D4E list)
+CASE_SMALL   equ 0xE436         ; 1 = letters type small (PLAY START toggles)
+%define T_B261_00AF 0x04D5:0x00B3       ; text-field key handler, editing switch after CMP AX,'M': its JZ
+%define T_B261_01FB 0x04D5:0x01FF       ; text-field key handler epilogue: return DI
+%define T_B261_0279 0x04D5:0x027D       ; wheel step after its PUSH BP / MOV BP,SP / SUB SP,6
+%define T_B1B1_0036 0x0427:0x0040       ; put one character at the cursor (8 = back one column)
+
+; ---------------------------------------------------------------- Track Mute (trackmute316.inc, notes/track_mute.md)
+SEQ_HDR      equ 0x8EF5         ; active sequence header (playback reads the mute bits here)
+SEQ_PTR      equ 0x8EF7         ; far pointer to the active sequence's record (+150h count, +151h track records of 18h)
+TRK_MAP      equ 0x8F37         ; header +42h: track 1..99 -> slot, FFh = not built
+TRK_FLAGS    equ 0x8F9B         ; header +A6h: slot flags, bit 0 = muted (Play/Record "On:NO")
+ACTIVE_SEQ   equ 0x8979         ; active sequence number
+SONG_LOADED  equ 0x86DA         ; 1 while a song step's sequence is in the header (3C97:0009)
+%define T_E704_0081 0x3D25:0x007D       ; leave song mode: stop, reload the active sequence (dispatcher 'M' case)
+%define T_B3FD_0006 0x0671:0x000A       ; the Song page (mode 'G'), AX = the key that leaves it
+%define T_B3FD_02D7 0x0671:0x02DB       ; Song page key loop: CMP AX,50h after the SONG test
+%define T_B3FD_085B 0x0671:0x085F       ; Song page key loop: CMP [bp-4],0 (exit test; return [bp-2])
+%define T_E4D6_000D 0x3AF7:0x0009       ; track name (seq, slot, far buffer >= 17) -> 0 named, 1 unused
+%define T_E291_0376 0x38B1:0x0382       ; build the track -> slot map of a header (far header)

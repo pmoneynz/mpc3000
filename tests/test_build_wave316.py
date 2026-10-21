@@ -24,16 +24,18 @@ from mods import buildkit as kit  # noqa: E402
 from mods import route_c as rc  # noqa: E402
 
 HAVE_TOOLS = shutil.which("nasm") is not None and shutil.which("ndisasm") is not None
-SYS_SHA256 = "9017b0f21290699401e7d90a92ac02e39f7d934cdd096a4f7df3e51c4be3b928"
-IMG_SHA256 = "449051e69bb8501a2b1b8fcf55d1d990d5625571ecc134d118542f9f0b10938a"
-CAVE_SHA256 = "012de870daacf8453273ca6ac3cf98e8e6ff9709ad21d14a4c46f77ada70392a"
+SYS_SHA256 = "6754cc2eb951c2f907fff16b64059c3e0f8a77f8c6bab9c699c9b437bef11670"
+IMG_SHA256 = "d5a42ad5afaf96b5a320294393d637d2db2937072d09d83d2781368d52ef7c6e"
+CAVE_SHA256 = "aec2cc6cf6deee4940a062cd67960c2480bd78e141a35f928b592e7e35bb0b8b"
 # Size budget (notes/port_316.md "Cave space"): entry316 runs 3.16 at L = 6900
 # on every EPROM set (3.08/3.11 load at 7000 and are moved down), so the cave
 # home 7E00 must end below F400h: 53,248 bytes on every machine.  Lower
 # HOME_BUDGET after each size step; raise it only with a note.
 HOME_LIMIT = 0xF4000 - 0x69000 - 0x7E00 * 16
 CAVE_HOME_IMAGE = 0x7E00 * 16      # image offset of the cave home (relative paragraph 7E00)
-HOME_BUDGET = 33_220            # bytes (+4,120 Input Thru, thru316.inc with its 2,048-byte DMA
+HOME_BUDGET = 34_700            # bytes (+1,458 Name Wheel, Extra Settings 2 and Track Mute,
+                                # namewheel316.inc / trackmute316.inc, notes/name_wheel.md and
+                                # notes/track_mute.md, 2026-10-22; 33,220 with +4,120 Input Thru, thru316.inc with its 2,048-byte DMA
                                 # ring, notes/input_thru.md, 2026-10-18; 29,100 with +102 Lazy Chop third review: + and - coalesced in the
                                 # cave, digit-ending disk names, notes/lazy_chop.md "Third review",
                                 # 2026-10-18; 28,998 with +866 Lazy Chop second review: key polling, the disk
@@ -47,7 +49,8 @@ HOME_BUDGET = 33_220            # bytes (+4,120 Input Thru, thru316.inc with its
                                 # fast paths without S6 and D1a, 2026-10-16; 21,140 with the
                                 # crash fixes C1-C3 and scsistack316, 2026-10-17; 21,154 with
                                 # scsistack316's no-wrap fallback, 2026-10-17)
-HOME_HEADROOM = 20_000          # kept free under the universal page-61 limit: 20,028 free with
+HOME_HEADROOM = 18_500          # kept free under the universal page-61 limit: 18,570 free with
+                                # Name Wheel and Track Mute (20,000 before, 20,028 free with
                                 # Input Thru (24,000 before, 24,148 free with the Lazy Chop third
                                 # review; 24,250 with the second, 2026-10-18; 25,000 before, 25,116
                                 # free with the first review fixes; 26,000 before that, 26,510
@@ -82,8 +85,8 @@ class PinnedBuild(unittest.TestCase):
         self.assertEqual((sim["6900"]["pool_end"], sim["7000"]["pool_end"]), ("67DF", "67DF"))
         self.assertEqual((sim["6900"]["runtime_segment"], sim["7000"]["runtime_segment"]), ("6900", "6900"))
         self.assertEqual((sim["6900"]["moved"], sim["7000"]["moved"]), (False, True))
-        self.assertEqual((sim["copy_words"], sim["min_move"]), ("40E2", "01F7"))
-        self.assertEqual((sim["table"]["bytes"], sim["table"]["records"]), (7723, 7383))
+        self.assertEqual((sim["copy_words"], sim["min_move"]), ("43BB", "01F9"))
+        self.assertEqual((sim["table"]["bytes"], sim["table"]["records"]), (7747, 7405))
         copied = 2 * int(sim["copy_words"], 16)
         self.assertLessEqual(copied, HOME_BUDGET, f"cave home {copied} B over budget")
         self.assertGreaterEqual(HOME_LIMIT - copied, HOME_HEADROOM)
@@ -98,8 +101,9 @@ class PinnedBuild(unittest.TestCase):
         # its review fixes (T_D547_02CF, T_D6E0_008B, T_C4C8_0F5F; one
         # T_D52A_0190 fewer) +2; the second review (find first / next, a second
         # T_D6E0_0000, two T_C4C8_0F5F; two T_BDE3_000E and T_D6E0_008B fewer) +2;
-        # the third (+ and - coalesced: two more T_D6E0_0000) +2
-        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (336, 46))
+        # the third (+ and - coalesced: two more T_D6E0_0000) +2; Name Wheel,
+        # Extra Settings 2 and Track Mute +17 and 2
+        self.assertEqual((sim["relocated_cave_words"], sim["not_operand_words"]), (353, 48))
 
 
 @unittest.skipUnless(HAVE_TOOLS, "needs nasm and ndisasm")
@@ -268,8 +272,9 @@ class Checks(unittest.TestCase):
     def test_entry316_bytes_run_in_x86sub(self) -> None:
         # The assembled entry316 run by the interpreter from the loader's hand-off
         # state at both load segments: the same memory and registers at 3.16's
-        # entry 6900:0000, and the builder's model agrees with every byte except
-        # the 2-byte PUSH CS / POP DS slot under SP (the model has no stack).
+        # entry 6900:0000, and the builder's model agrees with every byte (the
+        # 2-byte slot under SP is still allowed: the model has no stack, and
+        # entry316 no longer writes it, notes/port_316.md "Cave space").
         from tests.x86sub import Cpu
         mems: dict[int, bytearray] = {}
         self.verify(memories=mems)

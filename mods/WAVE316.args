@@ -151,3 +151,9 @@
 --patch=1bf4:8a2607000ae4:9a{thru_fdc_leave}90
 --patch=2209a:f8:d8
 --patch=2d0db:26f74702ffff:9a{thru_idle}90
+--patch=4de9:a0617a988bd88a87387aa24f1d:ea{nw_first}9090909090909090
+--patch=4dfe:8bc23d4d00:ea{nw_edit_key}
+--patch=4fc7:558bec83ec06:ea{nw_wheel}90
+--patch=5066:c60636e400cb:ea{nw_reset_case}90
+--patch=15bd7:9a0a007106:9a{tm_song}
+--patch=69e3:3d47007503:ea{tm_song_key}

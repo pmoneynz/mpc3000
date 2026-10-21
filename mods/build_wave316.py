@@ -65,14 +65,14 @@ CODE_END = DGROUP_316 * 16      # 3.16 code and far data lie below DGROUP
 POOL_IMM = 0x48535              # MOV BX,6FFFh immediate the entry adjusts
 POOL_END = 0x6FFF               # its stock value
 SHAPE_INSNS = 6                 # instructions compared per stock target
-HOOK_TARGETS = frozenset({"T_D0C0_0B19", "T_D0C0_0D17", "T_B1B1_005B", "T_D21F_0008", "T_CF92_000C"})   # targets that are a hook site: the cave calls through the hook
+HOOK_TARGETS = frozenset({"T_D0C0_0B19", "T_D0C0_0D17", "T_B1B1_005B", "T_D21F_0008", "T_CF92_000C", "T_B1B1_0036"})   # targets that are a hook site: the cave calls through the hook
 OUT = mod.OUT
 
 # entry316 as assembled, one NASM listing line per instruction.  {name} is the
 # instruction's trailing immediate, which verify() reads and runs.
 ENTRY316 = (
     # L <= UNIV_SEG: copy the cave home, set the pool end, jump to 3.16
-    "fc", "ba{dx}", "81fa{univ_m1}", "773b", "0e", "1f", "b8{home}", "8ec0", "31f6", "31ff",
+    "fc", "ba{dx}", "81fa{univ_m1}", "773d", "8cc8", "8ed8", "b8{home}", "8ec0", "31f6", "31ff",
     "b9{count}", "f3a5", "b8{pool_seg}", "8ec0", "bb{pool_off}", "26807fff{pool_opcode}", "750f",
     "26813f{pool_word}", "7508", "89d0", "2d{pool_room}", "268907", "b84000", "8ed8",
     "ea0000{start_seg}", "f4", "ebfd",
