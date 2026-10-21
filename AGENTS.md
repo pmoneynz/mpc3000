@@ -2,6 +2,15 @@
 
 [`PROJECT_GOAL.md`](PROJECT_GOAL.md) wins conflicts.
 
+## Project boundary
+
+This repository is MPC3000 OS Mod Work (OS reverse engineering, PMONEY
+and its mods, builders, benches, the evidence harness). The Mac app
+emulator and controller integration live in `pmoneynz/MPC3000-mac-port`;
+do not add app specifications, app code or controller drivers here. The
+MAME fork `pmoneynz/mame` (`mpc3000-accuracy`) is shared: pin your own
+commit, and land fork changes with a test here when this project needs them.
+
 ## Target
 
 Vailixi OS 3.50, interleaved from the LS/MS pair under `07-rom/Vailixi 3.50/`.

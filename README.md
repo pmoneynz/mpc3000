@@ -8,6 +8,25 @@ Current slice: [`notes/boot_reset_to_bios_banner.md`](notes/boot_reset_to_bios_b
 Work queue: [`TODO.md`](TODO.md). Start here: [`GETTING_STARTED.md`](GETTING_STARTED.md).
 Building floppy mods: [`MODDING_HOWTO.md`](MODDING_HOWTO.md).
 
+## Project boundary
+
+This repository is **MPC3000 OS Mod Work**: reverse engineering of the OS
+ROMs, the PMONEY OS and its floppy mods, their builders and bench
+checklists, and the evidence harness in `emu/`. Its output is OS software
+for real hardware.
+
+The Mac app emulator is a separate project,
+[MPC3000-mac-port](https://github.com/pmoneynz/MPC3000-mac-port) (local
+`~/Documents/MPC3000-mac-port`). Controller integration such as the
+Maschine MK1 belongs there.
+
+- **Shared:** the MAME fork [`pmoneynz/mame`](https://github.com/pmoneynz/mame)
+  branch `mpc3000-accuracy`. Each project pins its own commit. A fork
+  change lands with a test in the project that needed it.
+- **Evidence flows one way:** the app copies results from here, with their
+  provenance. Neither project edits the other's files.
+- App specifications, app code and controller drivers do not go here.
+
 Collected for Peter Wadams.
 
 **Delivery status (box):** tree is complete under `/workspace/mpc3000-docs/`. Executor subagent lacked `GetDynamicTools`/`CopyFromBox`/`ListMachines` (cursor namespace MCP not exposed). Parent must `CopyFromBox` → `/Users/peterwadams/Documents/MPC3000/` (machineId `eb8a6940-1b53-453e-991f-1565b5bc76a9`). Technical index of silicon, datasheets, service docs, and MAME reverse-engineering sources useful for decoding the MPC3000 Operating System ROM (memory map, IRQ, timers, I/O, IPC).
