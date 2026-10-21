@@ -95,6 +95,7 @@ PLAYER_CE9_RET equ 0x0D76               ; 0D70: CEF's return from the player 03A
 KEY_QUEUE  equ 0x12A4           ; 12BC: AMX key queue, byte queue of 8
 LIST_SELECTION equ 0xE0F7       ; E40A: sorted Sound list position, word
 %define T_FB00_06B9 0x47BF:0x06B3       ; AMX queue push-front (3.16's own AMX)
+%define T_FB00_0194 0x47BF:0x018E       ; AMX interrupt exit (expects its caller's CALLF return on top)
 %define T_B99A_0009 0x0B72:0x0013       ; Edit Sound after its replaced prologue
 %define T_B99A_006B 0x0B72:0x0070       ; Edit Sound after the sorted-list seam
 %define T_B99A_04E3 0x0B72:0x04E8       ; field 0 handler, sound present
@@ -286,6 +287,7 @@ SO_STR_OUT_A equ 0x654F         ; 6ACB: "OUT A"; "OUT B".."OUT D" at +6, +12, +1
 SO_STR_ALL   equ 0x3287         ; 6AE3: 3.16's own "ALL" (choice list ALL/ZONE/TEMP/..., far ptr at DS:321E)
 %define T_DC5B_0097 0x3286:0x008F       ; real-time sender after its entry test: DEC BX / JS ...
 %define T_DA09_0000 0x3033:0x000E       ; queue CL in the DS:BX ring; keeps BX, CX, SI
+%define T_DA09_0030 0x3033:0x003E       ; queue CL in the RING_SEG:BX ring (bulk MIDI OUT push); AX 0 / FFFF full
 %define T_DC5B_003B 0x3286:0x0039       ; buffer sender (buffer far, count, port word)
 
 ; ---------------------------------------------------------------- SCSI (scsi316.inc, Vailixi F12/F13)

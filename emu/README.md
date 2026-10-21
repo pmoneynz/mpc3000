@@ -74,6 +74,7 @@ Extra probes in `emu/lua/`, passed as
 | `wcu_dump.lua` | V53 wait control / refresh registers after 1 s (`wcu.txt`) |
 | `cave_watch.lua` | Reads (including fetches) and writes of the code cave in EPROM and in the Route A RAM copy (`cave.txt`) |
 | `lazychop316.lua` | Lazy Chop (316): owned pad timestamps, the take's t0, stock note-ons, ring-5 writes, DSP key-ons/stops, keys the view reads, cave/program snapshots (`emu/test_lazychop.py`) |
+| `lcdmirror_cost.lua` | LCD mirror: time from a fetch of `LM_TICK_PHYS` to the next fetch of `LM_IRET_PHYS` per tick (`lcdmirror_cost.txt`; `notes/lcd_mirror_midi.md` §3.2) |
 
 ## Cycle profiler (`emu/profile.py`, fork `nec_prof`)
 

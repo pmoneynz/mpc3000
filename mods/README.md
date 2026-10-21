@@ -30,6 +30,7 @@ image hash is a function of its files. Builders no longer need mtools.
 | `build_romapp.py`, `romapp.asm` | Guarded 336 KiB application/data capture to `ROMAPP.BIN`; excludes NVRAM, uses captured PGR wrapper |
 | `PETER.args`, `CAVEDEMO.args` | Version-screen credit and execution-from-RAM demonstrations |
 | `S1A.args`, `s1a.asm` | S1a: the 17 divide calls of the note-on layer `CFC6:039E` go to a two-step `DIV` cave routine (exact, falls back to the BIOS runtime); layer −45 % in MAME; `notes/performance.md` §9.6, `tests/test_s1a_divide.py` |
+| `LCDMIRROR316.args`, `lcdmirror316.asm`, `build_lcdmirror316.py` | LCD mirror experiment: stock 3.16 + a Route C cave that streams the screen as SysEx on MIDI OUT D (`--port`); `build/lcd_mirror/`; `notes/lcd_mirror_midi.md`, `emu/test_lcdmirror316.py` |
 
 ```bash
 python3 mods/build_mod_sys.py @mods/DEMO351.args   # build/mods/DEMO351.{SYS,img}; --out DIR elsewhere
